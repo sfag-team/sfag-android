@@ -1,50 +1,89 @@
 package com.droidhen.formalautosim.presentation.activities
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.droidhen.formalautosim.presentation.navigation.Destinations
 import com.droidhen.formalautosim.presentation.navigation.screens.CommunityScreen
 import com.droidhen.formalautosim.presentation.navigation.screens.GraphEditorScreen
-import com.droidhen.formalautosim.presentation.navigation.screens.HistoryScreen
 import com.droidhen.formalautosim.presentation.navigation.screens.MainScreen
 import com.droidhen.formalautosim.presentation.navigation.screens.UserProfileScreen
+import com.droidhen.formalautosim.presentation.theme.FormalAutoSimTheme
 import com.droidhen.formalautosim.presentation.views.BottomBar
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private var hideStatusBar = mutableIntStateOf(0)
 
+    @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setDefaultSettings()
         setContent {
-            rememberNavController().apply {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    NavHost(navController = this@apply, startDestination = Destinations.MAIN.route, modifier = Modifier.weight(9f)){
-                        composable(route = Destinations.MAIN.route){
-                            MainScreen()
+            FormalAutoSimTheme {
+                SetDefaultSettings()
+                key(hideStatusBar) {
+                    hideSystemBars()
+                }
+                rememberNavController().apply {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
+                    ) {
+                        NavHost(
+                            navController = this@apply,
+                            startDestination = Destinations.MAIN.route,
+                            modifier = Modifier.weight(9f)
+                        ) {
+                            composable(route = Destinations.MAIN.route) {
+                                MainScreen()
+                            }
+                            composable(route = Destinations.COMMUNITY.route) {
+                                CommunityScreen()
+                            }
+                            composable(route = Destinations.USER_PROFILE.route) {
+                                UserProfileScreen()
+                            }
+                            composable(route = Destinations.GRAPH_EDITOR.route) {
+                                GraphEditorScreen()
+                            }
                         }
-                        composable(route = Destinations.HISTORY.route){
-                            HistoryScreen()
-                        }
-                        composable(route = Destinations.COMMUNITY.route){
-                            CommunityScreen()
-                        }
-                        composable(route = Destinations.USER_PROFILE.route){
-                            UserProfileScreen()
-                        }
-                        composable(route = Destinations.GRAPH_EDITOR.route){
-                            GraphEditorScreen()
-                        }
+                        BottomBar(this@apply)
                     }
-                    BottomBar(this@apply)
                 }
             }
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        hideStatusBar.intValue += 1
+    }
+
+    @Composable
+    fun hideSystemBars() {
+        WindowCompat.getInsetsController(window, LocalView.current).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
     }
 }

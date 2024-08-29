@@ -11,4 +11,5 @@ plugins {
     alias(libs.plugins.android) apply false
     alias(libs.plugins.daggerHilt) apply false
     alias(libs.plugins.devTools)
+    alias(libs.plugins.googleGmsGoogleServices) apply false
 }

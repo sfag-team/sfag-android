@@ -1,3 +1,17 @@
 <resources>
-    <string name="app_name">FormalAutoSim</string>
+    <string name="app_name">FAS</string>
+    <string name="icon_image">icon image</string>
+    <string name="sign_in">SIGN-IN</string>
+    <string name="email">email</string>
+    <string name="password">password</string>
+    <string name="sign_up">SIGN-UP</string>
+    <string name="password_requirements">your password must contain at least 8 chars\nand must match password from first field</string>
+    <string name="confirm_password">confirm password</string>
+    <string name="email_requirements">please, enter valid email</string>
+    <string name="name_requirement">please, enter valid name</string>
+    <string name="incorrect_sign_in_data">incorrect email or password</string>
+    <string name="incorrect_sign_up_data">user with this email already exists</string>
+    <string name="sign_in_error_message_text">It\'s seems like we have some issue\nplease check your internet connection and try again\nor you can stay in guest mode</string>
+    <string name="try_again">TRY AGAIN</string>
+    <string name="stay_in_guest_mode">STAY IN GUEST MODE</string>
 </resources>
