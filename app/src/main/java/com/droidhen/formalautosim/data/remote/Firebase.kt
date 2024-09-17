@@ -4,7 +4,6 @@ import android.util.Log
 import com.droidhen.formalautosim.core.entities.User
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
-import java.lang.Exception
 import javax.inject.Inject
 
 class Firebase @Inject constructor() {

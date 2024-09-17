@@ -1,21 +1,18 @@
 package com.droidhen.formalautosim.core.entities.machines
 
-import java.nio.file.Path
+import androidx.compose.runtime.Composable
 
 class PushDownMachine : Machine() {
     override var currentState: Int?
         get() = TODO("Not yet implemented")
         set(value) {}
 
-    override fun getTransitionPath(transition: Pair<Int, Int>): Path? {
-        TODO("Not yet implemented")
-    }
-
+    @Composable
     override fun simulateTransition() {
         TODO("Not yet implemented")
     }
 
-    override fun converteMachineToKeyValue() {
+    override fun convertMachineToKeyValue(): List<Pair<String, String>> {
         TODO("Not yet implemented")
     }
 }

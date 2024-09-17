@@ -1,5 +1,7 @@
 package com.droidhen.formalautosim.core.entities.states
 
+import androidx.compose.ui.geometry.Offset
+
 
 class State constructor(
     public val finite: Boolean,
@@ -8,13 +10,14 @@ class State constructor(
     public var name: String,
     public var isCurrent: Boolean = false,
 ) {
-    var position: Pair<Float, Float> = 0f to 0f
+    var position: Offset= Offset(0f,0f)
+    var radius:Float = 40f
 
     fun setX(x:Float){
-        position = x to position.second
+        position = Offset(x, position.y)
     }
 
     fun setY(y:Float){
-        position = position.first to y
+        position = Offset(position.x, y)
     }
 }

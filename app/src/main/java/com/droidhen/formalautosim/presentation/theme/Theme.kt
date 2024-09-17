@@ -21,6 +21,7 @@ private val LightColorScheme = lightColorScheme(
     tertiary = blue_three,
     background = light_gray,
     surface = perlamutr_white,
+    primaryContainer = light_blue
 //    onPrimary = Color.White,
 //    onSecondary = Color.White,
 //    onTertiary = Color.White,

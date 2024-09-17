@@ -9,10 +9,10 @@ import androidx.compose.ui.graphics.Color
 val blue_one = Color(0xFF5B7065)
 val light_gray = Color(0xFFEDFFF5)
 val blue_two = Color(0xFF2E3D3D)
-val blue_two_transparent = Color(0x322E3D3D)
 val blue_three = Color(0xFF052836)
 val perlamutr_white = Color(0xFFF4FFFF)
-val unable_views = Color(0xFF8EA8A6)
+val light_blue = Color(0xFFB1E6D1)
+val unable_views = Color(0xFFA0BBB9)
 
 val error_red = Color(0xFF8C230F)
 

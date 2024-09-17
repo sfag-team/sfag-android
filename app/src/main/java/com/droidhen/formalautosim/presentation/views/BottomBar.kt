@@ -14,20 +14,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.toColor
 import androidx.navigation.NavController
 import com.droidhen.formalautosim.R
 import com.droidhen.formalautosim.presentation.navigation.Destinations
-import com.droidhen.formalautosim.presentation.theme.blue_two
-import com.droidhen.formalautosim.presentation.theme.blue_two_transparent
 
 @Composable
 fun BottomBar(navController: NavController) {

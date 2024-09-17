@@ -27,8 +27,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.droidhen.formalautosim.R
-import com.droidhen.formalautosim.presentation.theme.defaultTextInputColor
 import com.droidhen.formalautosim.presentation.theme.blue_one
+import com.droidhen.formalautosim.presentation.theme.defaultTextInputColor
 import com.droidhen.formalautosim.presentation.theme.error_red
 
 @Composable
