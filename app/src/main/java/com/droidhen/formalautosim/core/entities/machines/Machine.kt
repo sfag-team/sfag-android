@@ -1,16 +1,15 @@
 package com.droidhen.formalautosim.core.entities.machines
 
 import android.annotation.SuppressLint
-import androidx.compose.animation.core.Animation
-import androidx.compose.animation.core.LinearOutSlowInEasing
+import android.util.Log
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -18,7 +17,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -40,7 +40,7 @@ import kotlin.math.sin
 abstract class Machine(var name: String = "Untitled") {
     val states = mutableListOf<State>()
     protected val transitions = mutableListOf<Transition>()
-    val input = ArrayDeque<Char>()
+    val input = StringBuilder()
     abstract var currentState: Int?
 
 
@@ -159,7 +159,7 @@ abstract class Machine(var name: String = "Untitled") {
      * simulate transition regarding current state and input
      */
     @Composable
-    abstract fun simulateTransition()
+    abstract fun simulateTransition(onAnimationEnd: () -> Unit)
 
     /**
      * convert machine to key - value String format for saving machine on relative database
@@ -182,12 +182,14 @@ abstract class Machine(var name: String = "Untitled") {
     fun drawMachine() {
         val currentCircleColor = MaterialTheme.colorScheme.primaryContainer
         val borderColor = MaterialTheme.colorScheme.tertiary
-        states.forEach { state ->
-            getAllPath(LocalDensity.current).forEach { path ->
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawArrow(path!!, borderColor)
-                }
+
+        getAllPath(LocalDensity.current).forEach { path ->
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawArrow(path!!, borderColor)
             }
+        }
+
+        states.forEach { state ->
             Box(
                 modifier = Modifier
                     .size(state.radius.dp)
@@ -201,7 +203,7 @@ abstract class Machine(var name: String = "Untitled") {
                     )
                     drawCircle(
                         color = if (state.isCurrent) currentCircleColor else Color.White,
-                        radius = if (state.isCurrent) state.radius - 3 else state.radius
+                        radius = if (state.isCurrent) state.radius - 1 else state.radius
                     )
                 }
                 Text(
@@ -218,32 +220,70 @@ abstract class Machine(var name: String = "Untitled") {
     protected fun AnimationOfTransition(
         start: Offset,
         end: Offset,
-        curvature: Int = 200,
-        duration: Int = 500,
+        radius: Float,
+        primaryCurvature: Int = 200,
+        duration: Int = 4500,
+        onAnimationEnd: () -> Unit
     ) {
-        val progress = rememberInfiniteTransition(label = "").animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(tween(duration, easing = LinearOutSlowInEasing), repeatMode = RepeatMode.Reverse),
-            label = ""
-        )
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val currentPosition = getPositionByAnimationProgress(progress.value, start, end, curvature)
+        val progress = remember { Animatable(0f) }
 
-            drawCircle(color = Color.Red, radius = 15f, center = currentPosition)
+        LaunchedEffect(Unit) {
+            progress.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(duration, easing = FastOutSlowInEasing)
+            )
+            onAnimationEnd()
         }
 
+        val circleColor = MaterialTheme.colorScheme.primary
+        val density = LocalDensity.current
+        val startPoint = with(density) { Offset((start.x + radius / 2).dp.toPx(), (start.y + radius / 2).dp.toPx()) }
+        val endPoint = with(density) { Offset((end.x + radius / 2).dp.toPx(), (end.y + radius / 2).dp.toPx()) }
+        val radiusBigCircle = radius/2
+        val radiusSmallCircle = radiusBigCircle-5
 
+        val controlPoint = Offset(
+            (startPoint.x + endPoint.x) / 2 + (primaryCurvature / 1000f) * (endPoint.y - startPoint.y)*0.5f,
+            (startPoint.y + endPoint.y) / 2 - (primaryCurvature / 1000f) * (endPoint.x - startPoint.x)*0.5f
+        )
+
+
+        Canvas(modifier = Modifier.fillMaxSize()) {
+
+            val currentPosition = getQuadraticBezierPosition(
+                progress = progress.value,
+                start = startPoint,
+                control = controlPoint,
+                end = endPoint
+            )
+            drawCircle(color = circleColor, radius = radiusBigCircle, center = currentPosition)
+            drawCircle(color = Color.White, radius = radiusSmallCircle, center = currentPosition)
+        }
     }
 
-    private fun getPositionByAnimationProgress(
+    /**
+     * Calculates coordinates for circle - regarding curvature
+     * Warning: function going to have very big quantity of invocations because of recompositions.
+     * That's why it's extremely important to keep it as powerful as possible
+     *
+     * @param progress - progress of animation
+     * @param start - start position
+     * @param end - end position
+     * @param control - control point, in the middle of the line. This fields sets the curvature of transition
+     * @return Offset - position of circle
+     */
+    private fun getQuadraticBezierPosition(
         progress: Float,
         start: Offset,
-        end: Offset,
-        curvature: Int,
-    ) = Offset(
-        start.x + (end.x - start.x) * progress,
-        start.y + (end.y - start.y) * progress + curvature * (1 - 2 * progress) * progress
-    )
+        control: Offset,
+        end: Offset
+    ): Offset {
+        val oneMinusProgress = 1 - progress
+
+        val x = oneMinusProgress * oneMinusProgress * start.x + 2 * oneMinusProgress * progress * control.x + progress * progress * end.x
+        val y = oneMinusProgress * oneMinusProgress * start.y + 2 * oneMinusProgress * progress * control.y + progress * progress * end.y
+
+        return Offset(x, y)
+    }
 
 }

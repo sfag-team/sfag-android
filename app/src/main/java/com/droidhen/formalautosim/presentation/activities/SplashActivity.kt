@@ -7,6 +7,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -40,8 +41,10 @@ class SplashActivity : ComponentActivity() {
                             }, ::navigateToMainActivity)
                         }
                         composable(Destinations.SIGN_IN.route) {
-                            //navigateToMainActivity()
-                            SignInScreen(::navigateToMainActivity)
+                            LaunchedEffect(Unit) {
+                                navigateToMainActivity()
+                            }
+                            //SignInScreen(::navigateToMainActivity)
                         }
                     }
                 }

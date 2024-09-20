@@ -7,12 +7,11 @@ class TuringMachine: Machine() {
         get() = TODO("Not yet implemented")
         set(value) {}
 
-
-
     @Composable
-    override fun simulateTransition() {
+    override fun simulateTransition(onAnimationEnd: () -> Unit) {
         TODO("Not yet implemented")
     }
+
 
     override fun convertMachineToKeyValue(): List<Pair<String, String>> {
         TODO("Not yet implemented")

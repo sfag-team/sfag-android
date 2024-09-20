@@ -44,7 +44,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         testFiniteStateMachine()
 
-
         setContent {
             FormalAutoSimTheme {
                 SetDefaultSettings()
@@ -114,7 +113,7 @@ class MainActivity : ComponentActivity() {
         )
         TestMachine.addTransition(Transition(startState  =1, endState = 2))
         TestMachine.addTransition(Transition(startState = 2, endState =  1))
-        for(i in 0..30)TestMachine.input.add('a')
+        for(i in 0..30)TestMachine.input.append('a')
     }
 
     @SuppressLint("ComposableNaming")
