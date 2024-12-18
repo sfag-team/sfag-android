@@ -6,6 +6,9 @@ plugins {
     alias(libs.plugins.googleGmsGoogleServices)
 }
 
+kotlin{
+    tasks.register("testClasses")
+}
 android {
     namespace = "com.droidhen.formalautosim"
     compileSdk = 34

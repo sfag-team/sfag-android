@@ -8,7 +8,7 @@ class LinearBoundedMachine : Machine() {
         set(value) {}
 
     @Composable
-    override fun simulateTransition(onAnimationEnd: () -> Unit) {
+    override fun calculateTransition(onAnimationEnd: () -> Unit) {
         TODO("Not yet implemented")
     }
 

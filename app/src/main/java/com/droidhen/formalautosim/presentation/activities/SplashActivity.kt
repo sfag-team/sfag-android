@@ -44,7 +44,7 @@ class SplashActivity : ComponentActivity() {
                             LaunchedEffect(Unit) {
                                 navigateToMainActivity()
                             }
-                            //SignInScreen(::navigateToMainActivity)
+                                // SignInScreen(::navigateToMainActivity)
                         }
                     }
                 }

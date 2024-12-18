@@ -91,7 +91,7 @@ class MainActivity : ComponentActivity() {
             finite = true,
             initial = true,
             index = 1,
-            name = "a",
+            name = "q1",
             isCurrent = true
         )
 
@@ -99,7 +99,7 @@ class MainActivity : ComponentActivity() {
             finite = false,
             initial = false,
             index = 2,
-            name = "b"
+            name = "q2"
         )
 
         firstState.position = Offset(100f, 100f)
@@ -111,9 +111,10 @@ class MainActivity : ComponentActivity() {
         TestMachine.addNewState(
             secondState
         )
-        TestMachine.addTransition(Transition(startState  =1, endState = 2))
-        TestMachine.addTransition(Transition(startState = 2, endState =  1))
-        for(i in 0..30)TestMachine.input.append('a')
+        TestMachine.addTransition(Transition(name = "a", startState  =1, endState = 2))
+        TestMachine.addTransition(Transition(name = "b",startState = 2, endState =  1))
+        TestMachine.addTransition(Transition(name = "c", startState = 1, endState = 1))
+        for(i in 0..2) TestMachine.input.append("abc")
     }
 
     @SuppressLint("ComposableNaming")
