@@ -101,8 +101,10 @@ fun MainScreen() {
                         painter = painterResource(id = R.drawable.go_to_next),
                         contentDescription = "",
                         modifier = Modifier.clickable {
-                            isLockedAnimation = false
-                            animation.intValue++
+                            if(isLockedAnimation){
+                                isLockedAnimation = false
+                                animation.intValue++
+                            }
                         })
                 }
             }
