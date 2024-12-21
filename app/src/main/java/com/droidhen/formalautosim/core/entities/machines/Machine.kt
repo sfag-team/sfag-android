@@ -2,26 +2,25 @@ package com.droidhen.formalautosim.core.entities.machines
 
 import android.annotation.SuppressLint
 import android.graphics.PathMeasure
-import android.icu.text.Transliterator.Position
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,15 +44,19 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.droidhen.formalautosim.R
 import com.droidhen.formalautosim.core.entities.states.State
 import com.droidhen.formalautosim.core.entities.transitions.Transition
 import com.droidhen.formalautosim.presentation.theme.light_blue
+import com.droidhen.formalautosim.presentation.views.DefaultTextField
+import com.droidhen.formalautosim.presentation.views.FASButton
 import com.droidhen.formalautosim.utils.extensions.drawArrow
 import kotlin.math.atan
 import kotlin.math.cos
@@ -261,8 +264,6 @@ abstract class Machine(var name: String = "Untitled") {
     @SuppressLint("ComposableNaming", "SuspiciousIndentation")
     @Composable
     fun drawMachine() {
-        val currentCircleColor = MaterialTheme.colorScheme.primaryContainer
-        val borderColor = MaterialTheme.colorScheme.tertiary
         var offsetX by remember {
             mutableFloatStateOf(offsetXGraph)
         }
@@ -280,37 +281,27 @@ abstract class Machine(var name: String = "Untitled") {
             }
         }
 
-
         InputBar()
-        val controlPointList = mutableListOf<Offset>()
-        val transitionLocalList = mutableListOf<Transition>()
-        val paths = getAllPath(LocalDensity.current, { controlPoint ->
-            controlPointList.add(controlPoint)
-        }, { transition ->
-            transitionLocalList.add(transition)
-        })
-        paths.forEach { path ->
-            val controlPoint = controlPointList[paths.indexOf(path)]
-            Canvas(modifier = Modifier
-                .fillMaxWidth()
-                .then(dragModifier)
-                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }) {
-                drawArrow(path!!, borderColor)
-                drawContext.canvas.nativeCanvas.apply {
-                    drawText(
-                        transitionLocalList[paths.indexOf(path)].name,
-                        controlPoint.x,
-                        controlPoint.y,
-                        android.graphics.Paint().apply {
-                            color = android.graphics.Color.BLACK
-                            textSize = 40f
-                            textAlign = android.graphics.Paint.Align.CENTER
-                        }
-                    )
-                }
-            }
-        }
+        Transitions(dragModifier = dragModifier, offsetY, offsetX)
+        States(dragModifier = dragModifier, offsetY, offsetX)
+    }
 
+
+    /**
+     * private compose function States
+     *
+     * composes all states of machine on the screen
+     * @param dragModifier needed for correct drag and drop of states
+     *
+     */
+    @Composable
+    private fun States(
+        @SuppressLint("ModifierParameter") dragModifier: Modifier,
+        offsetY: Float,
+        offsetX: Float,
+        borderColor: Color = MaterialTheme.colorScheme.tertiary,
+    ) {
+        val currentCircleColor = MaterialTheme.colorScheme.primaryContainer
         states.forEach { state ->
             Box(
                 modifier = Modifier
@@ -379,6 +370,56 @@ abstract class Machine(var name: String = "Untitled") {
         }
     }
 
+
+    /**
+     * private compose function Transitions
+     *
+     * composes all transitions of machine
+     * @param dragModifier needed for correct drag and drop of transitions
+     */
+    @Composable
+    private fun Transitions(
+        dragModifier: Modifier,
+        offsetY: Float,
+        offsetX: Float,
+        borderColor: Color = MaterialTheme.colorScheme.tertiary,
+    ) {
+        val controlPointList = mutableListOf<Offset>()
+        val transitionLocalList = mutableListOf<Transition>()
+        val paths = getAllPath(LocalDensity.current, { controlPoint ->
+            controlPointList.add(controlPoint)
+        }, { transition ->
+            transitionLocalList.add(transition)
+        })
+        Canvas(modifier = Modifier
+            .fillMaxSize()
+            .then(dragModifier)
+            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }) {
+            paths.forEach { path ->
+                val controlPoint = controlPointList[paths.indexOf(path)]
+                drawArrow(path!!, borderColor)
+                drawContext.canvas.nativeCanvas.apply {
+                    drawText(
+                        transitionLocalList[paths.indexOf(path)].name,
+                        controlPoint.x,
+                        controlPoint.y,
+                        android.graphics.Paint().apply {
+                            color = android.graphics.Color.BLACK
+                            textSize = 40f
+                            textAlign = android.graphics.Paint.Align.CENTER
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+
+    /**
+     * InputBar
+     *
+     * Compose function that creates bar that shows input chars for the machine
+     */
     @Composable
     private fun InputBar() {
         var iteration = 0
@@ -388,7 +429,10 @@ abstract class Machine(var name: String = "Untitled") {
                     .fillMaxWidth()
                     .height(58.dp)
                     .background(light_blue)
-                    .padding(start = 8.dp),
+                    .padding(start = 8.dp)
+                    .clickable {
+
+                    },
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -466,7 +510,10 @@ abstract class Machine(var name: String = "Untitled") {
                 .fillMaxSize()
                 .offset { IntOffset(offsetXGraph.roundToInt(), offsetYGraph.roundToInt()) }) {
 
-                val currentPosition = getCurrentPositionByPath(path.first!!, progress.value* if(start==end) 0.8f else 1f)
+                val currentPosition = getCurrentPositionByPath(
+                    path.first!!,
+                    progress.value * if (start == end) 0.8f else 1f
+                )
                 drawCircle(color = circleColor, radius = radiusBigCircle, center = currentPosition)
                 drawCircle(
                     color = Color.White,
@@ -477,10 +524,49 @@ abstract class Machine(var name: String = "Untitled") {
         }
     }
 
+    /**
+     * return position of transition point by path and progress of point had made
+     * @param path - path of point
+     * @param progress - progress of point had made
+     *
+     * @return Offset - position of point
+     */
     private fun getCurrentPositionByPath(path: Path, progress: Float): Offset {
         val currentPositionArray = FloatArray(2)
         val pathMeasure = PathMeasure(path.asAndroidPath(), false)
         pathMeasure.getPosTan(pathMeasure.length * progress, currentPositionArray, null)
         return Offset(currentPositionArray[0], currentPositionArray[1])
+    }
+
+
+    /**
+     * Screen for editing input bar content
+     *
+     * @param finishedEditing it's a lambda - that invokes when user confirm his changes
+     */
+    @SuppressLint("UnrememberedMutableState")
+    @Composable
+    fun EditingInput(finishedEditing: () -> Unit){
+        val inputValue = mutableStateOf(input.toString())
+        Column (Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(modifier = Modifier.size(32.dp))
+            Text(text = stringResource(R.string.editing_input_headline), style = MaterialTheme.typography.headlineLarge)
+            Spacer(modifier =Modifier.size(16.dp))
+            DefaultTextField(
+                hint = "",
+                value = inputValue.value.reversed(),
+                requirementText = stringResource(R.string.requirement_text_for_machine_input),
+                onTextChange = { newInput ->
+                    input.clear()
+                    input.append(newInput.reversed())
+                    inputValue.value = newInput
+                }) {
+                input.contains("^[A-Za-z]+$".toRegex())
+            }
+
+            Spacer(modifier = Modifier.fillMaxHeight(0.7f))
+
+            FASButton(text = "Confirm", onClick = finishedEditing)
+        }
     }
 }
