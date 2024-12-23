@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.Color
 
 val blue_one = Color(0xFF5B7065)
 val light_gray = Color(0xFFEDFFF5)
+val medium_gray = Color(0x4F1A030C)
 val blue_two = Color(0xFF2E3D3D)
 val blue_three = Color(0xFF052836)
 val perlamutr_white = Color(0xFFF4FFFF)

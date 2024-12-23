@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.droidhen.formalautosim.R
 import com.droidhen.formalautosim.presentation.activities.MainActivity
 import com.droidhen.formalautosim.presentation.theme.light_blue
-import com.droidhen.formalautosim.utils.enums.ScreenStates
+import com.droidhen.formalautosim.utils.enums.MainScreenStates
 
 @Composable
 fun MainScreen() {
@@ -42,20 +42,20 @@ fun MainScreen() {
         mutableIntStateOf(0)
     }
     var currentScreenState = remember {
-        mutableStateOf(ScreenStates.SIMULATING)
+        mutableStateOf(MainScreenStates.SIMULATING)
     }
     var isLockedAnimation = true
 
     BackHandler {
         when (currentScreenState.value) {
-            ScreenStates.SIMULATING -> {}
+            MainScreenStates.SIMULATING -> {}
 
-            ScreenStates.EDITING_INPUT -> {
-                currentScreenState.value = ScreenStates.SIMULATING
+            MainScreenStates.EDITING_INPUT -> {
+                currentScreenState.value = MainScreenStates.SIMULATING
             }
 
-            ScreenStates.EDITING_MACHINE -> {
-                currentScreenState.value = ScreenStates.SIMULATING
+            MainScreenStates.EDITING_MACHINE -> {
+                currentScreenState.value = MainScreenStates.SIMULATING
             }
         }
     }
@@ -92,7 +92,7 @@ fun MainScreen() {
                         .clip(MaterialTheme.shapes.large)
                 ) {
                     when (currentScreenState.value) {
-                        ScreenStates.SIMULATING -> {
+                        MainScreenStates.SIMULATING -> {
                             key(animation.intValue) {
                                 if (isLockedAnimation.not()) {
                                     MainActivity.TestMachine.calculateTransition {
@@ -102,18 +102,18 @@ fun MainScreen() {
                                 }
                             }
                             key(recompose.intValue) {
-                                MainActivity.TestMachine.drawMachine()
+                                MainActivity.TestMachine.SimulateMachine()
                             }
                         }
 
-                        ScreenStates.EDITING_INPUT -> {
+                        MainScreenStates.EDITING_INPUT -> {
                             MainActivity.TestMachine.EditingInput {
-                                currentScreenState.value = ScreenStates.SIMULATING
+                                currentScreenState.value = MainScreenStates.SIMULATING
                             }
                         }
 
-                        ScreenStates.EDITING_MACHINE -> {
-                            //TODO
+                        MainScreenStates.EDITING_MACHINE -> {
+                            MainActivity.TestMachine.EditingMachine()
                         }
                     }
 
@@ -134,19 +134,30 @@ fun MainScreen() {
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     Icon(
+                        painter = painterResource(id = R.drawable.editing_machine),
+                        contentDescription = "",
+                        modifier = Modifier.clickable {
+                           currentScreenState.value = MainScreenStates.EDITING_MACHINE
+                        })
+                    Spacer(modifier = Modifier.width(36.dp))
+                    Icon(
                         painter = painterResource(id = R.drawable.input_ic),
                         contentDescription = "",
                         modifier = Modifier.clickable {
-                            currentScreenState.value = ScreenStates.EDITING_INPUT
+                            currentScreenState.value = MainScreenStates.EDITING_INPUT
                         })
                     Spacer(modifier = Modifier.width(36.dp))
                     Icon(
                         painter = painterResource(id = R.drawable.go_to_next),
                         contentDescription = "",
                         modifier = Modifier.clickable {
-                            if (isLockedAnimation) {
-                                isLockedAnimation = false
-                                animation.intValue++
+                            if(currentScreenState.value != MainScreenStates.SIMULATING){
+                                currentScreenState.value = MainScreenStates.SIMULATING
+                            }else{
+                                if (isLockedAnimation) {
+                                    isLockedAnimation = false
+                                    animation.intValue++
+                                }
                             }
                         })
                 }

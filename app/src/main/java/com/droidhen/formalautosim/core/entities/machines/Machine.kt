@@ -1,18 +1,25 @@
 package com.droidhen.formalautosim.core.entities.machines
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.PathMeasure
+import android.util.Log
+import android.widget.Space
+import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,12 +28,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,8 +55,14 @@ import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.modifier.modifierLocalProvider
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
@@ -55,8 +74,11 @@ import com.droidhen.formalautosim.R
 import com.droidhen.formalautosim.core.entities.states.State
 import com.droidhen.formalautosim.core.entities.transitions.Transition
 import com.droidhen.formalautosim.presentation.theme.light_blue
+import com.droidhen.formalautosim.presentation.theme.medium_gray
+import com.droidhen.formalautosim.presentation.theme.perlamutr_white
 import com.droidhen.formalautosim.presentation.views.DefaultTextField
 import com.droidhen.formalautosim.presentation.views.FASButton
+import com.droidhen.formalautosim.utils.enums.EditMachineStates
 import com.droidhen.formalautosim.utils.extensions.drawArrow
 import kotlin.math.atan
 import kotlin.math.cos
@@ -70,6 +92,7 @@ abstract class Machine(var name: String = "Untitled") {
     val input = StringBuilder()
     private var offsetXGraph = 0f
     private var offsetYGraph = 0f
+    private var editMode = EditMachineStates.ADD_STATES
     abstract var currentState: Int?
 
 
@@ -239,6 +262,15 @@ abstract class Machine(var name: String = "Untitled") {
     }
 
     /**
+     * delete state
+     *
+     * @param state - state that should be deleted
+     */
+    fun deleteState(state: State) {
+        states.remove(state)
+    }
+
+    /**
      * simulate transition regarding current state and input
      */
     @Composable
@@ -263,7 +295,7 @@ abstract class Machine(var name: String = "Untitled") {
      */
     @SuppressLint("ComposableNaming", "SuspiciousIndentation")
     @Composable
-    fun drawMachine() {
+    fun SimulateMachine() {
         var offsetX by remember {
             mutableFloatStateOf(offsetXGraph)
         }
@@ -281,9 +313,124 @@ abstract class Machine(var name: String = "Untitled") {
             }
         }
 
-        InputBar()
         Transitions(dragModifier = dragModifier, offsetY, offsetX)
         States(dragModifier = dragModifier, offsetY, offsetX)
+        InputBar()
+    }
+
+    @SuppressLint("DefaultLocale")
+    @Composable
+    fun EditingMachine() {
+        var offsetX by remember {
+            mutableFloatStateOf(offsetXGraph)
+        }
+        var offsetY by remember {
+            mutableFloatStateOf(offsetYGraph)
+        }
+        var clickOffset by remember {
+            mutableStateOf(Offset(0f, 0f))
+        }
+        var currentState by remember {
+            mutableStateOf(editMode)
+        }
+        var addStateWindowFocused by remember {
+            mutableStateOf(false)
+        }
+        key(currentState) {
+            val dragModifier = when (currentState) {
+                EditMachineStates.MOVE -> {
+                    Modifier.pointerInput(Unit) {
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+                            offsetX += dragAmount.x
+                            offsetY += dragAmount.y
+                            offsetXGraph = offsetX
+                            offsetYGraph = offsetY
+                        }
+                    }
+                }
+
+                EditMachineStates.ADD_STATES -> {
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures { offset ->
+                            val localOffset = Offset(
+                                String.format(
+                                    "%.2f",
+                                    offset.x.toDp().value - offsetXGraph.toDp().value
+                                ).toFloat(),
+                                String.format(
+                                    "%.2f",
+                                    offset.y.toDp().value - offsetYGraph.toDp().value
+                                ).toFloat()
+                            )
+
+                            clickOffset = localOffset
+                            addStateWindowFocused = true
+                        }
+                    }
+                }
+
+                EditMachineStates.ADD_TRANSITIONS -> {
+                    Modifier.clickable {
+                        //TODO check that user clicked on state and show screen for creating new transition otherwise show toast that user should click on state
+                    }
+                }
+
+                EditMachineStates.DELETE -> {
+                    Modifier //TODO
+                }
+
+                EditMachineStates.EDITING -> {
+                    Modifier //TODO
+                }
+
+            }
+
+
+            Transitions(dragModifier = dragModifier, offsetY, offsetX)
+            States(dragModifier = dragModifier, offsetY, offsetX)
+            ToolsRow {
+                currentState = editMode
+            }
+            if (addStateWindowFocused) AddStateWindow(clickOffset) {
+                addStateWindowFocused = false
+            }
+            // if (addTransitionWindowFocused) //AddTransitionWindow(clickOffset)
+        }
+    }
+
+    /**
+     * Screen for editing input bar content
+     *
+     * @param finishedEditing it's a lambda - that invokes when user confirm his changes
+     */
+    @SuppressLint("UnrememberedMutableState")
+    @Composable
+    fun EditingInput(finishedEditing: () -> Unit) {
+        val inputValue = mutableStateOf(input.toString())
+        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(modifier = Modifier.size(32.dp))
+            Text(
+                text = stringResource(R.string.editing_input_headline),
+                style = MaterialTheme.typography.headlineLarge
+            )
+            Spacer(modifier = Modifier.size(16.dp))
+            DefaultTextField(
+                hint = "",
+                value = inputValue.value.reversed(),
+                requirementText = stringResource(R.string.requirement_text_for_machine_input),
+                onTextChange = { newInput ->
+                    input.clear()
+                    input.append(newInput.reversed())
+                    inputValue.value = newInput
+                }) {
+                input.contains("^[A-Za-z]+$".toRegex())
+            }
+
+            Spacer(modifier = Modifier.fillMaxHeight(0.7f))
+
+            FASButton(text = "Confirm", onClick = finishedEditing)
+        }
     }
 
 
@@ -301,6 +448,7 @@ abstract class Machine(var name: String = "Untitled") {
         offsetX: Float,
         borderColor: Color = MaterialTheme.colorScheme.tertiary,
     ) {
+
         val currentCircleColor = MaterialTheme.colorScheme.primaryContainer
         states.forEach { state ->
             Box(
@@ -310,8 +458,8 @@ abstract class Machine(var name: String = "Untitled") {
             ) {
                 Canvas(modifier = Modifier
                     .fillMaxSize()
-                    .then(dragModifier)
-                    .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }) {
+                    .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                    .then(dragModifier)) {
                     drawCircle(
                         color = borderColor,
                         radius = state.radius + 1,
@@ -379,7 +527,7 @@ abstract class Machine(var name: String = "Untitled") {
      */
     @Composable
     private fun Transitions(
-        dragModifier: Modifier,
+        @SuppressLint("ModifierParameter") dragModifier: Modifier,
         offsetY: Float,
         offsetX: Float,
         borderColor: Color = MaterialTheme.colorScheme.tertiary,
@@ -414,6 +562,7 @@ abstract class Machine(var name: String = "Untitled") {
         }
     }
 
+    abstract fun addNewState(state: State)
 
     /**
      * InputBar
@@ -422,42 +571,43 @@ abstract class Machine(var name: String = "Untitled") {
      */
     @Composable
     private fun InputBar() {
-        var iteration = 0
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-            Row(
+            LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(58.dp)
                     .background(light_blue)
-                    .padding(start = 8.dp)
-                    .clickable {
-
-                    },
+                    .padding(start = 8.dp),
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                input.toString().toCharArray().toList().forEach { inputChar ->
-                    iteration++
+                itemsIndexed(input.toString().toCharArray().toList()) { index, inputChar ->
                     Box(
                         modifier = Modifier
                             .size(46.dp)
                             .clip(MaterialTheme.shapes.medium)
                             .background(
-                                if (iteration == 1) {
+                                if (index == 0) {
                                     MaterialTheme.colorScheme.secondary
                                 } else {
                                     MaterialTheme.colorScheme.primary
                                 }
                             ),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.TopCenter
                     ) {
                         Text(
-                            inputChar.toString(),
-                            fontSize = 25.sp,
+                            index.toString(),
+                            fontSize = 12.sp,
                             color = Color.White
                         )
+                        Text(
+                            inputChar.toString(),
+                            fontSize = 24.sp,
+                            color = Color.White,
+                            modifier = Modifier.padding(top = 14.dp)
+                        )
                     }
-                    Spacer(modifier = Modifier.size(10.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                 }
             }
         }
@@ -538,35 +688,287 @@ abstract class Machine(var name: String = "Untitled") {
         return Offset(currentPositionArray[0], currentPositionArray[1])
     }
 
+    @Composable
+    private fun ToolsRow(changedMode: (EditMachineStates) -> Unit) {
+        val spaceSize = 28.dp
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.15f)
+        ) {
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(16.dp)
+                    .background(perlamutr_white)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(13f)
+                    .background(perlamutr_white),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.edit_icon),
+                    contentDescription = stringResource(R.string.edit_icon),
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .background(if (editMode == EditMachineStates.EDITING) MaterialTheme.colorScheme.primaryContainer else Color.White)
+                        .clickable {
+                            editMode = EditMachineStates.EDITING
+                            changedMode(editMode)
+                        }
+                )
+                Spacer(modifier = Modifier.width(spaceSize))
+                Icon(
+                    painter = painterResource(id = R.drawable.add_states),
+                    contentDescription = stringResource(
+                        R.string.add_states_icon
+                    ),
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .background(if (editMode == EditMachineStates.ADD_STATES) MaterialTheme.colorScheme.primaryContainer else Color.White)
+                        .clickable {
+                            editMode = EditMachineStates.ADD_STATES
+                            changedMode(editMode)
+                        }
+                )
+                Spacer(modifier = Modifier.width(spaceSize))
+                Icon(
+                    painter = painterResource(id = R.drawable.add_transitions),
+                    contentDescription = stringResource(
+                        R.string.add_transitions_icon
+                    ),
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .background(if (editMode == EditMachineStates.ADD_TRANSITIONS) MaterialTheme.colorScheme.primaryContainer else Color.White)
+                        .clickable {
+                            editMode = EditMachineStates.ADD_TRANSITIONS
+                            changedMode(editMode)
+                        }
+                )
+                Spacer(modifier = Modifier.width(spaceSize))
+                Icon(
+                    painter = painterResource(id = R.drawable.bin),
+                    contentDescription = stringResource(
+                        R.string.bin_icon
+                    ),
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .background(if (editMode == EditMachineStates.DELETE) MaterialTheme.colorScheme.primaryContainer else Color.White)
+                        .clickable {
+                            editMode = EditMachineStates.DELETE
+                            changedMode(editMode)
+                        }
+                )
+                Spacer(modifier = Modifier.width(spaceSize))
+                Icon(
+                    painter = painterResource(id = R.drawable.move_icon),
+                    contentDescription = stringResource(
+                        R.string.move_icon
+                    ),
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .background(if (editMode == EditMachineStates.MOVE) MaterialTheme.colorScheme.primaryContainer else Color.White)
+                        .clickable {
+                            editMode = EditMachineStates.MOVE
+                            changedMode(editMode)
+                        }
+                )
+            }
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .background(perlamutr_white)
+            )
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(2.dp)
+                    .background(MaterialTheme.colorScheme.primary)
+            )
+        }
+    }
 
     /**
-     * Screen for editing input bar content
+     * compose AddStateWindow
      *
-     * @param finishedEditing it's a lambda - that invokes when user confirm his changes
+     * Shows window to create/edit states
+     * @param clickOffset - provides coordinates of click, where should be created new state
+     * @param finished - lambda that invokes when user confirm his changes
      */
-    @SuppressLint("UnrememberedMutableState")
     @Composable
-    fun EditingInput(finishedEditing: () -> Unit){
-        val inputValue = mutableStateOf(input.toString())
-        Column (Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Spacer(modifier = Modifier.size(32.dp))
-            Text(text = stringResource(R.string.editing_input_headline), style = MaterialTheme.typography.headlineLarge)
-            Spacer(modifier =Modifier.size(16.dp))
-            DefaultTextField(
-                hint = "",
-                value = inputValue.value.reversed(),
-                requirementText = stringResource(R.string.requirement_text_for_machine_input),
-                onTextChange = { newInput ->
-                    input.clear()
-                    input.append(newInput.reversed())
-                    inputValue.value = newInput
-                }) {
-                input.contains("^[A-Za-z]+$".toRegex())
-            }
-
-            Spacer(modifier = Modifier.fillMaxHeight(0.7f))
-
-            FASButton(text = "Confirm", onClick = finishedEditing)
+    private fun AddStateWindow(clickOffset: Offset, finished: () -> Unit) {
+        val context = LocalContext.current
+        var name by remember {
+            mutableStateOf("")
         }
+        var initial by remember {
+            mutableStateOf(false)
+        }
+        var finite by remember {
+            mutableStateOf(false)
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(medium_gray),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(0.7f)
+                    .fillMaxHeight(0.67f)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.background)
+                    .border(
+                        3.dp,
+                        MaterialTheme.colorScheme.primary,
+                        shape = MaterialTheme.shapes.medium
+                    ),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.new_state),
+                    fontSize = 24.sp,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                /**
+                 * Row for initial and finite state
+                 */
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.35f),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    ItemSpecificationIcon(
+                        icon = R.drawable.initial_state_icon,
+                        text = "initial",
+                        isActive = initial
+                    ) {
+                        if (checkMachineForExistingInitialState(context)) initial = !initial
+                    }
+
+                    ItemSpecificationIcon(
+                        icon = R.drawable.finite_state_icon,
+                        text = "finite",
+                        isActive = finite
+                    ) {
+                        if (checkMachineForExistingFiniteState(context)) finite = !finite
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(0.8f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "x: ${clickOffset.x}", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(text = "y: ${clickOffset.y}", fontSize = 18.sp)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(0.8f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    DefaultTextField(
+                        hint = "name",
+                        value = name,
+                        requirementText = "",
+                        onTextChange = { name = it }) { true }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    Modifier.fillMaxWidth(0.90f),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    FASButton(text = "Done", enabled = name.isNotEmpty()) {
+                        addNewState(
+                            State(
+                                name = name,
+                                isCurrent = false,
+                                index = states.size,
+                                finite = finite,
+                                initial = initial,
+                                position = clickOffset
+                            )
+                        )
+                        finished()
+                    }
+                    FASButton(text = "Cancel") {
+                        finished()
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun RowScope.ItemSpecificationIcon(
+        icon: Int,
+        text: String,
+        isActive: Boolean,
+        onClick: () -> Unit
+    ) {
+        Spacer(modifier = Modifier.weight(1f))
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .weight(3.5f)
+                .clip(MaterialTheme.shapes.medium)
+                .background(if (isActive) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                .border(
+                    3.dp,
+                    MaterialTheme.colorScheme.primary,
+                    shape = MaterialTheme.shapes.medium
+                )
+                .clickable {
+                    onClick()
+                },
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            Icon(
+                painter = painterResource(id = icon),
+                contentDescription = stringResource(
+                    R.string.initial_state
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp)
+            )
+            Text(text = text)
+        }
+    }
+
+    private fun checkMachineForExistingFiniteState(context: Context): Boolean {
+        return if (states.any { it.finite }) {
+            Toast.makeText(context, "Your machine already has finite state", Toast.LENGTH_SHORT)
+                .show()
+            false
+        } else true
+    }
+
+    private fun checkMachineForExistingInitialState(context: Context): Boolean {
+        return if (states.any { it.initial }) {
+            Toast.makeText(context, "Your machine already has initial state", Toast.LENGTH_SHORT)
+                .show()
+            false
+        } else true
     }
 }

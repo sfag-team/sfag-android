@@ -39,7 +39,7 @@ class FiniteMachine(name: String = "Untitled") : Machine(name) {
         TODO("Not yet implemented")
     }
 
-    fun addNewState(state: State) {
+    override fun addNewState(state: State) {
         if (state.initial && currentState == null) {
             currentState = state.index
         }

@@ -89,21 +89,20 @@ class MainActivity : ComponentActivity() {
     private fun testFiniteStateMachine(){
         val firstState =  State(
             finite = true,
-            initial = true,
+            initial = false,
             index = 1,
             name = "q1",
-            isCurrent = true
+            isCurrent = true,
+            position = Offset(100f, 100f)
         )
 
         val secondState = State(
             finite = false,
             initial = false,
             index = 2,
-            name = "q2"
+            name = "q2",
+            position = Offset(280f, 300f)
         )
-
-        firstState.position = Offset(100f, 100f)
-        secondState.position = Offset(280f, 300f)
 
         TestMachine.addNewState(
            firstState

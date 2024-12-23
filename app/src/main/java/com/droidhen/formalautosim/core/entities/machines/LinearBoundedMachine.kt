@@ -1,6 +1,7 @@
 package com.droidhen.formalautosim.core.entities.machines
 
 import androidx.compose.runtime.Composable
+import com.droidhen.formalautosim.core.entities.states.State
 
 class LinearBoundedMachine : Machine() {
     override var currentState: Int?
@@ -13,6 +14,10 @@ class LinearBoundedMachine : Machine() {
     }
 
     override fun convertMachineToKeyValue(): List<Pair<String, String>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun addNewState(state: State) {
         TODO("Not yet implemented")
     }
 }

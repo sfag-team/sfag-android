@@ -4,13 +4,13 @@ import androidx.compose.ui.geometry.Offset
 
 
 class State constructor(
-    public val finite: Boolean,
-    public val initial: Boolean,
-    public val index: Int,
+    public var finite: Boolean,
+    public var initial: Boolean,
+    public var index: Int,
     public var name: String,
     public var isCurrent: Boolean = false,
+    public var position: Offset= Offset(0f,0f)
 ) {
-    var position: Offset= Offset(0f,0f)
     var radius:Float = 40f
 
     fun setX(x:Float){
