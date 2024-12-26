@@ -268,6 +268,10 @@ abstract class Machine(var name: String = "Untitled") {
      */
     fun deleteState(state: State) {
         states.remove(state)
+        transitions.filter { it.startState == state.index || it.endState == state.index }
+            .forEach { transitionToRemove ->
+                transitions.remove(transitionToRemove)
+            }
     }
 
     /**
@@ -970,5 +974,40 @@ abstract class Machine(var name: String = "Untitled") {
                 .show()
             false
         } else true
+    }
+
+    private fun getStatesByClick(clickOffset: Offset): State? {
+        var result: State? = null
+        val radius = if (states.any()) states[0].radius.times(2) else 80f
+
+        states.filter {
+            (it.position.x + radius >= clickOffset.x || it.position.x - radius <= clickOffset.x) && (it.position.y + radius >= clickOffset.y || it.position.y - radius <= clickOffset.y)
+        }.forEach {
+            result = it
+        }
+        return result
+    }
+
+    private fun getTransitionByClick(clickOffset: Offset): Transition? {
+        var result: Transition? = null
+        val radius = if (states.any()) states[0].radius else 40f
+
+        fun isPointInRectangle(a: Offset, b: Offset, radius: Float, point: Offset): Boolean {
+            val left = minOf(a.x, b.x) - radius
+            val right = maxOf(a.x, b.x) + radius
+            val top = minOf(a.y, b.y) - radius
+            val bottom = maxOf(a.y, b.y) + radius
+            return point.x in left..right && point.y in top..bottom
+        }
+
+        transitions.filter {
+            val startPosition = getStateByIndex(it.startState).position
+            val endPosition = getStateByIndex(it.endState).position
+
+           isPointInRectangle(startPosition, endPosition, radius, clickOffset)
+        }.forEach {
+            result = it
+        }
+       return result
     }
 }

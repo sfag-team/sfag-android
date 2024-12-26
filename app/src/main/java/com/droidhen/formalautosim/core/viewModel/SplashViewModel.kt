@@ -1,5 +1,6 @@
 package com.droidhen.formalautosim.core.viewModel
 
+import android.content.Context
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -8,10 +9,12 @@ import com.droidhen.formalautosim.data.local.SQLite
 import com.droidhen.formalautosim.data.remote.Firebase
 import com.droidhen.formalautosim.data.remote.InternetTool
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
+    @ApplicationContext context: Context,
     private val firebase: Firebase,
     private val sqLite: SQLite,
     private val internet: InternetTool
@@ -23,6 +26,7 @@ class SplashViewModel @Inject constructor(
     private val email = mutableStateOf("")
     private val name = mutableStateOf("")
     private val secondPassword = mutableStateOf("")
+    private val pref = context.getSharedPreferences("FAS", Context.MODE_PRIVATE)
 
     fun setEmail(email: String) {
         user.setEmail(email)
@@ -86,10 +90,20 @@ class SplashViewModel @Inject constructor(
         }
     }
 
+    fun saveUserNonAuthorised(){
+        pref.edit().putBoolean("skippedSignIn", true).apply()
+    }
+
+    fun checkIfUserAuthorised():Boolean = pref.getBoolean("skippedSignIn", false)
+
+
+
     private fun signUp(onSuccess: () -> Unit, onWrongData: () -> Unit, onFailure: () -> Unit) {
         firebase.trySignUp(user, {
             try {
                 sqLite.insertUser(user)
+                pref.edit().putBoolean("skippedSignIn", true).apply()
+                pref.edit().putBoolean("userSignedIn", true).apply()
                 onSuccess()
             } catch (e: Exception) {
                 //TODO - log
@@ -103,6 +117,8 @@ class SplashViewModel @Inject constructor(
                 try {
                     user.clone(it)
                     sqLite.insertUser(user)
+                    pref.edit().putBoolean("skippedSignIn", true).apply()
+                    pref.edit().putBoolean("userSignedIn", true).apply()
                     onSuccess()
                 } catch (e: Exception) {
                     //TODO - log

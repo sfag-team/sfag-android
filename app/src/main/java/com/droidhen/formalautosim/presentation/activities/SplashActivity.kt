@@ -41,10 +41,7 @@ class SplashActivity : ComponentActivity() {
                             }, ::navigateToMainActivity)
                         }
                         composable(Destinations.SIGN_IN.route) {
-                            LaunchedEffect(Unit) {
-                                navigateToMainActivity()
-                            }
-                                // SignInScreen(::navigateToMainActivity)
+                            SignInScreen(::navigateToMainActivity)
                         }
                     }
                 }
