@@ -361,11 +361,11 @@ abstract class Machine(var name: String = "Untitled") {
                                 String.format(
                                     "%.2f",
                                     offset.x.toDp().value - offsetXGraph.toDp().value
-                                ).toFloat(),
+                                ).replace(',', '.').toFloat(),
                                 String.format(
                                     "%.2f",
                                     offset.y.toDp().value - offsetYGraph.toDp().value
-                                ).toFloat()
+                                ).replace(',', '.').toFloat()
                             )
 
                             clickOffset = localOffset
