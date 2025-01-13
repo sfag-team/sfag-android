@@ -1,5 +1,6 @@
 package com.droidhen.formalautosim.utils.extensions
 
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -14,7 +15,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
  */
 fun DrawScope.drawArrow(
     arrow:Pair<Path?, Path?>,
-    color: Color = Color.Black
+    color: Color = Color.Black,
 ) {
     if(arrow.first==null||arrow.second==null) return
     drawPath(arrow.first!!,color = color, style = Stroke(

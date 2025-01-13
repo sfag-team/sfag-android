@@ -20,4 +20,8 @@ class State constructor(
     fun setY(y:Float){
         position = Offset(position.x, y)
     }
+
+    override fun toString(): String {
+        return name
+    }
 }

@@ -3,7 +3,6 @@ package com.droidhen.formalautosim.core.entities.machines
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PathMeasure
-import android.util.Log
 import android.widget.Space
 import android.widget.Toast
 import androidx.compose.animation.core.Animatable
@@ -31,13 +30,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
@@ -45,7 +44,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -58,12 +59,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.modifier.modifierLocalProvider
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
@@ -74,9 +77,10 @@ import com.droidhen.formalautosim.R
 import com.droidhen.formalautosim.core.entities.states.State
 import com.droidhen.formalautosim.core.entities.transitions.Transition
 import com.droidhen.formalautosim.presentation.theme.light_blue
-import com.droidhen.formalautosim.presentation.theme.medium_gray
 import com.droidhen.formalautosim.presentation.theme.perlamutr_white
+import com.droidhen.formalautosim.presentation.views.DefaultFASDialogWindow
 import com.droidhen.formalautosim.presentation.views.DefaultTextField
+import com.droidhen.formalautosim.presentation.views.DropdownSelector
 import com.droidhen.formalautosim.presentation.views.FASButton
 import com.droidhen.formalautosim.utils.enums.EditMachineStates
 import com.droidhen.formalautosim.utils.extensions.drawArrow
@@ -85,8 +89,36 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
+class MyStringModifier(val value: String) : Modifier.Element
+
+fun Modifier.myString(value: String): Modifier {
+    return this.then(MyStringModifier(value))
+}
+
+fun Modifier.findMyString(): String? {
+    return this.foldIn<String?>(null) { acc, element ->
+        acc ?: (element as? MyStringModifier)?.value
+    }
+}
+
+fun Modifier.onTapFindMyString(
+    onTap: (String?) -> Unit
+): Modifier = composed {
+    val foundString = this.findMyString()
+
+    pointerInput(foundString) {
+        detectTapGestures {
+            onTap(foundString)
+        }
+    }
+}
+
+
 @Suppress("UNREACHABLE_CODE")
 abstract class Machine(var name: String = "Untitled") {
+    private lateinit var density: Density
+    private lateinit var context: Context
+    private var globalCanvasPosition: LayoutCoordinates? = null
     val states = mutableListOf<State>()
     protected val transitions = mutableListOf<Transition>()
     val input = StringBuilder()
@@ -95,15 +127,12 @@ abstract class Machine(var name: String = "Untitled") {
     private var editMode = EditMachineStates.ADD_STATES
     abstract var currentState: Int?
 
-
     /**
      * return all paths for all exists transitions
      *
-     * @param density - screen parameter needed for correct calculation regarding screen size
      * @return list of pairs path to path - the first path - path of arrow, second one - path for arrow head
      */
     private fun getAllPath(
-        density: Density,
         setControlPoint: (Offset) -> Unit,
         setTransition: (Transition) -> Unit,
     ): List<Pair<Path?, Path?>?> {
@@ -111,7 +140,7 @@ abstract class Machine(var name: String = "Untitled") {
         transitions.forEach { transition ->
             setTransition(transition)
             listOfPaths[transitions.indexOf(transition)] =
-                getTransitionByPath(density, transition) { controlPoint ->
+                getTransitionByPath(transition) { controlPoint ->
                     setControlPoint(controlPoint)
                 }
         }
@@ -121,12 +150,10 @@ abstract class Machine(var name: String = "Untitled") {
     /**
      * create path for composing arrow on the screen
      *
-     * @param density - screen parameter needed for correct calculation regarding screen size
      * @param transition - pair (evidence num of start state to ev. num of destination state)
      * @return pair Path to arrow, Path - to arrow head, in case that between states path doesn't exists - return pair null to null
      */
-    fun getTransitionByPath(
-        density: Density,
+    private fun getTransitionByPath(
         transition: Transition? = null,
         startState: Offset? = null,
         endState: Offset? = null,
@@ -300,6 +327,8 @@ abstract class Machine(var name: String = "Untitled") {
     @SuppressLint("ComposableNaming", "SuspiciousIndentation")
     @Composable
     fun SimulateMachine() {
+        context = LocalContext.current
+        density = LocalDensity.current
         var offsetX by remember {
             mutableFloatStateOf(offsetXGraph)
         }
@@ -318,7 +347,7 @@ abstract class Machine(var name: String = "Untitled") {
         }
 
         Transitions(dragModifier = dragModifier, offsetY, offsetX)
-        States(dragModifier = dragModifier, offsetY, offsetX)
+        States(dragModifier = dragModifier, false, offsetY, offsetX) {}
         InputBar()
     }
 
@@ -340,6 +369,15 @@ abstract class Machine(var name: String = "Untitled") {
         var addStateWindowFocused by remember {
             mutableStateOf(false)
         }
+        var addTransitionWindowFocused by remember {
+            mutableStateOf(false)
+        }
+        var chosedStateForTransition by remember {
+            mutableStateOf<State?>(null)
+        }
+
+        var parentCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+
         key(currentState) {
             val dragModifier = when (currentState) {
                 EditMachineStates.MOVE -> {
@@ -357,17 +395,9 @@ abstract class Machine(var name: String = "Untitled") {
                 EditMachineStates.ADD_STATES -> {
                     Modifier.pointerInput(Unit) {
                         detectTapGestures { offset ->
-                            val localOffset = Offset(
-                                String.format(
-                                    "%.2f",
-                                    offset.x.toDp().value - offsetXGraph.toDp().value
-                                ).replace(',', '.').toFloat(),
-                                String.format(
-                                    "%.2f",
-                                    offset.y.toDp().value - offsetYGraph.toDp().value
-                                ).replace(',', '.').toFloat()
+                            val localOffset = getDpOffsetWithPxOffset(
+                                Offset(offset.x, offset.y)
                             )
-
                             clickOffset = localOffset
                             addStateWindowFocused = true
                         }
@@ -375,9 +405,7 @@ abstract class Machine(var name: String = "Untitled") {
                 }
 
                 EditMachineStates.ADD_TRANSITIONS -> {
-                    Modifier.clickable {
-                        //TODO check that user clicked on state and show screen for creating new transition otherwise show toast that user should click on state
-                    }
+                    Modifier
                 }
 
                 EditMachineStates.DELETE -> {
@@ -392,15 +420,52 @@ abstract class Machine(var name: String = "Untitled") {
 
 
             Transitions(dragModifier = dragModifier, offsetY, offsetX)
-            States(dragModifier = dragModifier, offsetY, offsetX)
+            States(dragModifier = dragModifier,
+                if (currentState == EditMachineStates.ADD_STATES || currentState == EditMachineStates.MOVE) false else true,
+                offsetY,
+                offsetX,
+                onStateClick = { state ->
+                    when (currentState) {
+                        EditMachineStates.ADD_TRANSITIONS -> {
+                            chosedStateForTransition = state
+                            addTransitionWindowFocused = true
+                        }
+
+                        EditMachineStates.DELETE -> {
+                            deleteState(state)
+                        }
+
+                        EditMachineStates.EDITING -> addStateWindowFocused = true
+                        else -> {}
+                    }
+
+                }
+            )
             ToolsRow {
                 currentState = editMode
             }
             if (addStateWindowFocused) AddStateWindow(clickOffset) {
                 addStateWindowFocused = false
             }
-            // if (addTransitionWindowFocused) //AddTransitionWindow(clickOffset)
+            if (addTransitionWindowFocused) CreateTransitionWindow(chosedStateForTransition!!) {
+                addTransitionWindowFocused = false
+                chosedStateForTransition = null
+            }
         }
+    }
+
+    @SuppressLint("DefaultLocale")
+    private fun getDpOffsetWithPxOffset(pxPosition: Offset): Offset {
+        return Offset(
+            String.format(
+                "%.2f",
+                (pxPosition.x - offsetXGraph.dp.value) / density.density
+            ).replace(',', '.').toFloat(),
+            String.format(
+                "%.2f",
+                (pxPosition.y - offsetYGraph.dp.value) / density.density
+            ).replace(',', '.').toFloat()
+        )
     }
 
     /**
@@ -448,9 +513,11 @@ abstract class Machine(var name: String = "Untitled") {
     @Composable
     private fun States(
         @SuppressLint("ModifierParameter") dragModifier: Modifier,
+        shouldOverloadPoint: Boolean = false,
         offsetY: Float,
         offsetX: Float,
         borderColor: Color = MaterialTheme.colorScheme.tertiary,
+        onStateClick: (State) -> Unit,
     ) {
 
         val currentCircleColor = MaterialTheme.colorScheme.primaryContainer
@@ -463,7 +530,15 @@ abstract class Machine(var name: String = "Untitled") {
                 Canvas(modifier = Modifier
                     .fillMaxSize()
                     .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-                    .then(dragModifier)) {
+                    .then(
+                        if (!shouldOverloadPoint) dragModifier else dragModifier.pointerInput(
+                            Unit
+                        ) {
+                            detectTapGestures {
+                                onStateClick(state)
+                            }
+                        })
+                ) {
                     drawCircle(
                         color = borderColor,
                         radius = state.radius + 1,
@@ -538,7 +613,7 @@ abstract class Machine(var name: String = "Untitled") {
     ) {
         val controlPointList = mutableListOf<Offset>()
         val transitionLocalList = mutableListOf<Transition>()
-        val paths = getAllPath(LocalDensity.current, { controlPoint ->
+        val paths = getAllPath({ controlPoint ->
             controlPointList.add(controlPoint)
         }, { transition ->
             transitionLocalList.add(transition)
@@ -546,6 +621,9 @@ abstract class Machine(var name: String = "Untitled") {
         Canvas(modifier = Modifier
             .fillMaxSize()
             .then(dragModifier)
+            .onGloballyPositioned { position ->
+                globalCanvasPosition = position
+            }
             .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }) {
             paths.forEach { path ->
                 val controlPoint = controlPointList[paths.indexOf(path)]
@@ -566,7 +644,30 @@ abstract class Machine(var name: String = "Untitled") {
         }
     }
 
+
     abstract fun addNewState(state: State)
+
+    /**
+     * checks if machine already has state with the same name
+     * if so - modifies already existing state (extends name of existing state)
+     * behaviour of this function can be changed in children of Machine class
+     *
+     * @param name - name of new state
+     * @param startState and endState - states of transition
+     */
+    private fun addNewTransition(name: String, startState: State, endState: State) {
+        var iterations = 0
+        transitions.filter { transition ->
+            transition.startState == startState.index && transition.endState == endState.index
+        }.forEach {
+            iterations++
+            it.name += name
+        }
+        if (iterations == 0) {
+            transitions.add(Transition(name, startState.index, endState.index))
+        }
+    }
+
 
     /**
      * InputBar
@@ -655,10 +756,9 @@ abstract class Machine(var name: String = "Untitled") {
 
         if (isCanvasVisible.value) {
             val circleColor = MaterialTheme.colorScheme.primary
-            val density = LocalDensity.current
             val radiusBigCircle = radius / 2
             val radiusSmallCircle = radiusBigCircle - 5
-            val path = getTransitionByPath(density, startState = start, endState = end) {}
+            val path = getTransitionByPath(startState = start, endState = end) {}
 
             Canvas(modifier = Modifier
                 .fillMaxSize()
@@ -797,7 +897,100 @@ abstract class Machine(var name: String = "Untitled") {
     }
 
     /**
-     * compose AddStateWindow
+     * composes addTransition window, where user able to add new states
+     * supposed to have startState
+     *
+     * @param startToState - start state of transition
+     */
+    @Composable
+    private fun CreateTransitionWindow(start: State, onFinished: () -> Unit) {
+        var name by remember {
+            mutableStateOf("")
+        }
+
+        var startState: State by remember {
+            mutableStateOf(start)
+        }
+        var endState: State by remember {
+            mutableStateOf(start)
+        }
+
+        DefaultFASDialogWindow(
+            title = stringResource(R.string.new_transition),
+            onDismiss = { onFinished() },
+            onConfirm = {
+                addNewTransition(
+                    name = name,
+                    startState = start,
+                    endState = endState
+                )
+                onFinished()
+            }) {
+            Row(
+                modifier = Modifier.fillMaxWidth(0.8f),
+                verticalAlignment = CenterVertically
+            ) {
+                DefaultTextField(
+                    hint = "transition name",
+                    value = name,
+                    requirementText = "",
+                    onTextChange = { name = it }) { true }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(48.dp), verticalAlignment = CenterVertically
+            ) {
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(text = "from")
+                Spacer(modifier = Modifier.width(8.dp))
+                DropdownSelector(
+                    items = states,
+                    label = "start state",
+                    defaultSelectedIndex = states.indexOf(start)
+                ) { selectedItem ->
+                    startState = selectedItem as State
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(48.dp), verticalAlignment = CenterVertically
+            ) {
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(text = "to")
+                Spacer(modifier = Modifier.width(24.dp))
+                DropdownSelector(
+                    items = states,
+                    label = "end state",
+                    defaultSelectedIndex = states.indexOf(start)
+                ) { selectedItem ->
+                    endState = selectedItem as State
+                }
+            }
+        }
+    }
+
+    private fun findNewStateIndex(): Int {
+        val sortedStates = states.sortedBy { it.index }
+        return if (states.isEmpty()) 1 else if (sortedStates.last().index == sortedStates.size) sortedStates.last().index + 1 else {
+            var previousItem = 0
+            var choosedIndex = sortedStates.size+1
+            sortedStates.forEach { item ->
+                if (item.index == previousItem + 1) {
+                    previousItem = item.index
+                } else {
+                    choosedIndex = previousItem + 1
+                }
+            }
+            return choosedIndex
+        }
+    }
+
+    /**
+     * composes AddStateWindow
      *
      * Shows window to create/edit states
      * @param clickOffset - provides coordinates of click, where should be created new state
@@ -805,7 +998,6 @@ abstract class Machine(var name: String = "Untitled") {
      */
     @Composable
     private fun AddStateWindow(clickOffset: Offset, finished: () -> Unit) {
-        val context = LocalContext.current
         var name by remember {
             mutableStateOf("")
         }
@@ -815,109 +1007,76 @@ abstract class Machine(var name: String = "Untitled") {
         var finite by remember {
             mutableStateOf(false)
         }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(medium_gray),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .fillMaxHeight(0.67f)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.background)
-                    .border(
-                        3.dp,
-                        MaterialTheme.colorScheme.primary,
-                        shape = MaterialTheme.shapes.medium
-                    ),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.new_state),
-                    fontSize = 24.sp,
-                    modifier = Modifier.padding(top = 8.dp)
+
+        DefaultFASDialogWindow(
+            title = stringResource(id = R.string.new_state),
+            conditionToEnable = name.isNotEmpty(),
+            onDismiss = {
+                finished()
+            },
+            onConfirm = {
+                addNewState(
+                    State(
+                        name = name,
+                        isCurrent = false,
+                        index = findNewStateIndex(),
+                        finite = finite,
+                        initial = initial,
+                        position = clickOffset
+                    )
                 )
+                finished()
+            }) {
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                /**
-                 * Row for initial and finite state
-                 */
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight(0.35f),
-                    horizontalArrangement = Arrangement.SpaceBetween
+            /**
+             * Row for initial and finite state
+             */
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.35f),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                ItemSpecificationIcon(
+                    icon = R.drawable.initial_state_icon,
+                    text = "initial",
+                    isActive = initial
                 ) {
-                    ItemSpecificationIcon(
-                        icon = R.drawable.initial_state_icon,
-                        text = "initial",
-                        isActive = initial
-                    ) {
-                        if (checkMachineForExistingInitialState(context)) initial = !initial
-                    }
-
-                    ItemSpecificationIcon(
-                        icon = R.drawable.finite_state_icon,
-                        text = "finite",
-                        isActive = finite
-                    ) {
-                        if (checkMachineForExistingFiniteState(context)) finite = !finite
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
+                    if (checkMachineForExistingInitialState()) initial = !initial
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(0.8f),
-                    verticalAlignment = Alignment.CenterVertically
+                ItemSpecificationIcon(
+                    icon = R.drawable.finite_state_icon,
+                    text = "finite",
+                    isActive = finite
                 ) {
-                    Text(text = "x: ${clickOffset.x}", fontSize = 18.sp)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = "y: ${clickOffset.y}", fontSize = 18.sp)
+                    if (checkMachineForExistingFiniteState()) finite = !finite
                 }
+                Spacer(modifier = Modifier.weight(1f))
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(0.8f),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    DefaultTextField(
-                        hint = "name",
-                        value = name,
-                        requirementText = "",
-                        onTextChange = { name = it }) { true }
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth(0.8f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "x: ${clickOffset.x}", fontSize = 18.sp)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(text = "y: ${clickOffset.y}", fontSize = 18.sp)
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    Modifier.fillMaxWidth(0.90f),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    FASButton(text = "Done", enabled = name.isNotEmpty()) {
-                        addNewState(
-                            State(
-                                name = name,
-                                isCurrent = false,
-                                index = states.size,
-                                finite = finite,
-                                initial = initial,
-                                position = clickOffset
-                            )
-                        )
-                        finished()
-                    }
-                    FASButton(text = "Cancel") {
-                        finished()
-                    }
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth(0.8f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                DefaultTextField(
+                    hint = "name",
+                    value = name,
+                    requirementText = "",
+                    onTextChange = { name = it }) { true }
             }
         }
     }
@@ -960,7 +1119,7 @@ abstract class Machine(var name: String = "Untitled") {
         }
     }
 
-    private fun checkMachineForExistingFiniteState(context: Context): Boolean {
+    private fun checkMachineForExistingFiniteState(): Boolean {
         return if (states.any { it.finite }) {
             Toast.makeText(context, "Your machine already has finite state", Toast.LENGTH_SHORT)
                 .show()
@@ -968,9 +1127,13 @@ abstract class Machine(var name: String = "Untitled") {
         } else true
     }
 
-    private fun checkMachineForExistingInitialState(context: Context): Boolean {
+    private fun checkMachineForExistingInitialState(): Boolean {
         return if (states.any { it.initial }) {
-            Toast.makeText(context, "Your machine already has initial state", Toast.LENGTH_SHORT)
+            Toast.makeText(
+                context,
+                "Your machine already has initial state",
+                Toast.LENGTH_SHORT
+            )
                 .show()
             false
         } else true
@@ -981,7 +1144,7 @@ abstract class Machine(var name: String = "Untitled") {
         val radius = if (states.any()) states[0].radius.times(2) else 80f
 
         states.filter {
-            (it.position.x + radius >= clickOffset.x || it.position.x - radius <= clickOffset.x) && (it.position.y + radius >= clickOffset.y || it.position.y - radius <= clickOffset.y)
+            (it.position.x + radius >= clickOffset.x && it.position.x - radius <= clickOffset.x) && (it.position.y + radius >= clickOffset.y && it.position.y - radius <= clickOffset.y)
         }.forEach {
             result = it
         }
@@ -1004,10 +1167,10 @@ abstract class Machine(var name: String = "Untitled") {
             val startPosition = getStateByIndex(it.startState).position
             val endPosition = getStateByIndex(it.endState).position
 
-           isPointInRectangle(startPosition, endPosition, radius, clickOffset)
+            isPointInRectangle(startPosition, endPosition, radius, clickOffset)
         }.forEach {
             result = it
         }
-       return result
+        return result
     }
 }

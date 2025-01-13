@@ -24,4 +24,5 @@
     <string name="new_state">new state</string>
     <string name="initial_state">initial state</string>
     <string name="finite_state">finite state</string>
+    <string name="new_transition">new transition</string>
 </resources>
