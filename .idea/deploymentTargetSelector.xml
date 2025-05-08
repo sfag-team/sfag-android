@@ -13,7 +13,7 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="SignInScreenPreview">
+      <SelectionState runConfigName="gramatika">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>

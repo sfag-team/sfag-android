@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "FormalAutoSim"
 include(":app")
- 
+include(":gramatika")
