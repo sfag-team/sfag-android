@@ -1,7 +1,7 @@
 package com.droidhen.formalautosim.data.remote
 
 import android.util.Log
-import com.droidhen.formalautosim.core.entities.User
+import com.droidhen.formalautosim.core.entities.AutomataUser
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import javax.inject.Inject
@@ -13,11 +13,11 @@ class Firebase @Inject constructor() {
 
     }
 
-    fun setUser(user: User, onSuccess: () -> Unit, onFailure: () -> Unit) {
+    fun setUser(user: AutomataUser, onSuccess: () -> Unit, onFailure: () -> Unit) {
 
     }
 
-    fun trySignUp(user: User, onSuccess: () -> Unit, onFailure: () -> Unit, onTechnicalProblem:()->Unit) {
+    fun trySignUp(user: AutomataUser, onSuccess: () -> Unit, onFailure: () -> Unit, onTechnicalProblem:()->Unit) {
         db.collection("users").apply {
             get().addOnSuccessListener { result ->
                 for (document in result) {
@@ -33,7 +33,7 @@ class Firebase @Inject constructor() {
         }
     }
 
-    fun trySignIn(user: User, onSuccess: (user:User) -> Unit, onFailure: () -> Unit, onTechnicalProblem:()->Unit) {
+    fun trySignIn(user: AutomataUser, onSuccess: (user:AutomataUser) -> Unit, onFailure: () -> Unit, onTechnicalProblem:()->Unit) {
         Log.e("sasha", "request sent")
         db.collection("users").apply {
             get().addOnSuccessListener { result ->
@@ -41,7 +41,7 @@ class Firebase @Inject constructor() {
                     if (document.data["email"] == user.getLogInData().first) {
                         if(document.data["password"] == user.getLogInData().second){
                             Log.e("sasha","response received success")
-                            onSuccess(User.transformServerResponseToUser(document.data as Map<String, String>))
+                            onSuccess(AutomataUser.transformServerResponseToUser(document.data as Map<String, String>))
                             return@addOnSuccessListener
                         }else{
                             Log.e("sasha", "response received failure")

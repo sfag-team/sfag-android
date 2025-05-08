@@ -1,6 +1,6 @@
 package com.droidhen.formalautosim.core.entities
 
-class User {
+class AutomataUser {
     private var email: String? = null
     private var password: String? = null
     private var name: String? = null
@@ -29,15 +29,15 @@ class User {
         )
     }
 
-    fun clone(user: User) {
+    fun clone(user: AutomataUser) {
         this.name = user.name
         this.password = user.password
         this.email = user.email
     }
 
     companion object {
-        fun transformServerResponseToUser(response: Map<String, String>): User {
-            val result = User().apply {
+        fun transformServerResponseToUser(response: Map<String, String>): AutomataUser {
+            val result = AutomataUser().apply {
                 setUserName(response["name"])
                 setEmail(response["email"])
                 setPassword(response["password"])

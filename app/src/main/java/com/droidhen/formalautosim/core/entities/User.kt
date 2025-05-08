@@ -36,8 +36,8 @@ class User {
     }
 
     companion object {
-        fun transformServerResponseToUser(response: Map<String, String>): User {
-            val result = User().apply {
+        fun transformServerResponseToUser(response: Map<String, String>): AutomataUser {
+            val result = AutomataUser().apply {
                 setUserName(response["name"])
                 setEmail(response["email"])
                 setPassword(response["password"])
