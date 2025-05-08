@@ -20,4 +20,9 @@ class LinearBoundedMachine : Machine() {
     override fun addNewState(state: State) {
         TODO("Not yet implemented")
     }
+
+    override fun getDerivationTreeElements(): List<Map<String?, Float>> {
+        TODO("Not yet implemented")
+    }
+
 }

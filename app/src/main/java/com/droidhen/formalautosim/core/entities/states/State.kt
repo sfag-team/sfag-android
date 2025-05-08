@@ -1,6 +1,7 @@
 package com.droidhen.formalautosim.core.entities.states
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.Dp
 
 
 class State constructor(
@@ -13,7 +14,7 @@ class State constructor(
 ) {
     var radius:Float = 40f
 
-    fun setX(x:Float){
+    fun setX(x: Float){
         position = Offset(x, position.y)
     }
 

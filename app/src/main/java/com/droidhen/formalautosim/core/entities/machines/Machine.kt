@@ -3,7 +3,6 @@ package com.droidhen.formalautosim.core.entities.machines
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PathMeasure
-import android.widget.Space
 import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -29,8 +28,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -40,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -58,15 +58,11 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.SemanticsPropertyKey
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
@@ -133,7 +129,6 @@ abstract class Machine(var name: String = "Untitled") {
      * @return list of pairs path to path - the first path - path of arrow, second one - path for arrow head
      */
     private fun getAllPath(
-        setControlPoint: (Offset) -> Unit,
         setTransition: (Transition) -> Unit,
     ): List<Pair<Path?, Path?>?> {
         val listOfPaths = arrayOfNulls<Pair<Path?, Path?>>(transitions.size)
@@ -141,7 +136,7 @@ abstract class Machine(var name: String = "Untitled") {
             setTransition(transition)
             listOfPaths[transitions.indexOf(transition)] =
                 getTransitionByPath(transition) { controlPoint ->
-                    setControlPoint(controlPoint)
+                    transition.controlPoint = controlPoint
                 }
         }
         return listOfPaths.toList()
@@ -346,14 +341,17 @@ abstract class Machine(var name: String = "Untitled") {
             }
         }
 
-        Transitions(dragModifier = dragModifier, offsetY, offsetX)
-        States(dragModifier = dragModifier, false, offsetY, offsetX) {}
+        Transitions(dragModifier = dragModifier, offsetY, offsetX, onTransitionClick = null)
+        States(dragModifier = dragModifier, null, offsetY, offsetX, onStateClick = {})
         InputBar()
     }
 
-    @SuppressLint("DefaultLocale")
+    @SuppressLint("DefaultLocale", "UnrememberedMutableState")
     @Composable
     fun EditingMachine() {
+        var recomposition by remember {
+            mutableIntStateOf(0)
+        }
         var offsetX by remember {
             mutableFloatStateOf(offsetXGraph)
         }
@@ -363,7 +361,7 @@ abstract class Machine(var name: String = "Untitled") {
         var clickOffset by remember {
             mutableStateOf(Offset(0f, 0f))
         }
-        var currentState by remember {
+        var currentEditingState by remember {
             mutableStateOf(editMode)
         }
         var addStateWindowFocused by remember {
@@ -372,25 +370,24 @@ abstract class Machine(var name: String = "Untitled") {
         var addTransitionWindowFocused by remember {
             mutableStateOf(false)
         }
-        var chosedStateForTransition by remember {
+        var choosedStateForTransitionStart by remember {
             mutableStateOf<State?>(null)
         }
 
-        var parentCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+        var choosedStateForTransitionEnd by remember {
+            mutableStateOf<State?>(null)
+        }
 
-        key(currentState) {
-            val dragModifier = when (currentState) {
-                EditMachineStates.MOVE -> {
-                    Modifier.pointerInput(Unit) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            offsetX += dragAmount.x
-                            offsetY += dragAmount.y
-                            offsetXGraph = offsetX
-                            offsetYGraph = offsetY
-                        }
-                    }
-                }
+        var choosedTransitionName by remember {
+            mutableStateOf<String?>(null)
+        }
+
+        var chosedStateForEditing by remember {
+            mutableStateOf<State?>(null)
+        }
+
+        key(currentEditingState) {
+            val dragModifier = when (currentEditingState) {
 
                 EditMachineStates.ADD_STATES -> {
                     Modifier.pointerInput(Unit) {
@@ -404,52 +401,78 @@ abstract class Machine(var name: String = "Untitled") {
                     }
                 }
 
-                EditMachineStates.ADD_TRANSITIONS -> {
-                    Modifier
-                }
-
-                EditMachineStates.DELETE -> {
-                    Modifier //TODO
-                }
-
-                EditMachineStates.EDITING -> {
-                    Modifier //TODO
-                }
-
+                else -> Modifier
             }
 
-
-            Transitions(dragModifier = dragModifier, offsetY, offsetX)
-            States(dragModifier = dragModifier,
-                if (currentState == EditMachineStates.ADD_STATES || currentState == EditMachineStates.MOVE) false else true,
-                offsetY,
-                offsetX,
-                onStateClick = { state ->
-                    when (currentState) {
-                        EditMachineStates.ADD_TRANSITIONS -> {
-                            chosedStateForTransition = state
+            key(recomposition) {
+                Transitions(
+                    dragModifier = dragModifier,
+                    offsetY,
+                    offsetX,
+                    onTransitionClick = when (currentEditingState) {
+                        EditMachineStates.EDITING -> { transition ->
+                            choosedStateForTransitionStart = getStateByIndex(transition.startState)
+                            choosedStateForTransitionEnd = getStateByIndex(transition.endState)
+                            choosedTransitionName = transition.name
                             addTransitionWindowFocused = true
                         }
 
-                        EditMachineStates.DELETE -> {
-                            deleteState(state)
+                        EditMachineStates.DELETE -> { transition ->
+                            deleteTransition(transition)
+                            recomposition++
                         }
 
-                        EditMachineStates.EDITING -> addStateWindowFocused = true
-                        else -> {}
+                        else -> null
                     }
+                )
+                States(dragModifier = dragModifier,
+                    currentEditingState,
+                    offsetY,
+                    offsetX,
+                    onStateClick = { state ->
+                        when (currentEditingState) {
+                            EditMachineStates.ADD_TRANSITIONS -> {
+                                choosedStateForTransitionStart = state
+                                choosedStateForTransitionEnd = state
+                                addTransitionWindowFocused = true
+                            }
 
-                }
-            )
+                            EditMachineStates.DELETE -> {
+                                deleteState(state)
+                                recomposition++
+                            }
+
+                            EditMachineStates.EDITING -> {
+                                chosedStateForEditing = state
+                                addStateWindowFocused = true
+                            }
+
+                            else -> {}
+                        }
+
+                    },
+                    recompose = {
+                        recomposition++
+                    }
+                )
+            }
+
             ToolsRow {
-                currentState = editMode
+                currentEditingState = editMode
             }
-            if (addStateWindowFocused) AddStateWindow(clickOffset) {
+            if (addStateWindowFocused) AddStateWindow(clickOffset, chosedStateForEditing) {
                 addStateWindowFocused = false
+                chosedStateForEditing = null
             }
-            if (addTransitionWindowFocused) CreateTransitionWindow(chosedStateForTransition!!) {
+            if (addTransitionWindowFocused) CreateTransitionWindow(
+                choosedStateForTransitionStart!!,
+                choosedStateForTransitionEnd!!,
+                choosedTransitionName
+            ) {
                 addTransitionWindowFocused = false
-                chosedStateForTransition = null
+                choosedStateForTransitionStart = null
+                choosedStateForTransitionEnd = null
+                choosedTransitionName = null
             }
         }
     }
@@ -513,11 +536,12 @@ abstract class Machine(var name: String = "Untitled") {
     @Composable
     private fun States(
         @SuppressLint("ModifierParameter") dragModifier: Modifier,
-        shouldOverloadPoint: Boolean = false,
+        currentEditingState: EditMachineStates? = null,
         offsetY: Float,
         offsetX: Float,
         borderColor: Color = MaterialTheme.colorScheme.tertiary,
         onStateClick: (State) -> Unit,
+        recompose: () -> Unit = {}
     ) {
 
         val currentCircleColor = MaterialTheme.colorScheme.primaryContainer
@@ -531,11 +555,26 @@ abstract class Machine(var name: String = "Untitled") {
                     .fillMaxSize()
                     .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
                     .then(
-                        if (!shouldOverloadPoint) dragModifier else dragModifier.pointerInput(
+                        if (currentEditingState == EditMachineStates.ADD_STATES) dragModifier else dragModifier.pointerInput(
                             Unit
                         ) {
-                            detectTapGestures {
-                                onStateClick(state)
+                            if (currentEditingState == EditMachineStates.MOVE) {
+                                detectDragGestures(onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    val localOffset = getDpOffsetWithPxOffset(
+                                        Offset(
+                                            dragAmount.x,
+                                            dragAmount.y
+                                        )
+                                    )
+                                    state.setX(state.position.x + localOffset.x)
+                                    state.setY(state.position.y + localOffset.y)
+
+                                }, onDragEnd = { recompose() })
+                            } else {
+                                detectTapGestures {
+                                    onStateClick(state)
+                                }
                             }
                         })
                 ) {
@@ -610,23 +649,40 @@ abstract class Machine(var name: String = "Untitled") {
         offsetY: Float,
         offsetX: Float,
         borderColor: Color = MaterialTheme.colorScheme.tertiary,
+        onTransitionClick: ((Transition) -> Unit)?,
     ) {
-        val controlPointList = mutableListOf<Offset>()
         val transitionLocalList = mutableListOf<Transition>()
-        val paths = getAllPath({ controlPoint ->
-            controlPointList.add(controlPoint)
-        }, { transition ->
+        val paths = getAllPath { transition ->
             transitionLocalList.add(transition)
-        })
+        }
         Canvas(modifier = Modifier
             .fillMaxSize()
-            .then(dragModifier)
+            .then(
+                if (onTransitionClick == null) dragModifier else dragModifier.pointerInput(
+                    Unit
+                ) {
+                    detectTapGestures { tapOffset ->
+                        for (transition in transitions) {
+                            if (transition.isClicked(
+                                    tapOffset.x.toDp(),
+                                    tapOffset.y.toDp(),
+                                    ::getStateByIndex
+                                )
+                            ) {
+                                onTransitionClick(transition)
+                                break
+                            }
+                        }
+                    }
+                })
             .onGloballyPositioned { position ->
                 globalCanvasPosition = position
             }
+
+
             .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }) {
             paths.forEach { path ->
-                val controlPoint = controlPointList[paths.indexOf(path)]
+                val controlPoint = transitionLocalList[paths.indexOf(path)].controlPoint!!
                 drawArrow(path!!, borderColor)
                 drawContext.canvas.nativeCanvas.apply {
                     drawText(
@@ -794,11 +850,11 @@ abstract class Machine(var name: String = "Untitled") {
 
     @Composable
     private fun ToolsRow(changedMode: (EditMachineStates) -> Unit) {
-        val spaceSize = 28.dp
+        val spaceSize = 20.dp
         Column(
             Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.15f)
+                .fillMaxHeight(0.13f)
         ) {
             Spacer(
                 modifier = Modifier
@@ -903,27 +959,40 @@ abstract class Machine(var name: String = "Untitled") {
      * @param startToState - start state of transition
      */
     @Composable
-    private fun CreateTransitionWindow(start: State, onFinished: () -> Unit) {
+    private fun CreateTransitionWindow(
+        start: State,
+        end: State,
+        nameParam: String?,
+        onFinished: () -> Unit
+    ) {
         var name by remember {
-            mutableStateOf("")
+            mutableStateOf(nameParam ?: "")
         }
 
         var startState: State by remember {
             mutableStateOf(start)
         }
         var endState: State by remember {
-            mutableStateOf(start)
+            mutableStateOf(end)
         }
 
         DefaultFASDialogWindow(
-            title = stringResource(R.string.new_transition),
+            title = if (nameParam == null) stringResource(R.string.new_transition) else "editing transition: $name",
             onDismiss = { onFinished() },
             onConfirm = {
-                addNewTransition(
-                    name = name,
-                    startState = start,
-                    endState = endState
-                )
+                if (nameParam == null) {
+                    addNewTransition(
+                        name = name,
+                        startState = startState,
+                        endState = endState
+                    )
+                } else {
+                    transitions.filter { transition ->
+                        transition.startState == startState.index && transition.endState == endState.index
+                    }.forEach {
+                        it.name = name
+                    }
+                }
                 onFinished()
             }) {
             Row(
@@ -965,7 +1034,7 @@ abstract class Machine(var name: String = "Untitled") {
                 DropdownSelector(
                     items = states,
                     label = "end state",
-                    defaultSelectedIndex = states.indexOf(start)
+                    defaultSelectedIndex = states.indexOf(end)
                 ) { selectedItem ->
                     endState = selectedItem as State
                 }
@@ -977,7 +1046,7 @@ abstract class Machine(var name: String = "Untitled") {
         val sortedStates = states.sortedBy { it.index }
         return if (states.isEmpty()) 1 else if (sortedStates.last().index == sortedStates.size) sortedStates.last().index + 1 else {
             var previousItem = 0
-            var choosedIndex = sortedStates.size+1
+            var choosedIndex = sortedStates.size + 1
             sortedStates.forEach { item ->
                 if (item.index == previousItem + 1) {
                     previousItem = item.index
@@ -997,34 +1066,41 @@ abstract class Machine(var name: String = "Untitled") {
      * @param finished - lambda that invokes when user confirm his changes
      */
     @Composable
-    private fun AddStateWindow(clickOffset: Offset, finished: () -> Unit) {
+    private fun AddStateWindow(clickOffset: Offset, chosedState: State?, finished: () -> Unit) {
+
         var name by remember {
-            mutableStateOf("")
+            mutableStateOf(chosedState?.name ?: "")
         }
         var initial by remember {
-            mutableStateOf(false)
+            mutableStateOf(chosedState?.initial ?: false)
         }
         var finite by remember {
-            mutableStateOf(false)
+            mutableStateOf(chosedState?.finite ?: false)
         }
 
         DefaultFASDialogWindow(
-            title = stringResource(id = R.string.new_state),
+            title = if (chosedState == null) stringResource(id = R.string.new_state) else "edit state: ${chosedState.name}",
             conditionToEnable = name.isNotEmpty(),
             onDismiss = {
                 finished()
             },
             onConfirm = {
-                addNewState(
-                    State(
-                        name = name,
-                        isCurrent = false,
-                        index = findNewStateIndex(),
-                        finite = finite,
-                        initial = initial,
-                        position = clickOffset
+                if (chosedState == null) {
+                    addNewState(
+                        State(
+                            name = name,
+                            isCurrent = false,
+                            index = findNewStateIndex(),
+                            finite = finite,
+                            initial = initial,
+                            position = clickOffset
+                        )
                     )
-                )
+                } else {
+                    chosedState.name = name
+                    chosedState.initial = initial
+                    chosedState.finite = finite
+                }
                 finished()
             }) {
 
@@ -1042,7 +1118,8 @@ abstract class Machine(var name: String = "Untitled") {
                     text = "initial",
                     isActive = initial
                 ) {
-                    if (checkMachineForExistingInitialState()) initial = !initial
+                    if (chosedState != null || checkMachineForExistingInitialState()) initial =
+                        !initial
                 }
 
                 ItemSpecificationIcon(
@@ -1050,7 +1127,8 @@ abstract class Machine(var name: String = "Untitled") {
                     text = "finite",
                     isActive = finite
                 ) {
-                    if (checkMachineForExistingFiniteState()) finite = !finite
+                    if (chosedState != null || checkMachineForExistingFiniteState()) finite =
+                        !finite
                 }
                 Spacer(modifier = Modifier.weight(1f))
             }
@@ -1059,7 +1137,7 @@ abstract class Machine(var name: String = "Untitled") {
 
             Row(
                 modifier = Modifier.fillMaxWidth(0.8f),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = CenterVertically
             ) {
                 Text(text = "x: ${clickOffset.x}", fontSize = 18.sp)
                 Spacer(modifier = Modifier.width(12.dp))
@@ -1070,7 +1148,7 @@ abstract class Machine(var name: String = "Untitled") {
 
             Row(
                 modifier = Modifier.fillMaxWidth(0.8f),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = CenterVertically
             ) {
                 DefaultTextField(
                     hint = "name",
@@ -1137,6 +1215,60 @@ abstract class Machine(var name: String = "Untitled") {
                 .show()
             false
         } else true
+    }
+
+
+    abstract fun getDerivationTreeElements(): List<Map<String?, Float>>
+
+    @Composable
+    fun DerivationTree() {
+        val derivationTreeElements = remember {
+            mutableStateOf<List<Map<String?, Float>>>(listOf())
+        }
+
+        LaunchedEffect(Unit) {
+            derivationTreeElements.value = getDerivationTreeElements()
+        }
+
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .background(perlamutr_white)
+                .clip(MaterialTheme.shapes.large)
+                .border(3.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large),
+        ) {
+            items(derivationTreeElements.value) { treeLevel ->
+                Column(
+                    modifier = Modifier.width(30.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    treeLevel.forEach { (stateName, weight) ->
+                        if (stateName != null) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                                    .clip(MaterialTheme.shapes.medium)
+                                    .weight(weight)
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.shapes.medium
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(text = stateName, fontSize = 18.sp)
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.weight(weight))
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.width(5.dp))
+            }
+        }
     }
 
     private fun getStatesByClick(clickOffset: Offset): State? {

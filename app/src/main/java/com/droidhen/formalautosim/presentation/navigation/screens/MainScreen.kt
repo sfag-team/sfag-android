@@ -1,5 +1,6 @@
 package com.droidhen.formalautosim.presentation.navigation.screens
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -48,7 +50,11 @@ fun MainScreen() {
 
     BackHandler {
         when (currentScreenState.value) {
-            MainScreenStates.SIMULATING -> {}
+            MainScreenStates.SIMULATING -> {
+                currentScreenState.value = MainScreenStates.SIMULATION_RUN
+            }
+
+            MainScreenStates.SIMULATION_RUN -> {}
 
             MainScreenStates.EDITING_INPUT -> {
                 currentScreenState.value = MainScreenStates.SIMULATING
@@ -70,7 +76,7 @@ fun MainScreen() {
                 .padding(horizontal = 16.dp)
         ) {
             item {
-                Spacer(modifier = Modifier.height(80.dp))
+                Spacer(modifier = Modifier.height(30.dp))
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -93,11 +99,17 @@ fun MainScreen() {
                 ) {
                     when (currentScreenState.value) {
                         MainScreenStates.SIMULATING -> {
+                            key(recompose.intValue) {
+                                MainActivity.TestMachine.SimulateMachine()
+                            }
+                        }
+                        MainScreenStates.SIMULATION_RUN -> {
                             key(animation.intValue) {
                                 if (isLockedAnimation.not()) {
                                     MainActivity.TestMachine.calculateTransition {
                                         isLockedAnimation = true
                                         recompose.intValue++
+                                        currentScreenState.value = MainScreenStates.SIMULATING
                                     }
                                 }
                             }
@@ -105,7 +117,6 @@ fun MainScreen() {
                                 MainActivity.TestMachine.SimulateMachine()
                             }
                         }
-
                         MainScreenStates.EDITING_INPUT -> {
                             MainActivity.TestMachine.EditingInput {
                                 currentScreenState.value = MainScreenStates.SIMULATING
@@ -119,6 +130,10 @@ fun MainScreen() {
 
                 }
                 Spacer(modifier = Modifier.size(18.dp))
+
+                /**
+                 * Bottom navigation row (Editing Machine, Editing Input, TestMachine)
+                 */
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -151,8 +166,14 @@ fun MainScreen() {
                         painter = painterResource(id = R.drawable.go_to_next),
                         contentDescription = "",
                         modifier = Modifier.clickable {
-                            if(currentScreenState.value != MainScreenStates.SIMULATING){
+                            if(currentScreenState.value != MainScreenStates.SIMULATING && currentScreenState.value != MainScreenStates.SIMULATION_RUN){
                                 currentScreenState.value = MainScreenStates.SIMULATING
+                            }else if(currentScreenState.value == MainScreenStates.SIMULATING){
+                                currentScreenState.value = MainScreenStates.SIMULATION_RUN
+                                if (isLockedAnimation) {
+                                    isLockedAnimation = false
+                                    animation.intValue++
+                                }
                             }else{
                                 if (isLockedAnimation) {
                                     isLockedAnimation = false
@@ -161,8 +182,34 @@ fun MainScreen() {
                             }
                         })
                 }
+
+                Spacer(modifier = Modifier.size(24.dp))
+
+                BottomScreenPart(currentScreenState)
+
+                Spacer(modifier = Modifier.size(30.dp))
             }
         }
     }
+}
 
+/**
+ *
+ * Shows additional info for related screen state  (ex.: for simulating it shows derivation tree and shows interface for multipling testing)
+ */
+@Composable
+private fun BottomScreenPart(currentScreenState: MutableState<MainScreenStates>) {
+    when(currentScreenState.value){
+        MainScreenStates.SIMULATING -> {
+            MainActivity.TestMachine.DerivationTree()
+        }
+        MainScreenStates.SIMULATION_RUN -> {
+        }
+        MainScreenStates.EDITING_INPUT -> {
+           // MatrixTesting()
+        }
+        MainScreenStates.EDITING_MACHINE -> {
+            //TODO()
+        }
+    }
 }

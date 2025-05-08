@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity() {
             initial = false,
             index = 1,
             name = "q1",
-            isCurrent = true,
+            isCurrent = false,
             position = Offset(100f, 100f)
         )
 
@@ -104,16 +104,31 @@ class MainActivity : ComponentActivity() {
             position = Offset(280f, 300f)
         )
 
+        val thirdState = State(
+            finite = false,
+            initial = true,
+            index = 3,
+            name = "q0",
+            position = Offset(280f, 100f)
+        )
+
         TestMachine.addNewState(
            firstState
         )
         TestMachine.addNewState(
             secondState
         )
+        TestMachine.addNewState(
+            thirdState
+        )
         TestMachine.addTransition(Transition(name = "a", startState  =1, endState = 2))
         TestMachine.addTransition(Transition(name = "b",startState = 2, endState =  1))
         TestMachine.addTransition(Transition(name = "c", startState = 1, endState = 1))
+        TestMachine.addTransition(Transition(name = "a", startState = 3, endState = 1))
+        TestMachine.addTransition(Transition(name = "a", startState = 3, endState = 3))
+        TestMachine.input.append("a")
         for(i in 0..2) TestMachine.input.append("abc")
+
     }
 
     @SuppressLint("ComposableNaming")
