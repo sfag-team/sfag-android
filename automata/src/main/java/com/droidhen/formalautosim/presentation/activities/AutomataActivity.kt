@@ -25,7 +25,7 @@ import androidx.navigation.compose.rememberNavController
 import com.droidhen.formalautosim.core.entities.machines.FiniteMachine
 import com.droidhen.formalautosim.core.entities.states.State
 import com.droidhen.formalautosim.core.entities.transitions.Transition
-import com.droidhen.formalautosim.presentation.navigation.Destinations
+import com.droidhen.formalautosim.presentation.navigation.AutomataDestinations
 import com.droidhen.formalautosim.presentation.navigation.screens.CommunityScreen
 import com.droidhen.formalautosim.presentation.navigation.screens.AutomataScreen
 import com.droidhen.formalautosim.presentation.navigation.screens.UserProfileScreen
@@ -57,16 +57,16 @@ class AutomataActivity : ComponentActivity() {
                     ) {
                         NavHost(
                             navController = this@apply,
-                            startDestination = Destinations.AUTOMATA.route,
+                            startDestination = AutomataDestinations.AUTOMATA.route,
                             modifier = Modifier.weight(9f)
                         ) {
-                            composable(route = Destinations.AUTOMATA.route) {
+                            composable(route = AutomataDestinations.AUTOMATA.route) {
                                 AutomataScreen()
                             }
-                            composable(route = Destinations.COMMUNITY.route) {
+                            composable(route = AutomataDestinations.COMMUNITY.route) {
                                 CommunityScreen()
                             }
-                            composable(route = Destinations.USER_PROFILE.route) {
+                            composable(route = AutomataDestinations.USER_PROFILE.route) {
                                 UserProfileScreen()
                             }
                         }

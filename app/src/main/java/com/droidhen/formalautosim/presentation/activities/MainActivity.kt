@@ -1,6 +1,7 @@
 package com.droidhen.formalautosim.presentation.activities
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -21,11 +22,12 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.droidhen.formalautosim.presentation.navigation.Destinations
+import com.droidhen.formalautosim.presentation.navigation.AppDestinations
 import com.droidhen.formalautosim.presentation.navigation.screens.MainScreen
 import com.droidhen.formalautosim.presentation.theme.FormalAutoSimTheme
 import com.droidhen.formalautosim.presentation.views.BottomBar
 import com.droidhen.formalautosim.utils.extensions.SetDefaultSettings
+import com.example.gramatika.GrammarActivity
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -50,14 +52,13 @@ class MainActivity : ComponentActivity() {
                     ) {
                         NavHost(
                             navController = this@apply,
-                            startDestination = Destinations.MAIN.route,
+                            startDestination = AppDestinations.MAIN.route,
                             modifier = Modifier.weight(9f)
                         ) {
-                            composable(route = Destinations.MAIN.route) {
-                                MainScreen(navToGrammar = {}, navToAutomata = {})
+                            composable(route = AppDestinations.MAIN.route) {
+                                MainScreen(navToGrammar = {navToGrammarActivity()}, navToAutomata = {navToAutomataActivity()})
                             }
                         }
-                        BottomBar(this@apply)
                     }
                 }
             }
@@ -79,10 +80,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun navToGrammarActivity(){
-
+        val intent = Intent(this, GrammarActivity::class.java)
+        startActivity(intent)
     }
 
     private fun navToAutomataActivity(){
-
+        val intent = Intent(this, AutomataActivity::class.java)
+        startActivity(intent)
     }
 }

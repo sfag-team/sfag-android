@@ -21,7 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.droidhen.automata.R
-import com.droidhen.formalautosim.presentation.navigation.Destinations
+import com.droidhen.formalautosim.presentation.navigation.AutomataDestinations
 
 @Composable
 fun BottomBar(navController: NavController) {
@@ -49,7 +49,7 @@ fun BottomBar(navController: NavController) {
                             .clickable {
                                 if (weights.value[0] == 2f) {
                                     weights.value = listOf(3f,2f,2f)
-                                    navController.navigate(Destinations.AUTOMATA.route)
+                                    navController.navigate(AutomataDestinations.AUTOMATA.route)
                                 }
                             })
                 }
@@ -65,7 +65,7 @@ fun BottomBar(navController: NavController) {
                             .clickable {
                                 if (weights.value[1] == 2f) {
                                     weights.value = listOf(2f,3f,2f)
-                                    navController.navigate(Destinations.COMMUNITY.route)
+                                    navController.navigate(AutomataDestinations.COMMUNITY.route)
                                 }
                             })
                 }
@@ -81,7 +81,7 @@ fun BottomBar(navController: NavController) {
                             .clickable {
                                 if (weights.value[2] == 2f) {
                                     weights.value = listOf(2f,2f,3f)
-                                    navController.navigate(Destinations.USER_PROFILE.route)
+                                    navController.navigate(AutomataDestinations.USER_PROFILE.route)
                                 }
                             })
                 }

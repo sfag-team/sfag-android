@@ -10,7 +10,7 @@ import androidx.annotation.RequiresApi
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.droidhen.formalautosim.presentation.navigation.Destinations
+import com.droidhen.formalautosim.presentation.navigation.AppDestinations
 import com.droidhen.formalautosim.presentation.navigation.screens.SignInScreen
 import com.droidhen.formalautosim.presentation.navigation.screens.SplashScreen
 import com.droidhen.formalautosim.presentation.theme.FormalAutoSimTheme
@@ -32,14 +32,14 @@ class SplashActivity : ComponentActivity() {
                 rememberNavController().apply {
                     NavHost(
                         navController = this,
-                        startDestination = Destinations.SPLASH.route
+                        startDestination = AppDestinations.SPLASH.route
                     ) {
-                        composable(Destinations.SPLASH.route) {
+                        composable(AppDestinations.SPLASH.route) {
                             SplashScreen(navigateToNextScreen = {
-                                navigate(Destinations.SIGN_IN.route)
+                                navigate(AppDestinations.SIGN_IN.route)
                             }, ::navigateToMainActivity)
                         }
-                        composable(Destinations.SIGN_IN.route) {
+                        composable(AppDestinations.SIGN_IN.route) {
                             SignInScreen(::navigateToMainActivity)
                         }
                     }
