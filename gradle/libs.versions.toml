@@ -53,5 +53,6 @@ jetbrainsKotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "k
 daggerHilt = {id = "com.google.dagger.hilt.android", version.ref = "hiltAndroid"}
 devTools = {id = "com.google.devtools.ksp", version.ref = "devTools"}
 android = {id = "com.android.library", version.ref="agp"}
+androidLibrary = { id = "com.android.library", version.ref="agp" }
 googleGmsGoogleServices = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
 

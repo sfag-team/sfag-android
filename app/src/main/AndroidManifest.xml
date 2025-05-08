@@ -8,9 +8,12 @@
     <application
         android:name=".FormalAutoSimApplication"
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
+        android:screenOrientation="portrait"
         android:supportsRtl="true"
         android:theme="@style/Theme.FormalAutoSim"
         tools:targetApi="31">
@@ -26,6 +29,25 @@
         <activity
             android:name=".presentation.activities.MainActivity"
             android:exported="false" />
+        <activity
+            android:name=".presentation.activities.AutomataActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.example.gramatika.GrammarActivity"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:pathPattern=".*\\.jff" />
+                <data android:mimeType="application/xml" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

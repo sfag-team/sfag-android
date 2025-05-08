@@ -31,9 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -47,11 +45,11 @@ import com.droidhen.formalautosim.R
 import com.droidhen.formalautosim.core.viewModel.SplashViewModel
 import com.droidhen.formalautosim.presentation.theme.signScreenSpacerModifierMedium
 import com.droidhen.formalautosim.presentation.theme.signScreenSpacerModifierSmall
-import com.droidhen.formalautosim.presentation.views.ConfirmPasswordTextField
-import com.droidhen.formalautosim.presentation.views.DefaultTextField
-import com.droidhen.formalautosim.presentation.views.FASButton
-import com.droidhen.formalautosim.presentation.views.IssueMessage
-import com.droidhen.formalautosim.presentation.views.PasswordTextField
+import views.ConfirmPasswordTextField
+import views.DefaultTextField
+import views.FASButton
+import views.IssueMessage
+import views.PasswordTextField
 
 @Composable
 fun SignInScreen(navigateToMainActivity: () -> Unit) {
@@ -98,7 +96,7 @@ fun SignInScreen(navigateToMainActivity: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Image(
-                            painter = painterResource(id = R.mipmap.icon),
+                            painter = painterResource(id = com.droidhen.theme.R.mipmap.icon),
                             contentDescription = stringResource(
                                 R.string.icon_image
                             ),
