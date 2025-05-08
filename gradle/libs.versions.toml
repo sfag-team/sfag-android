@@ -10,6 +10,7 @@ lifecycleRuntimeKtx = "2.8.3"
 activityCompose = "1.9.0"
 devTools = "1.9.23-1.0.20"
 composeBom = "2024.06.00"
+lifecycleViewmodelCompose = "2.8.0"
 navigationFragmentKtx = "2.7.7"
 hiltNavigationCompose = "1.2.0"
 googleGmsGoogleServices = "4.4.2"
@@ -20,6 +21,7 @@ runtimeLivedata = "1.7.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationFragmentKtx" }
 androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
 androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigationFragmentKtx", name = "navigation.ui.ktx" }
