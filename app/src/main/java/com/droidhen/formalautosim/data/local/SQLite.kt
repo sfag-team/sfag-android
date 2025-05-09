@@ -2,12 +2,12 @@ package com.droidhen.formalautosim.data.local
 
 import android.content.ContentValues
 import android.database.Cursor
-import com.droidhen.formalautosim.core.entities.AutomataUser
+import com.droidhen.formalautosim.core.entities.User
 import javax.inject.Inject
 
-class SQLite @Inject constructor(private val database: SQLModel) {
+class SQLite @Inject constructor(private val database: AutomataSQLModel) {
 
-    fun insertUser(user:AutomataUser): Long {
+    fun insertUser(user: User): Long {
         val db = database.writableDatabase
         val values = ContentValues().apply {
             put("name", user.getName())
@@ -18,16 +18,16 @@ class SQLite @Inject constructor(private val database: SQLModel) {
         return db.insert("users", null, values)
     }
 
-    fun getUser(): AutomataUser? {
+    fun getUser(): User? {
         val db = database.readableDatabase
         val cursor: Cursor = db.query(
             "users", null, null, null, null, null, null
         )
-        var user: AutomataUser? = null
+        var user: User? = null
 
         with(cursor) {
             while (moveToNext()) {
-                user = AutomataUser()
+                user = User()
                 val name = getString(getColumnIndexOrThrow("name"))
                 val email = getString(getColumnIndexOrThrow("email"))
                 val password = getString(getColumnIndexOrThrow("password"))

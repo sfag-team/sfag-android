@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import com.droidhen.formalautosim.core.entities.AutomataUser
+import com.droidhen.formalautosim.core.entities.User
 import com.droidhen.formalautosim.data.local.SQLite
 import com.droidhen.formalautosim.data.remote.Firebase
 import com.droidhen.formalautosim.data.remote.InternetTool
@@ -20,7 +20,7 @@ class SplashViewModel @Inject constructor(
     private val internet: InternetTool
 ) : ViewModel() {
     var isSignIn = true
-    private val user = AutomataUser()
+    private val user = User()
     private var isPasswordShowed = mutableStateOf(false)
     private val password = mutableStateOf("")
     private val email = mutableStateOf("")

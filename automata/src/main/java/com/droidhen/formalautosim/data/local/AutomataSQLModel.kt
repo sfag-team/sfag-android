@@ -6,7 +6,7 @@ import android.database.sqlite.SQLiteOpenHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
-class SQLModel @Inject constructor (@ApplicationContext context:Context): SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+class AutomataSQLModel @Inject constructor (@ApplicationContext context:Context): SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
         private const val DATABASE_NAME = "mydatabase.db"

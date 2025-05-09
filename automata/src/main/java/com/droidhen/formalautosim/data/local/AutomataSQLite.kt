@@ -5,7 +5,7 @@ import android.database.Cursor
 import com.droidhen.formalautosim.core.entities.AutomataUser
 import javax.inject.Inject
 
-class SQLite @Inject constructor(private val database: SQLModel) {
+class AutomataSQLite @Inject constructor(private val database: AutomataSQLModel) {
 
     fun insertUser(user:AutomataUser): Long {
         val db = database.writableDatabase

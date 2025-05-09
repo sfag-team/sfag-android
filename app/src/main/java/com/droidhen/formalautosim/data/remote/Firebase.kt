@@ -1,7 +1,6 @@
 package com.droidhen.formalautosim.data.remote
 
 import android.util.Log
-import com.droidhen.formalautosim.core.entities.AutomataUser
 import com.droidhen.formalautosim.core.entities.User
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
@@ -14,11 +13,11 @@ class Firebase @Inject constructor() {
 
     }
 
-    fun setUser(user: AutomataUser, onSuccess: () -> Unit, onFailure: () -> Unit) {
+    fun setUser(user: User, onSuccess: () -> Unit, onFailure: () -> Unit) {
 
     }
 
-    fun trySignUp(user: AutomataUser, onSuccess: () -> Unit, onFailure: () -> Unit, onTechnicalProblem:()->Unit) {
+    fun trySignUp(user: User, onSuccess: () -> Unit, onFailure: () -> Unit, onTechnicalProblem:()->Unit) {
         db.collection("users").apply {
             get().addOnSuccessListener { result ->
                 for (document in result) {
@@ -34,7 +33,7 @@ class Firebase @Inject constructor() {
         }
     }
 
-    fun trySignIn(user: AutomataUser, onSuccess: (user:AutomataUser) -> Unit, onFailure: () -> Unit, onTechnicalProblem:()->Unit) {
+    fun trySignIn(user: User, onSuccess: (user:User) -> Unit, onFailure: () -> Unit, onTechnicalProblem:()->Unit) {
         Log.e("sasha", "request sent")
         db.collection("users").apply {
             get().addOnSuccessListener { result ->

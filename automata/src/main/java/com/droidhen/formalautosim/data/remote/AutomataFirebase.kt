@@ -6,7 +6,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import javax.inject.Inject
 
-class Firebase @Inject constructor() {
+class AutomataFirebase @Inject constructor() {
     private val db = Firebase.firestore
 
     fun getUserData(onSuccess: () -> Unit, onFailure: () -> Unit) {
