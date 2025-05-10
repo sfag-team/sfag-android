@@ -501,26 +501,25 @@ abstract class Machine(var name: String = "Untitled") {
     fun EditingInput(finishedEditing: () -> Unit) {
         val inputValue = mutableStateOf(input.toString())
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Spacer(modifier = Modifier.size(32.dp))
+            Spacer(modifier = Modifier.size(24.dp))
             Text(
                 text = stringResource(R.string.editing_input_headline),
                 style = MaterialTheme.typography.headlineLarge
             )
             Spacer(modifier = Modifier.size(16.dp))
-            DefaultTextField(
-                hint = "",
-                value = inputValue.value.reversed(),
-                requirementText = stringResource(R.string.requirement_text_for_machine_input),
-                onTextChange = { newInput ->
-                    input.clear()
-                    input.append(newInput.reversed())
-                    inputValue.value = newInput
-                }) {
-                input.contains("^[A-Za-z]+$".toRegex())
+            Column(modifier = Modifier.fillMaxHeight(0.7f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                DefaultTextField(
+                    hint = "",
+                    value = inputValue.value.reversed(),
+                    requirementText = stringResource(R.string.requirement_text_for_machine_input),
+                    onTextChange = { newInput ->
+                        input.clear()
+                        input.append(newInput.reversed())
+                        inputValue.value = newInput
+                    }) {
+                    input.contains("^[A-Za-z]+$".toRegex())
+                }
             }
-
-            Spacer(modifier = Modifier.fillMaxHeight(0.7f))
-
             FASButton(text = "Confirm", onClick = finishedEditing)
         }
     }
