@@ -1,14 +1,18 @@
 package views
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialogDefaults.shape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -17,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -24,6 +29,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.droidhen.formalautosim.presentation.theme.blue_one
@@ -110,9 +116,9 @@ fun ConfirmPasswordTextField(
 
 @Composable
 fun DefaultTextField(
-    hint:String,
+    hint: String,
     value: String,
-    requirementText:String,
+    requirementText: String,
     onTextChange: (String) -> Unit,
     isRequirementsComplete: () -> Boolean,
 ) {
@@ -146,4 +152,19 @@ fun DefaultTextField(
                 .padding(2.dp)
         )
     }
+}
+
+
+@Composable
+fun ImutableTextField(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        modifier = modifier.clip(RoundedCornerShape(8.dp)).border(3.dp, MaterialTheme.colorScheme.primary,RoundedCornerShape(8.dp)).padding(top = 8.dp),
+        style = TextStyle(color = blue_one, fontSize = 20.sp),
+        color = MaterialTheme.colorScheme.tertiary,
+        textAlign = TextAlign.Center,
+    )
 }
