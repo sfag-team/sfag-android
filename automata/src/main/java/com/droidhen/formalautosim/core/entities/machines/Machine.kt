@@ -80,6 +80,7 @@ import views.DropdownSelector
 import views.FASButton
 import com.droidhen.formalautosim.utils.enums.EditMachineStates
 import com.droidhen.formalautosim.utils.extensions.drawArrow
+import views.ImutableTextField
 import kotlin.math.atan
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -117,7 +118,8 @@ abstract class Machine(var name: String = "Untitled") {
     private var globalCanvasPosition: LayoutCoordinates? = null
     val states = mutableListOf<State>()
     protected val transitions = mutableListOf<Transition>()
-    val input = StringBuilder()
+    var input = StringBuilder()
+    private val savedInputs = mutableListOf<StringBuilder>()
     private var offsetXGraph = 0f
     private var offsetYGraph = 0f
     private var editMode = EditMachineStates.ADD_STATES
@@ -500,31 +502,92 @@ abstract class Machine(var name: String = "Untitled") {
     @Composable
     fun EditingInput(finishedEditing: () -> Unit) {
         val inputValue = mutableStateOf(input.toString())
-        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Spacer(modifier = Modifier.size(32.dp))
-            Text(
-                text = stringResource(R.string.editing_input_headline),
-                style = MaterialTheme.typography.headlineLarge
-            )
-            Spacer(modifier = Modifier.size(16.dp))
-            DefaultTextField(
-                hint = "",
-                value = inputValue.value.reversed(),
-                requirementText = stringResource(R.string.requirement_text_for_machine_input),
-                onTextChange = { newInput ->
-                    input.clear()
-                    input.append(newInput.reversed())
-                    inputValue.value = newInput
-                }) {
-                input.contains("^[A-Za-z]+$".toRegex())
+        var editingRecompose by remember { mutableIntStateOf(0) }
+
+        key(editingRecompose) {
+            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Spacer(modifier = Modifier.size(24.dp))
+                Row(modifier = Modifier.fillMaxWidth(0.8f)) {
+                    Text(
+                        text = stringResource(R.string.editing_input_headline),
+                        style = MaterialTheme.typography.headlineLarge
+                    )
+                    Spacer(modifier = Modifier.width(40.dp))
+                    FASButton(text = "ADD") {
+                        savedInputs.add(input)
+                        input = StringBuilder()
+                        editingRecompose++
+                    }
+                }
+
+                Spacer(modifier = Modifier.size(16.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight(0.8f)
+                        .fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    DefaultTextField(
+                        hint = "",
+                        value = inputValue.value.reversed(),
+                        requirementText = stringResource(R.string.requirement_text_for_machine_input),
+                        onTextChange = { newInput ->
+                            input.clear()
+                            input.append(newInput.reversed())
+                            inputValue.value = newInput
+                        }) {
+                        input.contains("^[A-Za-z]+$".toRegex())
+                    }
+                    savedInputs.forEach { input ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(0.9f),
+                            horizontalArrangement = Arrangement.Center,
+                            CenterVertically
+                        ) {
+                            ImutableTextField(text = input.toString().reversed(),
+                                modifier = Modifier
+                                    .clickable {
+                                        this@Machine.input = StringBuilder(input.toString())
+                                        setInitialStateAsCurrent()
+                                        editingRecompose++
+                                    }
+                                    .width(260.dp)
+                                    .height(40.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(painter = painterResource(id = R.drawable.bin),
+                                contentDescription = "",
+                                modifier = Modifier
+                                    .clickable {
+                                        savedInputs.remove(input)
+                                        editingRecompose++
+                                    }
+                                    .size(30.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                painter = painterResource(id = if (canReachFinalState(input)) com.droidhen.theme.R.drawable.check else com.droidhen.theme.R.drawable.cross),
+                                contentDescription = "",
+                                modifier = Modifier.size(30.dp)
+                            )
+                        }
+
+                    }
+                }
+                Spacer(modifier = Modifier.size(16.dp))
+                FASButton(text = "Confirm", onClick = finishedEditing)
             }
-
-            Spacer(modifier = Modifier.fillMaxHeight(0.7f))
-
-            FASButton(text = "Confirm", onClick = finishedEditing)
         }
+
+
     }
 
+    private fun setInitialStateAsCurrent() {
+        getStateByIndex(currentState).isCurrent = false
+        val initialState = states.filter { it.initial }
+        if (initialState.isNotEmpty()) {
+            initialState[0].isCurrent = true
+            currentState = initialState[0].index
+        }
+    }
 
     /**
      * private compose function States
@@ -740,7 +803,7 @@ abstract class Machine(var name: String = "Untitled") {
                     .background(light_blue)
                     .padding(start = 8.dp),
                 horizontalArrangement = Arrangement.Start,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = CenterVertically
             ) {
                 itemsIndexed(input.toString().toCharArray().toList()) { index, inputChar ->
                     Box(
@@ -1273,6 +1336,8 @@ abstract class Machine(var name: String = "Untitled") {
             }
         }
     }
+
+    abstract fun canReachFinalState(input:StringBuilder) : Boolean
 
     private fun getStatesByClick(clickOffset: Offset): State? {
         var result: State? = null

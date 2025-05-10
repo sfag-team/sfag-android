@@ -12,11 +12,33 @@ class FiniteMachine(name: String = "Untitled") : Machine(name) {
     @Composable
     override fun calculateTransition(onAnimationEnd: () -> Unit) {
         if (currentState == null) return
+
         val startState = getStateByIndex(currentState!!)
-        val appropriateTransition = getListOfAppropriateTransitions(startState)
-        if (appropriateTransition.isEmpty()) return
-        val endState = getStateByIndex(appropriateTransition[0].endState)
-        val newInputValue = input.removePrefix(appropriateTransition[0].name).toString()
+        val possibleTransitions = getListOfAppropriateTransitions(startState)
+        if (possibleTransitions.isEmpty()) return
+
+        val validTransition = possibleTransitions.firstOrNull { transition ->
+            val nextInput = input.removePrefix(transition.name)
+            val nextState = getStateByIndex(transition.endState)
+
+            val previousCurrent = currentState
+            states.forEach { it.isCurrent = false }
+            nextState.isCurrent = true
+            currentState = nextState.index
+
+            val result = canReachFinalState(StringBuilder(nextInput))
+
+            nextState.isCurrent = false
+            getStateByIndex(previousCurrent!!).isCurrent = true
+            currentState = previousCurrent
+
+            result
+        }
+
+        if (validTransition == null) return
+
+        val endState = getStateByIndex(validTransition.endState)
+        val newInputValue = input.removePrefix(validTransition.name).toString()
         input.clear()
         input.append(newInputValue)
 
@@ -131,10 +153,44 @@ class FiniteMachine(name: String = "Untitled") : Machine(name) {
     }
 
 
+    override fun canReachFinalState(input: StringBuilder): Boolean {
+        data class Path(
+            val currentState: State,
+            val inputIndex: Int
+        )
 
+        var paths = mutableListOf<Path>()
+        val startState = states.firstOrNull { it.isCurrent }
+        if (startState != null) {
+            paths.add(Path(startState, 0))
+        }
 
+        while (paths.isNotEmpty()) {
+            val nextPaths = mutableListOf<Path>()
 
+            for (path in paths) {
+                if (path.inputIndex == input.length && path.currentState.finite) {
+                    return true
+                }
 
+                if (path.inputIndex == input.length) continue
+
+                val currentChar = input[path.inputIndex]
+                val possibleTransitions = transitions.filter {
+                    it.startState == path.currentState.index && it.name.first() == currentChar
+                }
+
+                for (transition in possibleTransitions) {
+                    val nextState = states.first { it.index == transition.endState }
+                    nextPaths.add(Path(nextState, path.inputIndex + 1))
+                }
+            }
+
+            paths = nextPaths
+        }
+
+        return false
+    }
 
 
     private fun getListOfAppropriateTransitions(startState: State): List<Transition> {
@@ -142,7 +198,4 @@ class FiniteMachine(name: String = "Untitled") : Machine(name) {
             it.startState == startState.index && input.startsWith(it.name)
         }
     }
-
-
-
 }

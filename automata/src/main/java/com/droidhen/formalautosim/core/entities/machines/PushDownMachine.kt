@@ -25,4 +25,8 @@ class PushDownMachine : Machine() {
         TODO("Not yet implemented")
     }
 
+    override fun canReachFinalState(input: StringBuilder): Boolean {
+        TODO("Not yet implemented")
+    }
+
 }
