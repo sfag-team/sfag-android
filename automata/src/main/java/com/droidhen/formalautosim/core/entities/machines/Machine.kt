@@ -75,12 +75,12 @@ import com.droidhen.formalautosim.core.entities.transitions.Transition
 import com.droidhen.formalautosim.presentation.theme.light_blue
 import com.droidhen.formalautosim.presentation.theme.perlamutr_white
 import views.DefaultFASDialogWindow
-import views.DefaultTextField
+import views.FASDefaultTextField
 import views.DropdownSelector
 import views.FASButton
 import com.droidhen.formalautosim.utils.enums.EditMachineStates
 import com.droidhen.formalautosim.utils.extensions.drawArrow
-import views.ImutableTextField
+import views.FASImmutableTextField
 import kotlin.math.atan
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -113,6 +113,7 @@ fun Modifier.onTapFindMyString(
 
 @Suppress("UNREACHABLE_CODE")
 abstract class Machine(var name: String = "Untitled") {
+    var version = 1
     private lateinit var density: Density
     private lateinit var context: Context
     private var globalCanvasPosition: LayoutCoordinates? = null
@@ -124,6 +125,7 @@ abstract class Machine(var name: String = "Untitled") {
     private var offsetYGraph = 0f
     private var editMode = EditMachineStates.ADD_STATES
     abstract var currentState: Int?
+    abstract val machineType: MachineType
 
     /**
      * return all paths for all exists transitions
@@ -526,7 +528,7 @@ abstract class Machine(var name: String = "Untitled") {
                         .fillMaxHeight(0.8f)
                         .fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    DefaultTextField(
+                    FASDefaultTextField(
                         hint = "",
                         value = inputValue.value.reversed(),
                         requirementText = stringResource(R.string.requirement_text_for_machine_input),
@@ -544,7 +546,7 @@ abstract class Machine(var name: String = "Untitled") {
                             horizontalArrangement = Arrangement.Center,
                             CenterVertically
                         ) {
-                            ImutableTextField(text = input.toString().reversed(),
+                            FASImmutableTextField(text = input.toString().reversed(),
                                 modifier = Modifier
                                     .clickable {
                                         this@Machine.input = StringBuilder(input.toString())
@@ -1062,7 +1064,7 @@ abstract class Machine(var name: String = "Untitled") {
                 modifier = Modifier.fillMaxWidth(0.8f),
                 verticalAlignment = CenterVertically
             ) {
-                DefaultTextField(
+                FASDefaultTextField(
                     hint = "transition name",
                     value = name,
                     requirementText = "",
@@ -1216,7 +1218,7 @@ abstract class Machine(var name: String = "Untitled") {
                 modifier = Modifier.fillMaxWidth(0.8f),
                 verticalAlignment = CenterVertically
             ) {
-                DefaultTextField(
+                FASDefaultTextField(
                     hint = "name",
                     value = name,
                     requirementText = "",
@@ -1339,6 +1341,37 @@ abstract class Machine(var name: String = "Untitled") {
 
     abstract fun canReachFinalState(input:StringBuilder) : Boolean
 
+    fun exportToJFF(): String {
+        val builder = StringBuilder()
+        builder.appendLine("""<?xml version="1.0" encoding="UTF-8" standalone="no"?>""")
+        builder.appendLine("<structure>")
+        builder.appendLine("    <type>${machineType}</type>")
+        builder.appendLine("    <automaton>")
+
+
+        for (state in states) {
+            builder.appendLine("""        <state id="${state.index}" name="${state.name}">""")
+            builder.appendLine("""            <x>${state.position.x}</x>""")
+            builder.appendLine("""            <y>${state.position.y}</y>""")
+            if (state.initial) builder.appendLine("            <initial/>")
+            if (state.finite) builder.appendLine("            <final/>")
+            builder.appendLine("        </state>")
+        }
+
+        for (transition in transitions) {
+            builder.appendLine("        <transition>")
+            builder.appendLine("            <from>${transition.startState}</from>")
+            builder.appendLine("            <to>${transition.endState}</to>")
+            builder.appendLine("            <read>${transition.name}</read>")
+            builder.appendLine("        </transition>")
+        }
+
+        builder.appendLine("    </automaton>")
+        builder.appendLine("</structure>")
+
+        return builder.toString()
+    }
+
     private fun getStatesByClick(clickOffset: Offset): State? {
         var result: State? = null
         val radius = if (states.any()) states[0].radius.times(2) else 80f
@@ -1373,4 +1406,11 @@ abstract class Machine(var name: String = "Untitled") {
         }
         return result
     }
+}
+
+sealed class MachineType(val tag: String) {
+    object Finite : MachineType("fa")
+    object Pushdown : MachineType("pda")
+
+    override fun toString(): String = tag
 }

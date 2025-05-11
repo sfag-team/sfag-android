@@ -6,8 +6,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,22 +19,30 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.droidhen.automata.R
+import com.droidhen.formalautosim.core.entities.machines.Machine
+import com.droidhen.formalautosim.data.local.ExternalStorageController
 import com.droidhen.formalautosim.presentation.activities.AutomataActivity
 import com.droidhen.formalautosim.presentation.theme.light_blue
 import com.droidhen.formalautosim.utils.enums.MainScreenStates
+import views.DefaultFASDialogWindow
+import views.FASButton
+import views.FASDefaultTextField
+import views.FASImmutableTextField
 
 @Composable
 fun AutomataScreen() {
@@ -42,10 +52,15 @@ fun AutomataScreen() {
     val animation = remember {
         mutableIntStateOf(0)
     }
-    var currentScreenState = remember {
+    val currentScreenState = remember {
         mutableStateOf(MainScreenStates.SIMULATING)
     }
     var isLockedAnimation = true
+
+    var exportFileWindow by remember {
+        mutableStateOf(false)
+    }
+    val context = LocalContext.current
 
     BackHandler {
         when (currentScreenState.value) {
@@ -80,9 +95,19 @@ fun AutomataScreen() {
                     Modifier
                         .fillMaxWidth()
                         .height(80.dp)
-                        .padding(12.dp)
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Text(text = "Main Screen")
+                    FASButton(text = "Export") {
+                        exportFileWindow = true
+                    }
+                    FASButton(text = "Save", enabled = false) {
+
+                    }
+                    FASButton(text = "Share") {
+                        ExternalStorageController.shareJffFile(context = context, jffContent = AutomataActivity.TestMachine.exportToJFF(), fileName = AutomataActivity.TestMachine.name)
+                    }
                 }
                 Box(
                     modifier = Modifier
@@ -102,6 +127,7 @@ fun AutomataScreen() {
                                 AutomataActivity.TestMachine.SimulateMachine()
                             }
                         }
+
                         MainScreenStates.SIMULATION_RUN -> {
                             key(animation.intValue) {
                                 if (isLockedAnimation.not()) {
@@ -116,6 +142,7 @@ fun AutomataScreen() {
                                 AutomataActivity.TestMachine.SimulateMachine()
                             }
                         }
+
                         MainScreenStates.EDITING_INPUT -> {
                             AutomataActivity.TestMachine.EditingInput {
                                 currentScreenState.value = MainScreenStates.SIMULATING
@@ -151,7 +178,7 @@ fun AutomataScreen() {
                         painter = painterResource(id = R.drawable.editing_machine),
                         contentDescription = "",
                         modifier = Modifier.clickable {
-                           currentScreenState.value = MainScreenStates.EDITING_MACHINE
+                            currentScreenState.value = MainScreenStates.EDITING_MACHINE
                         })
                     Spacer(modifier = Modifier.width(36.dp))
                     Icon(
@@ -165,15 +192,15 @@ fun AutomataScreen() {
                         painter = painterResource(id = R.drawable.go_to_next),
                         contentDescription = "",
                         modifier = Modifier.clickable {
-                            if(currentScreenState.value != MainScreenStates.SIMULATING && currentScreenState.value != MainScreenStates.SIMULATION_RUN){
+                            if (currentScreenState.value != MainScreenStates.SIMULATING && currentScreenState.value != MainScreenStates.SIMULATION_RUN) {
                                 currentScreenState.value = MainScreenStates.SIMULATING
-                            }else if(currentScreenState.value == MainScreenStates.SIMULATING){
+                            } else if (currentScreenState.value == MainScreenStates.SIMULATING) {
                                 currentScreenState.value = MainScreenStates.SIMULATION_RUN
                                 if (isLockedAnimation) {
                                     isLockedAnimation = false
                                     animation.intValue++
                                 }
-                            }else{
+                            } else {
                                 if (isLockedAnimation) {
                                     isLockedAnimation = false
                                     animation.intValue++
@@ -189,6 +216,14 @@ fun AutomataScreen() {
                 Spacer(modifier = Modifier.size(30.dp))
             }
         }
+
+        key(exportFileWindow) {
+            if (exportFileWindow) {
+                ExportWindow(AutomataActivity.TestMachine){
+                    exportFileWindow = false
+                }
+            }
+        }
     }
 }
 
@@ -198,17 +233,60 @@ fun AutomataScreen() {
  */
 @Composable
 private fun BottomScreenPart(currentScreenState: MutableState<MainScreenStates>) {
-    when(currentScreenState.value){
+    when (currentScreenState.value) {
         MainScreenStates.SIMULATING -> {
             AutomataActivity.TestMachine.DerivationTree()
         }
+
         MainScreenStates.SIMULATION_RUN -> {
         }
+
         MainScreenStates.EDITING_INPUT -> {
-           // MatrixTesting()
+            // MatrixTesting()
         }
+
         MainScreenStates.EDITING_MACHINE -> {
             //TODO()
+        }
+    }
+}
+
+@Composable
+private fun ExportWindow(machine: Machine, finished: () -> Unit = {}) {
+    var fileName by remember {
+        mutableStateOf("AS_${machine.name}_version_${machine.version}")
+    }
+    val jFFMachine = machine.exportToJFF()
+
+    val context = LocalContext.current
+
+    DefaultFASDialogWindow(
+        title = "export machine as .jff",
+        onDismiss = finished,
+        onConfirm = {
+            ExternalStorageController.saveJffToDownloads(
+                context,
+                jFFMachine,
+                fileName
+            )
+            finished()
+        }) {
+        Column(modifier = Modifier
+            .fillMaxHeight(0.6f)
+            .fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Top) {
+            Spacer(modifier = Modifier.size(40.dp))
+            FASDefaultTextField(
+                modifier = Modifier.fillMaxWidth(0.7f),
+                hint = "file name",
+                value = fileName,
+                requirementText = "file name: without ' ', '%', '.'",
+                onTextChange = {
+                    fileName = it
+                }, isRequirementsComplete = {
+                    fileName.let { !(it.contains(' ') || it.contains('%') || it.contains('.')) }
+                })
+            Spacer(modifier = Modifier.size(40.dp))
+            FASImmutableTextField(text = "File will be saved to downloads", modifier = Modifier.fillMaxWidth(0.85f))
         }
     }
 }
