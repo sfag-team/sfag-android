@@ -45,11 +45,11 @@ import com.droidhen.formalautosim.R
 import com.droidhen.formalautosim.core.viewModel.SplashViewModel
 import com.droidhen.formalautosim.presentation.theme.signScreenSpacerModifierMedium
 import com.droidhen.formalautosim.presentation.theme.signScreenSpacerModifierSmall
-import views.ConfirmPasswordTextField
-import views.DefaultTextField
+import views.FASConfirmPasswordTextField
+import views.FASDefaultTextField
 import views.FASButton
 import views.IssueMessage
-import views.PasswordTextField
+import views.FASPasswordTextField
 
 @Composable
 fun SignInScreen(navigateToMainActivity: () -> Unit) {
@@ -155,27 +155,27 @@ fun SignInScreen(navigateToMainActivity: () -> Unit) {
                         Spacer(modifier = signScreenSpacerModifierSmall)
 
                         if (!viewModel.isSignIn) {
-                            DefaultTextField(
+                            FASDefaultTextField(
                                 hint = "name",
                                 value = viewModel.getName().value,
                                 requirementText = stringResource(R.string.name_requirement),
-                                { name ->
+                                onTextChange = { name ->
                                     viewModel.setName(name)
                                 },
-                                { viewModel.checkNameRequirements() })
+                                isRequirementsComplete = { viewModel.checkNameRequirements() })
                         }
 
-                        DefaultTextField(hint = stringResource(
+                        FASDefaultTextField(hint = stringResource(
                             id = R.string.email
                         ),
                             value = viewModel.getEmail().value,
                             requirementText = stringResource(id = R.string.email_requirements),
-                            { email ->
+                            onTextChange = { email ->
                                 viewModel.setEmail(email)
                             },
-                            { return@DefaultTextField viewModel.checkEmailRequirements() })
+                            isRequirementsComplete = { return@FASDefaultTextField viewModel.checkEmailRequirements() })
 
-                        PasswordTextField(
+                        FASPasswordTextField(
                             password = viewModel.getPassword().value,
                             { password ->
                                 viewModel.setPassword(password)
@@ -184,12 +184,12 @@ fun SignInScreen(navigateToMainActivity: () -> Unit) {
                             { viewModel.checkSinglePasswordRequirements() })
 
                         if (!viewModel.isSignIn) {
-                            ConfirmPasswordTextField(
+                            FASConfirmPasswordTextField(
                                 password = viewModel.getSecondPassword().value,
                                 { secondPassword ->
                                     viewModel.setSecondPassword(secondPassword)
                                 },
-                                { return@ConfirmPasswordTextField viewModel.checkPasswordRequirements() },
+                                { return@FASConfirmPasswordTextField viewModel.checkPasswordRequirements() },
                                 viewModel.getPasswordShowed().value
                             )
                         }

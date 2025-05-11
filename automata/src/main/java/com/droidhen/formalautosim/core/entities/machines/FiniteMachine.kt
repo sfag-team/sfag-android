@@ -5,9 +5,8 @@ import com.droidhen.formalautosim.core.entities.states.State
 import com.droidhen.formalautosim.core.entities.transitions.Transition
 
 class FiniteMachine(name: String = "Untitled") : Machine(name) {
-
     override var currentState: Int? = null
-
+    override val machineType = MachineType.Finite
 
     @Composable
     override fun calculateTransition(onAnimationEnd: () -> Unit) {
@@ -191,7 +190,6 @@ class FiniteMachine(name: String = "Untitled") : Machine(name) {
 
         return false
     }
-
 
     private fun getListOfAppropriateTransitions(startState: State): List<Transition> {
         return transitions.filter {

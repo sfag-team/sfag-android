@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import com.droidhen.formalautosim.core.entities.states.State
 
 class PushDownMachine : Machine() {
+    override val machineType = MachineType.Pushdown
+
     override var currentState: Int?
         get() = TODO("Not yet implemented")
         set(value) {}
@@ -28,5 +30,4 @@ class PushDownMachine : Machine() {
     override fun canReachFinalState(input: StringBuilder): Boolean {
         TODO("Not yet implemented")
     }
-
 }

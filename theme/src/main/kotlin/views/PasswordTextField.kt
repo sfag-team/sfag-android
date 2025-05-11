@@ -6,13 +6,11 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialogDefaults.shape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -24,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.modifier.modifierLocalOf
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
@@ -38,7 +37,7 @@ import com.droidhen.formalautosim.presentation.theme.error_red
 import com.droidhen.theme.R
 
 @Composable
-fun PasswordTextField(
+fun FASPasswordTextField(
     password: String,
     onPasswordChange: (String) -> Unit,
     isPasswordShowed: MutableState<Boolean>,
@@ -77,7 +76,7 @@ fun PasswordTextField(
 }
 
 @Composable
-fun ConfirmPasswordTextField(
+fun FASConfirmPasswordTextField(
     password: String,
     onPasswordChange: (String) -> Unit,
     isRequirementsComplete: () -> Boolean,
@@ -115,12 +114,13 @@ fun ConfirmPasswordTextField(
 }
 
 @Composable
-fun DefaultTextField(
+fun FASDefaultTextField(
+    modifier: Modifier = Modifier,
     hint: String,
     value: String,
     requirementText: String,
     onTextChange: (String) -> Unit,
-    isRequirementsComplete: () -> Boolean,
+    isRequirementsComplete: () -> Boolean
 ) {
     var isFocused by remember {
         mutableStateOf(false)
@@ -131,7 +131,7 @@ fun DefaultTextField(
         onValueChange = { text ->
             onTextChange(text.filterNot { it == '\n' })
         },
-        modifier = Modifier.onFocusChanged { state ->
+        modifier = modifier.onFocusChanged { state ->
             isFocused = state.isFocused
         },
         label = { Text(hint) },
@@ -156,7 +156,7 @@ fun DefaultTextField(
 
 
 @Composable
-fun ImutableTextField(
+fun FASImmutableTextField(
     text: String,
     modifier: Modifier = Modifier,
 ) {

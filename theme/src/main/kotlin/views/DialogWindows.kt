@@ -25,6 +25,7 @@ import com.droidhen.formalautosim.presentation.theme.medium_gray
 
 @Composable
 fun DefaultFASDialogWindow(
+
     title: String,
     conditionToEnable: Boolean = true,
     onDismiss: () -> Unit,
@@ -33,7 +34,7 @@ fun DefaultFASDialogWindow(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(medium_gray),
         contentAlignment = Alignment.Center
