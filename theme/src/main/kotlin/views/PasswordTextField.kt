@@ -1,6 +1,7 @@
 package views
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -18,17 +19,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.modifier.modifierLocalOf
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.droidhen.formalautosim.presentation.theme.blue_one
@@ -159,12 +161,20 @@ fun FASDefaultTextField(
 fun FASImmutableTextField(
     text: String,
     modifier: Modifier = Modifier,
+    fontSize: TextUnit = 24.sp
 ) {
-    Text(
-        text = text,
-        modifier = modifier.clip(RoundedCornerShape(8.dp)).border(3.dp, MaterialTheme.colorScheme.primary,RoundedCornerShape(8.dp)).padding(top = 8.dp),
-        style = TextStyle(color = blue_one, fontSize = 20.sp),
-        color = MaterialTheme.colorScheme.tertiary,
-        textAlign = TextAlign.Center,
-    )
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = TextStyle(color = blue_one, fontSize = fontSize),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.tertiary,
+        )
+    }
 }

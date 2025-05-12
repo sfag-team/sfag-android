@@ -4,9 +4,15 @@ import androidx.compose.runtime.Composable
 import com.droidhen.formalautosim.core.entities.states.State
 import com.droidhen.formalautosim.core.entities.transitions.Transition
 
-class FiniteMachine(name: String = "Untitled") : Machine(name) {
+class FiniteMachine(
+    name: String = "Untitled", version: Int = 1, states: MutableList<State> = mutableListOf(),
+    transitions: MutableList<Transition> = mutableListOf(), savedInputs: MutableList<StringBuilder> = mutableListOf()
+) : Machine(
+    name, version,
+    machineType = MachineType.Finite,
+    states, transitions, savedInputs
+) {
     override var currentState: Int? = null
-    override val machineType = MachineType.Finite
 
     @Composable
     override fun calculateTransition(onAnimationEnd: () -> Unit) {
@@ -108,7 +114,8 @@ class FiniteMachine(name: String = "Untitled") : Machine(name) {
                 }
 
                 val currentChar = input[path.inputIndex]
-                val possibleTransitions = transitions.filter { it.startState == path.currentState?.index && it.name.first() == currentChar }
+                val possibleTransitions =
+                    transitions.filter { it.startState == path.currentState?.index && it.name.first() == currentChar }
 
                 if (possibleTransitions.isEmpty()) {
                     finishedPaths.add(path.history + path.currentState?.name)
@@ -118,7 +125,14 @@ class FiniteMachine(name: String = "Untitled") : Machine(name) {
 
                 for (transition in possibleTransitions) {
                     val nextState = states.first { it.index == transition.endState }
-                    nextPaths.add(Path(path.history + path.currentState?.name, nextState, path.inputIndex + 1, true))
+                    nextPaths.add(
+                        Path(
+                            path.history + path.currentState?.name,
+                            nextState,
+                            path.inputIndex + 1,
+                            true
+                        )
+                    )
                 }
             }
 

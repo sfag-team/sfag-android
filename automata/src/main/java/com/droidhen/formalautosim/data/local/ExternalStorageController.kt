@@ -6,9 +6,15 @@ import android.content.Intent
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.compose.ui.geometry.Offset
 import androidx.core.content.FileProvider
+import com.droidhen.formalautosim.core.entities.states.State
+import com.droidhen.formalautosim.core.entities.transitions.Transition
+import org.w3c.dom.Element
+import org.w3c.dom.Node
 import java.io.File
 import java.io.FileOutputStream
+import javax.xml.parsers.DocumentBuilderFactory
 
 class ExternalStorageController {
 
@@ -66,4 +72,55 @@ class ExternalStorageController {
         }
 
     }
+
+    fun parseJff(jffXml: String): Pair<List<State>, List<Transition>> {
+        val states = mutableListOf<State>()
+        val transitions = mutableListOf<Transition>()
+
+        val docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+        val inputStream = jffXml.byteInputStream()
+        val doc = docBuilder.parse(inputStream)
+        val automaton = doc.getElementsByTagName("automaton").item(0)
+
+        val nodeList = automaton.childNodes
+        for (i in 0 until nodeList.length) {
+            val node = nodeList.item(i)
+
+            if (node.nodeType != Node.ELEMENT_NODE) continue
+            val element = node as Element
+
+            when (element.tagName) {
+                "state" -> {
+                    val id = element.getAttribute("id").toInt()
+                    val name = element.getAttribute("name")
+                    val x = element.getElementsByTagName("x").item(0).textContent.toFloatOrNull() ?: 0f
+                    val y = element.getElementsByTagName("y").item(0).textContent.toFloatOrNull() ?: 0f
+                    val isInitial = element.getElementsByTagName("initial").length > 0
+                    val isFinal = element.getElementsByTagName("final").length > 0
+
+                    states.add(
+                        State(
+                            finite = isFinal,
+                            initial = isInitial,
+                            index = id,
+                            name = name,
+                            isCurrent = false,
+                            position = Offset(x, y)
+                        )
+                    )
+                }
+
+                "transition" -> {
+                    val from = element.getElementsByTagName("from").item(0).textContent.toInt()
+                    val to = element.getElementsByTagName("to").item(0).textContent.toInt()
+                    val read = element.getElementsByTagName("read").item(0)?.textContent ?: ""
+
+                    transitions.add(Transition(read, from, to))
+                }
+            }
+        }
+
+        return Pair(states, transitions)
+    }
+
 }

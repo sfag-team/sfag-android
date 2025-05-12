@@ -81,6 +81,7 @@ import views.FASButton
 import com.droidhen.formalautosim.utils.enums.EditMachineStates
 import com.droidhen.formalautosim.utils.extensions.drawArrow
 import views.FASImmutableTextField
+import views.ItemSpecificationIcon
 import kotlin.math.atan
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -112,20 +113,18 @@ fun Modifier.onTapFindMyString(
 
 
 @Suppress("UNREACHABLE_CODE")
-abstract class Machine(var name: String = "Untitled") {
-    var version = 1
+abstract class Machine(val name: String, var version:Int, val machineType: MachineType, val states:MutableList<State>, protected val transitions:MutableList<Transition>, val savedInputs:MutableList<StringBuilder>) {
+
     private lateinit var density: Density
     private lateinit var context: Context
     private var globalCanvasPosition: LayoutCoordinates? = null
-    val states = mutableListOf<State>()
-    protected val transitions = mutableListOf<Transition>()
     var input = StringBuilder()
-    private val savedInputs = mutableListOf<StringBuilder>()
+
     private var offsetXGraph = 0f
     private var offsetYGraph = 0f
     private var editMode = EditMachineStates.ADD_STATES
     abstract var currentState: Int?
-    abstract val machineType: MachineType
+
 
     /**
      * return all paths for all exists transitions
@@ -315,7 +314,7 @@ abstract class Machine(var name: String = "Untitled") {
     /**
      * @returns state with the same index, if it exists, else - returns null
      */
-    fun getStateByIndex(index: Int?): State = states.filter {
+    fun getStateByIndex(index: Int): State = states.filter {
         it.index == index
     }[0]
 
@@ -583,7 +582,9 @@ abstract class Machine(var name: String = "Untitled") {
     }
 
     private fun setInitialStateAsCurrent() {
-        getStateByIndex(currentState).isCurrent = false
+        currentState?.let{
+            getStateByIndex(it).isCurrent = false
+        }
         val initialState = states.filter { it.initial }
         if (initialState.isNotEmpty()) {
             initialState[0].isCurrent = true
@@ -1224,44 +1225,6 @@ abstract class Machine(var name: String = "Untitled") {
                     requirementText = "",
                     onTextChange = { name = it }) { true }
             }
-        }
-    }
-
-    @Composable
-    private fun RowScope.ItemSpecificationIcon(
-        icon: Int,
-        text: String,
-        isActive: Boolean,
-        onClick: () -> Unit
-    ) {
-        Spacer(modifier = Modifier.weight(1f))
-        Column(
-            modifier = Modifier
-                .fillMaxHeight()
-                .weight(3.5f)
-                .clip(MaterialTheme.shapes.medium)
-                .background(if (isActive) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
-                .border(
-                    3.dp,
-                    MaterialTheme.colorScheme.primary,
-                    shape = MaterialTheme.shapes.medium
-                )
-                .clickable {
-                    onClick()
-                },
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
-        ) {
-            Icon(
-                painter = painterResource(id = icon),
-                contentDescription = stringResource(
-                    R.string.initial_state
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp)
-            )
-            Text(text = text)
         }
     }
 

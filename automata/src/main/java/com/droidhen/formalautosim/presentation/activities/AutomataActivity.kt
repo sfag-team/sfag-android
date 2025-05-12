@@ -41,7 +41,7 @@ class AutomataActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        testFiniteStateMachine()
+
 
         setContent {
             FormalAutoSimTheme {
@@ -57,11 +57,18 @@ class AutomataActivity : ComponentActivity() {
                     ) {
                         NavHost(
                             navController = this@apply,
-                            startDestination = AutomataDestinations.AUTOMATA.route,
+                            startDestination = AutomataDestinations.AUTOMATA_LIST.route,
                             modifier = Modifier.weight(9f)
                         ) {
                             composable(route = AutomataDestinations.AUTOMATA.route) {
                                 AutomataScreen()
+                            }
+                            composable(route = AutomataDestinations.AUTOMATA_LIST.route){
+                                AutomataListScreen(navBack = {
+                                    //navigateToMainActivity()
+                                }) {
+                                    navigate(AutomataDestinations.AUTOMATA.route)
+                                }
                             }
                             composable(route = AutomataDestinations.COMMUNITY.route) {
                                 CommunityScreen()
@@ -82,51 +89,6 @@ class AutomataActivity : ComponentActivity() {
         hideStatusBar.intValue += 1
     }
 
-    private fun testFiniteStateMachine(){
-        val firstState =  State(
-            finite = true,
-            initial = false,
-            index = 1,
-            name = "q1",
-            isCurrent = false,
-            position = Offset(100f, 100f)
-        )
-
-        val secondState = State(
-            finite = false,
-            initial = false,
-            index = 2,
-            name = "q2",
-            position = Offset(280f, 300f)
-        )
-
-        val thirdState = State(
-            finite = false,
-            initial = true,
-            index = 3,
-            name = "q0",
-            position = Offset(280f, 100f)
-        )
-
-        TestMachine.addNewState(
-           firstState
-        )
-        TestMachine.addNewState(
-            secondState
-        )
-        TestMachine.addNewState(
-            thirdState
-        )
-        TestMachine.addTransition(Transition(name = "a", startState  =1, endState = 2))
-        TestMachine.addTransition(Transition(name = "b",startState = 2, endState =  1))
-        TestMachine.addTransition(Transition(name = "c", startState = 1, endState = 1))
-        TestMachine.addTransition(Transition(name = "a", startState = 3, endState = 1))
-        TestMachine.addTransition(Transition(name = "a", startState = 3, endState = 3))
-        TestMachine.input.append("a")
-        for(i in 0..2) TestMachine.input.append("abc")
-
-    }
-
     @SuppressLint("ComposableNaming")
     @Composable
     private fun hideSystemBars() {
@@ -136,7 +98,4 @@ class AutomataActivity : ComponentActivity() {
         }
     }
 
-    companion object {
-        val TestMachine = FiniteMachine()
-    }
 }

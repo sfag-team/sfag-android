@@ -4,10 +4,10 @@ import android.content.Context
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import com.droidhen.formalautosim.core.entities.User
-import com.droidhen.formalautosim.data.local.SQLite
-import com.droidhen.formalautosim.data.remote.Firebase
-import com.droidhen.formalautosim.data.remote.InternetTool
+import com.droidhen.formalautosim.core.entities.AutomataUser
+import com.droidhen.formalautosim.data.local.AutomataSQLite
+import com.droidhen.formalautosim.data.remote.AutomataFirebase
+import com.droidhen.formalautosim.data.remote.AutomataInternetTool
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -15,12 +15,12 @@ import javax.inject.Inject
 @HiltViewModel
 class SplashViewModel @Inject constructor(
     @ApplicationContext context: Context,
-    private val firebase: Firebase,
-    private val sqLite: SQLite,
-    private val internet: InternetTool
+    private val firebase: AutomataFirebase,
+    private val sqLite: AutomataSQLite,
+    private val internet: AutomataInternetTool
 ) : ViewModel() {
     var isSignIn = true
-    private val user = User()
+    private val user = AutomataUser()
     private var isPasswordShowed = mutableStateOf(false)
     private val password = mutableStateOf("")
     private val email = mutableStateOf("")
