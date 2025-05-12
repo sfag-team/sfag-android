@@ -33,8 +33,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.droidhen.automata.R
 import com.droidhen.formalautosim.core.entities.machines.Machine
+import com.droidhen.formalautosim.core.viewModel.AutomataViewModel
+import com.droidhen.formalautosim.core.viewModel.CurrentMachine
 import com.droidhen.formalautosim.data.local.ExternalStorageController
 import com.droidhen.formalautosim.presentation.activities.AutomataActivity
 import com.droidhen.formalautosim.presentation.theme.light_blue
@@ -46,6 +49,11 @@ import views.FASImmutableTextField
 
 @Composable
 fun AutomataScreen() {
+    val viewModel:AutomataViewModel = hiltViewModel()
+    val automata by remember {
+        mutableStateOf(CurrentMachine.machine!!)
+    }
+
     val recompose = remember {
         mutableIntStateOf(0)
     }
@@ -102,11 +110,11 @@ fun AutomataScreen() {
                     FASButton(text = "Export") {
                         exportFileWindow = true
                     }
-                    FASButton(text = "Save", enabled = false) {
-
+                    FASButton(text = "Save") {
+                        viewModel.saveMachine(automata)
                     }
                     FASButton(text = "Share") {
-                        ExternalStorageController.shareJffFile(context = context, jffContent = AutomataActivity.TestMachine.exportToJFF(), fileName = AutomataActivity.TestMachine.name)
+                        ExternalStorageController.shareJffFile(context = context, jffContent = automata.exportToJFF(), fileName = automata.name)
                     }
                 }
                 Box(
@@ -124,14 +132,14 @@ fun AutomataScreen() {
                     when (currentScreenState.value) {
                         MainScreenStates.SIMULATING -> {
                             key(recompose.intValue) {
-                                AutomataActivity.TestMachine.SimulateMachine()
+                                automata.SimulateMachine()
                             }
                         }
 
                         MainScreenStates.SIMULATION_RUN -> {
                             key(animation.intValue) {
                                 if (isLockedAnimation.not()) {
-                                    AutomataActivity.TestMachine.calculateTransition {
+                                    automata.calculateTransition {
                                         isLockedAnimation = true
                                         recompose.intValue++
                                         currentScreenState.value = MainScreenStates.SIMULATING
@@ -139,18 +147,18 @@ fun AutomataScreen() {
                                 }
                             }
                             key(recompose.intValue) {
-                                AutomataActivity.TestMachine.SimulateMachine()
+                                automata.SimulateMachine()
                             }
                         }
 
                         MainScreenStates.EDITING_INPUT -> {
-                            AutomataActivity.TestMachine.EditingInput {
+                            automata.EditingInput {
                                 currentScreenState.value = MainScreenStates.SIMULATING
                             }
                         }
 
                         MainScreenStates.EDITING_MACHINE -> {
-                            AutomataActivity.TestMachine.EditingMachine()
+                            automata.EditingMachine()
                         }
                     }
 
@@ -211,7 +219,7 @@ fun AutomataScreen() {
 
                 Spacer(modifier = Modifier.size(24.dp))
 
-                BottomScreenPart(currentScreenState)
+                BottomScreenPart(currentScreenState, automata)
 
                 Spacer(modifier = Modifier.size(30.dp))
             }
@@ -219,7 +227,7 @@ fun AutomataScreen() {
 
         key(exportFileWindow) {
             if (exportFileWindow) {
-                ExportWindow(AutomataActivity.TestMachine){
+                ExportWindow(automata){
                     exportFileWindow = false
                 }
             }
@@ -232,22 +240,13 @@ fun AutomataScreen() {
  * Shows additional info for related screen state  (ex.: for simulating it shows derivation tree and shows interface for multipling testing)
  */
 @Composable
-private fun BottomScreenPart(currentScreenState: MutableState<MainScreenStates>) {
+private fun BottomScreenPart(currentScreenState: MutableState<MainScreenStates>, automata: Machine) {
     when (currentScreenState.value) {
         MainScreenStates.SIMULATING -> {
-            AutomataActivity.TestMachine.DerivationTree()
+            automata.DerivationTree()
         }
 
-        MainScreenStates.SIMULATION_RUN -> {
-        }
-
-        MainScreenStates.EDITING_INPUT -> {
-            // MatrixTesting()
-        }
-
-        MainScreenStates.EDITING_MACHINE -> {
-            //TODO()
-        }
+        else -> {}
     }
 }
 
