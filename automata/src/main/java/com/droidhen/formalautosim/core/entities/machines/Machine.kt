@@ -763,15 +763,17 @@ abstract class Machine(
             .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }) {
             paths.forEach { path ->
                 val controlPoint = transitionLocalList[paths.indexOf(path)].controlPoint!!
+                val transition = transitionLocalList[paths.indexOf(path)]
+
                 drawArrow(path!!, borderColor)
                 drawContext.canvas.nativeCanvas.apply {
                     drawText(
-                        transitionLocalList[paths.indexOf(path)].name,
+                        "${transition.name}${if(machineType==MachineType.Pushdown)";${(transition as PushDownTransition).pop};${transition.pull}" else ""}",
                         controlPoint.x,
                         controlPoint.y,
                         android.graphics.Paint().apply {
                             color = android.graphics.Color.BLACK
-                            textSize = 40f
+                            textSize = 60f
                             textAlign = android.graphics.Paint.Align.CENTER
                         }
                     )
