@@ -2,6 +2,7 @@ package com.droidhen.formalautosim.presentation.activities
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -23,6 +24,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.droidhen.formalautosim.presentation.navigation.AppDestinations
+import com.droidhen.formalautosim.presentation.navigation.screens.ExamplesScreen
 import com.droidhen.formalautosim.presentation.navigation.screens.MainScreen
 import com.droidhen.formalautosim.presentation.theme.FormalAutoSimTheme
 import com.droidhen.formalautosim.presentation.views.BottomBar
@@ -56,7 +58,19 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.weight(9f)
                         ) {
                             composable(route = AppDestinations.MAIN.route) {
-                                MainScreen(navToGrammar = {navToGrammarActivity()}, navToAutomata = {navToAutomataActivity()})
+                                MainScreen(navToGrammar = {navToGrammarActivity(null)}, navToAutomata = {navToAutomataActivity(null)}, navToExamplesScreen = {
+                                    navigate(AppDestinations.EXAMPLES.route)
+                                })
+                            }
+                            composable(route = AppDestinations.EXAMPLES.route){
+                                ExamplesScreen(navBack = {
+                                    navigate(AppDestinations.MAIN.route)
+                                },
+                                    navToGrammar = { grammarUri ->
+                                        navToGrammarActivity(grammarUri)
+                                    }, navToAutomata = { automataUri ->
+                                        navToAutomataActivity(automataUri)
+                                    })
                             }
                         }
                     }
@@ -79,13 +93,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun navToGrammarActivity(){
+    private fun navToGrammarActivity(uri: Uri?){
         val intent = Intent(this, GrammarActivity::class.java)
+        uri?.apply { intent.putExtra("example uri", this) }
         startActivity(intent)
     }
 
-    private fun navToAutomataActivity(){
+    private fun navToAutomataActivity(uri: Uri?){
         val intent = Intent(this, AutomataActivity::class.java)
+        uri?.apply { intent.putExtra("example uri", this) }
         startActivity(intent)
     }
 }

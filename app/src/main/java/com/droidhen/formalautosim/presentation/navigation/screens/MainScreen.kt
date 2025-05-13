@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import views.FASButton
 
 @Composable
-fun MainScreen(navToAutomata: () -> Unit, navToGrammar: () -> Unit) {
+fun MainScreen(navToAutomata: () -> Unit, navToGrammar: () -> Unit, navToExamplesScreen: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -32,6 +32,10 @@ fun MainScreen(navToAutomata: () -> Unit, navToGrammar: () -> Unit) {
         Spacer(modifier = Modifier.height(100.dp))
         FASButton(text = "navigate to Grammar simulator", modifier = Modifier.width(280.dp)) {
             navToGrammar()
+        }
+        Spacer(modifier = Modifier.height(100.dp))
+        FASButton(text = "Examples", modifier = Modifier.width(200.dp)) {
+            navToExamplesScreen()
         }
     }
 }

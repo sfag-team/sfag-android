@@ -4,4 +4,5 @@ enum class AppDestinations (val route:String) {
     SPLASH("splash screen"),
     SIGN_IN("sign-in screen"),
     MAIN("main screen"),
+    EXAMPLES("examples screen")
 }
