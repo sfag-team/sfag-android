@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.droidhen.automata.R
 import com.droidhen.formalautosim.core.entities.machines.Machine
+import com.droidhen.formalautosim.core.entities.machines.MachineType
 import com.droidhen.formalautosim.core.viewModel.AutomataViewModel
 import com.droidhen.formalautosim.core.viewModel.CurrentMachine
 import com.droidhen.formalautosim.data.local.ExternalStorageController
@@ -120,7 +121,7 @@ fun AutomataScreen() {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(500.dp)
+                        .height(if(automata.machineType==MachineType.Finite)500.dp else 600.dp)
                         .background(MaterialTheme.colorScheme.surface)
                         .border(
                             2.dp,

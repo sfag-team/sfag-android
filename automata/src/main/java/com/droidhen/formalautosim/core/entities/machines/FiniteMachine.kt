@@ -205,6 +205,37 @@ class FiniteMachine(
         return false
     }
 
+    override fun exportToJFF(): String {
+        val builder = StringBuilder()
+        builder.appendLine("""<?xml version="1.0" encoding="UTF-8" standalone="no"?>""")
+        builder.appendLine("<structure>")
+        builder.appendLine("    <type>${machineType}</type>")
+        builder.appendLine("    <automaton>")
+
+
+        for (state in states) {
+            builder.appendLine("""        <state id="${state.index}" name="${state.name}">""")
+            builder.appendLine("""            <x>${state.position.x}</x>""")
+            builder.appendLine("""            <y>${state.position.y}</y>""")
+            if (state.initial) builder.appendLine("            <initial/>")
+            if (state.finite) builder.appendLine("            <final/>")
+            builder.appendLine("        </state>")
+        }
+
+        for (transition in transitions) {
+            builder.appendLine("        <transition>")
+            builder.appendLine("            <from>${transition.startState}</from>")
+            builder.appendLine("            <to>${transition.endState}</to>")
+            builder.appendLine("            <read>${transition.name}</read>")
+            builder.appendLine("        </transition>")
+        }
+
+        builder.appendLine("    </automaton>")
+        builder.appendLine("</structure>")
+
+        return builder.toString()
+    }
+
     private fun getListOfAppropriateTransitions(startState: State): List<Transition> {
         return transitions.filter {
             it.startState == startState.index && input.startsWith(it.name)

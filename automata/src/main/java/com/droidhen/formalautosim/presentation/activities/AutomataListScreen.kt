@@ -39,6 +39,7 @@ import com.droidhen.formalautosim.core.entities.machines.FiniteMachine
 import com.droidhen.formalautosim.core.entities.machines.Machine
 import com.droidhen.formalautosim.core.entities.machines.MachineType
 import com.droidhen.formalautosim.core.entities.machines.PushDownMachine
+import com.droidhen.formalautosim.core.entities.machines.PushDownTransition
 import com.droidhen.formalautosim.core.viewModel.AutomataViewModel
 import com.droidhen.formalautosim.core.viewModel.CurrentMachine
 import com.droidhen.formalautosim.data.local.ExternalStorageController
@@ -74,7 +75,7 @@ fun AutomataListScreen(navBack: () -> Unit, navToAutomata: () -> Unit) {
                     name = "imported finite",
                     states = states.toMutableList(),
                     transitions = transitions.toMutableList()
-                ) else PushDownMachine(name = "imported pushdown", states =states.toMutableList(), transitions =transitions.toMutableList() )
+                ) else PushDownMachine(name = "imported pushdown", states =states.toMutableList(), transitions =transitions.toMutableList() as MutableList<PushDownTransition> )
                 viewModel.saveMachine(machine = machine)
                 CurrentMachine.machine = machine
                 navToAutomata()

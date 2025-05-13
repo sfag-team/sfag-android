@@ -15,6 +15,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -74,6 +75,7 @@ import com.droidhen.formalautosim.core.entities.states.State
 import com.droidhen.formalautosim.core.entities.transitions.Transition
 import com.droidhen.formalautosim.presentation.theme.light_blue
 import com.droidhen.formalautosim.presentation.theme.perlamutr_white
+import com.droidhen.formalautosim.presentation.views.BottomBar
 import views.DefaultFASDialogWindow
 import views.FASDefaultTextField
 import views.DropdownSelector
@@ -113,7 +115,14 @@ fun Modifier.onTapFindMyString(
 
 
 @Suppress("UNREACHABLE_CODE")
-abstract class Machine(val name: String, var version:Int, val machineType: MachineType, val states:MutableList<State>, protected val transitions:MutableList<Transition>, val savedInputs:MutableList<StringBuilder>) {
+abstract class Machine(
+    val name: String,
+    var version: Int,
+    val machineType: MachineType,
+    val states: MutableList<State>,
+    protected val transitions: MutableList<Transition>,
+    val savedInputs: MutableList<StringBuilder>
+) {
 
     private lateinit var density: Density
     private lateinit var context: Context
@@ -347,7 +356,12 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         Transitions(dragModifier = dragModifier, offsetY, offsetX, onTransitionClick = null)
         States(dragModifier = dragModifier, null, offsetY, offsetX, onStateClick = {})
         InputBar()
+        if(machineType == MachineType.Pushdown){
+            BottomPushDownBar(this as PushDownMachine)
+        }
     }
+
+
 
     @SuppressLint("DefaultLocale", "UnrememberedMutableState")
     @Composable
@@ -582,7 +596,7 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
     }
 
     private fun setInitialStateAsCurrent() {
-        currentState?.let{
+        currentState?.let {
             getStateByIndex(it).isCurrent = false
         }
         val initialState = states.filter { it.initial }
@@ -787,6 +801,25 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         }
         if (iterations == 0) {
             transitions.add(Transition(name, startState.index, endState.index))
+        }
+    }
+
+    private fun addNewTransition(
+        name: String,
+        startState: State,
+        endState: State,
+        pop: String,
+        pull: String
+    ) {
+        var iterations = 0
+        transitions.filter { transition ->
+            transition.startState == startState.index && transition.endState == endState.index
+        }.forEach {
+            iterations++
+            it.name += name
+        }
+        if (iterations == 0) {
+            transitions.add(PushDownTransition(name, startState.index, endState.index, pop, pull))
         }
     }
 
@@ -1041,26 +1074,54 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         var endState: State by remember {
             mutableStateOf(end)
         }
+        var pop by remember {
+            mutableStateOf("")
+        }
+        var pull by remember {
+            mutableStateOf("")
+        }
 
         DefaultFASDialogWindow(
             title = if (nameParam == null) stringResource(R.string.new_transition) else "editing transition: $name",
             onDismiss = { onFinished() },
             onConfirm = {
                 if (nameParam == null) {
-                    addNewTransition(
-                        name = name,
-                        startState = startState,
-                        endState = endState
-                    )
+                    if (machineType == MachineType.Finite) {
+                        addNewTransition(
+                            name = name,
+                            startState = startState,
+                            endState = endState
+                        )
+                    } else {
+                        addNewTransition(
+                            name = name,
+                            startState = startState,
+                            endState = endState,
+                            pop = pop,
+                            pull = pull
+                        )
+                    }
                 } else {
-                    transitions.filter { transition ->
-                        transition.startState == startState.index && transition.endState == endState.index
-                    }.forEach {
-                        it.name = name
+                    if (machineType == MachineType.Finite) {
+                        transitions.filter { transition ->
+                            transition.startState == startState.index && transition.endState == endState.index
+                        }.forEach {
+                            it.name = name
+                        }
+                    } else {
+                        transitions.filter { transition ->
+                            transition.startState == startState.index && transition.endState == endState.index
+                        }.forEach {
+                            it as PushDownTransition
+                            it.name = name
+                            it.pop = pop
+                            it.pull = pull
+                        }
                     }
                 }
                 onFinished()
-            }) {
+            },
+            modifier = if(machineType==MachineType.Pushdown)Modifier.fillMaxHeight(1.2f) else Modifier) {
             Row(
                 modifier = Modifier.fillMaxWidth(0.8f),
                 verticalAlignment = CenterVertically
@@ -1103,6 +1164,36 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                     defaultSelectedIndex = states.indexOf(end)
                 ) { selectedItem ->
                     endState = selectedItem as State
+                }
+            }
+
+            if (machineType == MachineType.Pushdown) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(64.dp), verticalAlignment = CenterVertically, horizontalArrangement = Arrangement.Center
+                ) {
+                    FASDefaultTextField(
+                        hint = "pop",
+                        value = pop,
+                        requirementText = "",
+                        onTextChange = { pop = it },
+                        modifier = Modifier.width(84.dp)
+                    ) {
+                        true
+                    }
+                    Spacer(modifier = Modifier.width(24.dp))
+
+                    FASDefaultTextField(
+                        hint = "push",
+                        value = pull,
+                        requirementText = "",
+                        onTextChange = { pull = it },
+                        modifier = Modifier.width(84.dp)
+                    ) {
+                        true
+                    }
                 }
             }
         }
@@ -1302,38 +1393,9 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         }
     }
 
-    abstract fun canReachFinalState(input:StringBuilder) : Boolean
+    abstract fun canReachFinalState(input: StringBuilder): Boolean
 
-    fun exportToJFF(): String {
-        val builder = StringBuilder()
-        builder.appendLine("""<?xml version="1.0" encoding="UTF-8" standalone="no"?>""")
-        builder.appendLine("<structure>")
-        builder.appendLine("    <type>${machineType}</type>")
-        builder.appendLine("    <automaton>")
-
-
-        for (state in states) {
-            builder.appendLine("""        <state id="${state.index}" name="${state.name}">""")
-            builder.appendLine("""            <x>${state.position.x}</x>""")
-            builder.appendLine("""            <y>${state.position.y}</y>""")
-            if (state.initial) builder.appendLine("            <initial/>")
-            if (state.finite) builder.appendLine("            <final/>")
-            builder.appendLine("        </state>")
-        }
-
-        for (transition in transitions) {
-            builder.appendLine("        <transition>")
-            builder.appendLine("            <from>${transition.startState}</from>")
-            builder.appendLine("            <to>${transition.endState}</to>")
-            builder.appendLine("            <read>${transition.name}</read>")
-            builder.appendLine("        </transition>")
-        }
-
-        builder.appendLine("    </automaton>")
-        builder.appendLine("</structure>")
-
-        return builder.toString()
-    }
+    abstract fun exportToJFF(): String
 
     private fun getStatesByClick(clickOffset: Offset): State? {
         var result: State? = null
