@@ -41,7 +41,7 @@ class Grammar : ViewModel() {
             return
         }
         _rules.value = _rules.value?.plus(newRule)
-        grammarType()
+        grammarType(newRule)
         updateSymbols()
     }
 
@@ -49,7 +49,9 @@ class Grammar : ViewModel() {
     fun removeRule(rule: GrammarRule) {
         val currentRules = _rules.value ?: emptyList()
         _rules.value = currentRules.filter { it != rule }
-        grammarType()
+        for(r in currentRules){
+            grammarType(r)
+        }
         updateSymbols()
     }
 
@@ -57,9 +59,10 @@ class Grammar : ViewModel() {
         val currentRules = _rules.value?.toMutableList() ?: return
         val index = currentRules.indexOf(oldRule)
         if (index != -1) {
-            currentRules[index] = GrammarRule(newLeft, newRight)
+            val newRule = GrammarRule(newLeft, newRight)
+            currentRules[index] = newRule
             _rules.value = currentRules
-            grammarType()
+            grammarType(newRule)
             updateSymbols()
         }
     }
@@ -91,7 +94,7 @@ class Grammar : ViewModel() {
                 }
             }
             for(symbol in rule.right){
-                if(symbol == '|'){
+                if(symbol == '|' || symbol == 'ε'){
                     continue
                 }else if (!symbol.isDigit() && symbol.isUpperCase()) {
                     nonTerminalsSet.add(symbol)
@@ -106,12 +109,12 @@ class Grammar : ViewModel() {
         _terminals.value = terminalsSet
     }
 
-    private fun grammarType() {
-        val rules = _rules.value ?: emptyList()
+    private fun grammarType(rule: GrammarRule) {
+
         _grammarType.value = when {
-            testForReg(rules) -> GrammarType.REGULAR
-            testForContextFree(rules) -> GrammarType.CONTEXT_FREE
-            testForContextSens(rules) -> GrammarType.CONTEXT_SENSITIVE
+            isRegular(rule) -> GrammarType.REGULAR
+            isContextFree(rule) -> GrammarType.CONTEXT_FREE
+            isContextSensitive(rule) -> GrammarType.CONTEXT_SENSITIVE
             else -> GrammarType.UNRESTRICTED
         }
     }

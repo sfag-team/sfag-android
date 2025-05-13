@@ -9,37 +9,24 @@ enum class GrammarType(private val displayName: String) {
     override fun toString(): String = displayName
 }
 
-
-fun testForReg(rules: List<GrammarRule>): Boolean{
-    for(rule in rules){
-        if(rule.left.length == 1 && rule.left.first().isUpperCase()){
-            if(rule.right.length <= 2){
-                if(rule.right.length == 1 && (rule.right.first().isLowerCase() || rule.right.first().isDigit() )) {
-                    continue
-                }else if(rule.right[0].isUpperCase().xor(rule.right[1].isUpperCase())){
-                    continue
-                }
+fun isRegular(rule: GrammarRule): Boolean {
+    if (rule.left.length == 1 && rule.left.first().isUpperCase()) {
+        if (rule.right.length <= 2) {
+            if (rule.right.length == 1 && (rule.right.first().isLowerCase() || rule.right.first().isDigit())) {
+                return true
+            } else if (rule.right.length == 2 &&
+                rule.right[0].isUpperCase().xor(rule.right[1].isUpperCase())) {
+                return true
             }
         }
-        return false
     }
-    return true
+    return false
 }
 
-fun testForContextFree(rules: List<GrammarRule>): Boolean{
-    for(rule in rules){
-        if (rule.left.length != 1 || !rule.left.first().isUpperCase()) {
-            return false
-        }
-    }
-    return true
+fun isContextFree(rule: GrammarRule): Boolean {
+    return rule.left.length == 1 && rule.left.first().isUpperCase()
 }
 
-fun testForContextSens(rules: List<GrammarRule>): Boolean{
-    for (rule in rules){
-        if(rule.right.length < rule.left.length){
-            return false
-        }
-    }
-    return true
+fun isContextSensitive(rule: GrammarRule): Boolean {
+    return rule.right.length >= rule.left.length
 }

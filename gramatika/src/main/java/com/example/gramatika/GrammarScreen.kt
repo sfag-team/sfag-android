@@ -46,6 +46,12 @@ fun GrammarScreen(grammarViewModel: Grammar) {
             .padding(horizontal = 4.dp)
             .fillMaxWidth()
     ) {
+        Text(
+            text = "Rules",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
+        )
         // LazyColumn for displaying rules and input fields
         LazyColumn(
             modifier = Modifier.weight(1f) // Makes the LazyColumn fill remaining space
@@ -121,18 +127,37 @@ fun GrammarScreen(grammarViewModel: Grammar) {
         ) {
             Column(modifier = Modifier.fillMaxSize().padding(vertical = 8.dp)){
 
-                Text(
-                    text = "Type",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
-                Text(
-                    text = type.toString(),
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
+                Row(){
+                    Column(){
+                        Text(
+                            text = "Type",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        Text(
+                            text = type.toString(),
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Column(){
+                        Text(
+                            text = "Start symbol",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        Text(
+                            text = "S",
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                    }
+                }
                 Text(
                     text = "Non-terminals",
                     style = MaterialTheme.typography.bodyLarge,
@@ -209,7 +234,7 @@ fun DisplayRule(rule: GrammarRule, grammarViewModel: Grammar, finnishGrammar: Bo
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        }
+    }
 }
 
 
