@@ -22,7 +22,9 @@ class FiniteMachine(
         val possibleTransitions = getListOfAppropriateTransitions(startState)
         if (possibleTransitions.isEmpty()) return
 
-        val validTransition = possibleTransitions.firstOrNull { transition ->
+        var validTransition: Transition? = null
+
+        validTransition = possibleTransitions.firstOrNull { transition ->
             val nextInput = input.removePrefix(transition.name)
             val nextState = getStateByIndex(transition.endState)
 
@@ -40,7 +42,9 @@ class FiniteMachine(
             result
         }
 
-        if (validTransition == null) return
+        if (validTransition == null) {
+            validTransition = possibleTransitions.first()
+        }
 
         val endState = getStateByIndex(validTransition.endState)
         val newInputValue = input.removePrefix(validTransition.name).toString()
@@ -60,6 +64,7 @@ class FiniteMachine(
             }
         )
     }
+
 
 
     override fun convertMachineToKeyValue(): List<Pair<String, String>> {
@@ -173,7 +178,11 @@ class FiniteMachine(
         )
 
         var paths = mutableListOf<Path>()
-        val startState = states.firstOrNull { it.isCurrent }
+        var startState = states.firstOrNull { it.isCurrent }
+        if(startState==null){
+            setInitialStateAsCurrent()
+            startState = states.firstOrNull { it.isCurrent }
+        }
         if (startState != null) {
             paths.add(Path(startState, 0))
         }

@@ -49,7 +49,7 @@ import views.FASDefaultTextField
 import views.FASImmutableTextField
 
 @Composable
-fun AutomataScreen() {
+fun AutomataScreen(navBack: ()->Unit) {
     val viewModel:AutomataViewModel = hiltViewModel()
     val automata by remember {
         mutableStateOf(CurrentMachine.machine!!)
@@ -74,7 +74,8 @@ fun AutomataScreen() {
     BackHandler {
         when (currentScreenState.value) {
             MainScreenStates.SIMULATING -> {
-                currentScreenState.value = MainScreenStates.SIMULATION_RUN
+                viewModel.saveMachine(automata)
+                navBack()
             }
 
             MainScreenStates.SIMULATION_RUN -> {}
@@ -110,9 +111,6 @@ fun AutomataScreen() {
                 ) {
                     FASButton(text = "Export") {
                         exportFileWindow = true
-                    }
-                    FASButton(text = "Save") {
-                        viewModel.saveMachine(automata)
                     }
                     FASButton(text = "Share") {
                         ExternalStorageController.shareJffFile(context = context, jffContent = automata.exportToJFF(), fileName = automata.name)

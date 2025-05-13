@@ -29,7 +29,7 @@ class PushDownMachine(
     states: MutableList<State> = mutableListOf(),
     transitions: MutableList<PushDownTransition> = mutableListOf(),
     savedInputs: MutableList<StringBuilder> = mutableListOf(),
-    val symbolStack: MutableList<String> = mutableListOf()
+    val symbolStack: MutableList<Char> = mutableListOf()
 ) : Machine(
     name, version,
     machineType = MachineType.Pushdown, states, transitions as MutableList<Transition>, savedInputs
@@ -48,22 +48,20 @@ class PushDownMachine(
         val possibleTransitions = getListOfAppropriateTransitions(startState)
         if (possibleTransitions.isEmpty()) return
 
-        val validTransition = possibleTransitions.firstOrNull { transition ->
-            val nextInput = input.removePrefix(transition.name)
+        var validTransition: Transition? = null
 
+        validTransition = possibleTransitions.firstOrNull { transition ->
+            val nextInput = input.removePrefix(transition.name)
             val tempStack = symbolStack.toMutableList()
 
             if (transition is PushDownTransition) {
-                // POP
                 if (transition.pop.isNotEmpty()) {
                     val expectedTop = transition.pop.first()
-                    if (tempStack.isEmpty() || tempStack.last() != expectedTop.toString()) return@firstOrNull false
+                    if (tempStack.isEmpty() || tempStack.last() != expectedTop) return@firstOrNull false
                     tempStack.removeLast()
                 }
-
-                // PUSH
                 if (transition.pull.isNotEmpty()) {
-                    tempStack.add(transition.pull.first().toString())
+                    tempStack.add(transition.pull.first())
                 }
             }
 
@@ -83,7 +81,9 @@ class PushDownMachine(
             result
         }
 
-        if (validTransition == null) return
+        if (validTransition == null) {
+            validTransition = possibleTransitions.first()
+        }
 
         val endState = getStateByIndex(validTransition.endState)
         val newInputValue = input.removePrefix(validTransition.name).toString()
@@ -95,7 +95,7 @@ class PushDownMachine(
                 symbolStack.removeLast()
             }
             if (validTransition.pull.isNotEmpty()) {
-                symbolStack.add(validTransition.pull.first().toString())
+                symbolStack.add(validTransition.pull.first())
             }
         }
 
@@ -112,6 +112,7 @@ class PushDownMachine(
             }
         )
     }
+
 
 
     override fun convertMachineToKeyValue(): List<Pair<String, String>> {
@@ -239,7 +240,12 @@ class PushDownMachine(
             val symbolStack: List<Char>
         )
 
-        val startState = states.firstOrNull { it.isCurrent } ?: return false
+        var startState = states.firstOrNull { it.isCurrent }
+        if(startState==null){
+            setInitialStateAsCurrent()
+            startState = states.firstOrNull { it.isCurrent }
+        }
+        if(startState==null) return false
         var paths = mutableListOf(Path(startState, 0, emptyList()))
 
         while (paths.isNotEmpty()) {
@@ -341,7 +347,7 @@ class PushDownMachine(
             transition.startState == startState.index &&
                     input.startsWith(transition.name) &&
                     (transition !is PushDownTransition || transition.pop.isEmpty() ||
-                            (symbolStack.isNotEmpty() && symbolStack.last() == transition.pop.first().toString()))
+                            (symbolStack.isNotEmpty() && symbolStack.last() == transition.pop.first()))
         }
     }
 }
@@ -371,10 +377,10 @@ fun BottomPushDownBar(pushDownMachine: PushDownMachine) {
                     modifier = Modifier
                         .size(80.dp)
                         .clip(MaterialTheme.shapes.large)
-                        .border(2.dp, MaterialTheme.colorScheme.surface, MaterialTheme.shapes.large),
+                        .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = symbol, fontSize = 30.sp, color = MaterialTheme.colorScheme.tertiary)
+                    Text(text = symbol.toString(), fontSize = 30.sp, color = MaterialTheme.colorScheme.tertiary)
                 }
             }
         }

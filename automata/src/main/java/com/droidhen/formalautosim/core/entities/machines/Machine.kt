@@ -595,7 +595,7 @@ abstract class Machine(
 
     }
 
-    private fun setInitialStateAsCurrent() {
+    protected fun setInitialStateAsCurrent() {
         currentState?.let {
             getStateByIndex(it).isCurrent = false
         }
@@ -604,6 +604,7 @@ abstract class Machine(
             initialState[0].isCurrent = true
             currentState = initialState[0].index
         }
+        if(machineType==MachineType.Pushdown) (this as PushDownMachine).symbolStack.clear()
     }
 
     /**
@@ -1083,6 +1084,11 @@ abstract class Machine(
             mutableStateOf("")
         }
 
+        if(machineType==MachineType.Pushdown&&nameParam!=null){
+            pop = (transitions.first { it.name == nameParam } as PushDownTransition).pop
+            pull = (transitions.first { it.name == nameParam } as PushDownTransition).pull
+        }
+
         DefaultFASDialogWindow(
             title = if (nameParam == null) stringResource(R.string.new_transition) else "editing transition: $name",
             onDismiss = { onFinished() },
@@ -1123,7 +1129,7 @@ abstract class Machine(
                 }
                 onFinished()
             },
-            modifier = if(machineType==MachineType.Pushdown)Modifier.fillMaxHeight(1.2f) else Modifier) {
+            modifier = if(machineType==MachineType.Pushdown)Modifier.height(650.dp) else Modifier) {
             Row(
                 modifier = Modifier.fillMaxWidth(0.8f),
                 verticalAlignment = CenterVertically
@@ -1138,7 +1144,7 @@ abstract class Machine(
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .height(48.dp), verticalAlignment = CenterVertically
+                    .height(44.dp), verticalAlignment = CenterVertically
             ) {
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(text = "from")
@@ -1151,11 +1157,11 @@ abstract class Machine(
                     startState = selectedItem as State
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .height(48.dp), verticalAlignment = CenterVertically
+                    .height(44.dp), verticalAlignment = CenterVertically
             ) {
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(text = "to")
@@ -1170,31 +1176,34 @@ abstract class Machine(
             }
 
             if (machineType == MachineType.Pushdown) {
-                Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .height(64.dp), verticalAlignment = CenterVertically, horizontalArrangement = Arrangement.Center
+                        .height(96.dp), verticalAlignment = CenterVertically, horizontalArrangement = Arrangement.Center
                 ) {
-                    FASDefaultTextField(
-                        hint = "pop",
-                        value = pop,
-                        requirementText = "",
-                        onTextChange = { pop = it },
-                        modifier = Modifier.width(84.dp)
-                    ) {
-                        true
+                    Column(modifier = Modifier.width(96.dp).height(96.dp)){
+                        FASDefaultTextField(
+                            hint = "pop",
+                            value = pop,
+                            requirementText = "max length is 1",
+                            onTextChange = { pop = it },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            pop.length <= 1
+                        }
                     }
-                    Spacer(modifier = Modifier.width(24.dp))
 
-                    FASDefaultTextField(
-                        hint = "push",
-                        value = pull,
-                        requirementText = "",
-                        onTextChange = { pull = it },
-                        modifier = Modifier.width(84.dp)
-                    ) {
-                        true
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.width(96.dp).height(96.dp)) {
+                        FASDefaultTextField(
+                            hint = "push",
+                            value = pull,
+                            requirementText = "max length is 1",
+                            onTextChange = { pull = it },
+                            modifier = Modifier.width(84.dp)
+                        ) {
+                            pull.length <= 1
+                        }
                     }
                 }
             }
