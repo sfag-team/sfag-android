@@ -5,9 +5,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -32,7 +34,7 @@ class PushDownMachine(
     val symbolStack: MutableList<Char> = mutableListOf()
 ) : Machine(
     name, version,
-    machineType = MachineType.Pushdown, states, transitions as MutableList<Transition>, savedInputs
+    machineType = MachineType.Pushdown, states, transitions as MutableList<Transition>, savedInputs = savedInputs
 ) {
 
 
@@ -98,6 +100,7 @@ class PushDownMachine(
                 symbolStack.add(validTransition.pull.first())
             }
         }
+        currentTreePosition++
 
         AnimationOfTransition(
             start = startState.position,
@@ -127,8 +130,8 @@ class PushDownMachine(
         states.add(state)
     }
 
-    override fun getDerivationTreeElements(): List<Map<String?, Float>> {
-        val result = mutableListOf<MutableMap<String?, Float>>()
+    override fun getDerivationTreeElements(): List<List<TreeNode>> {
+        val allPaths = mutableListOf<List<String?>>()
 
         data class Path(
             val history: List<String?>,
@@ -138,38 +141,35 @@ class PushDownMachine(
             val alive: Boolean
         )
 
-        var paths = mutableListOf<Path>()
-        val startState = states.firstOrNull { it.isCurrent }
-        if (startState != null) {
-            paths.add(Path(listOf(null), startState, 0, emptyList(), true))
-        }
-
-        val finishedPaths = mutableListOf<List<String?>>()
+        val startStates = states.filter { it.initial }
+        var paths = startStates.map {
+            Path(listOf(null), it, 0, emptyList(), true)
+        }.toMutableList()
 
         while (paths.any { it.alive }) {
             val nextPaths = mutableListOf<Path>()
 
             paths.forEach { path ->
                 if (!path.alive) {
-                    nextPaths.add(Path(path.history + null, null, path.inputIndex, path.symbolStack, false))
+                    nextPaths.add(path.copy(history = path.history + null, currentState = null, alive = false))
                     return@forEach
                 }
 
-                if (path.inputIndex == input.length) {
-                    finishedPaths.add(path.history + path.currentState?.name)
-                    nextPaths.add(Path(path.history + null, null, path.inputIndex, path.symbolStack, false))
+                if (path.inputIndex == imuInput.length) {
+                    allPaths.add(path.history + path.currentState?.name)
+                    nextPaths.add(path.copy(history = path.history + null, currentState = null, alive = false))
                     return@forEach
                 }
 
-                val currentChar = input[path.inputIndex]
+                val currentChar = imuInput[path.inputIndex]
                 val currentStack = path.symbolStack.toMutableList()
 
                 val possibleTransitions = transitions.filter { it.startState == path.currentState?.index }
                     .filter { it.name.firstOrNull() == currentChar }
 
                 if (possibleTransitions.isEmpty()) {
-                    finishedPaths.add(path.history + path.currentState?.name)
-                    nextPaths.add(Path(path.history + null, null, path.inputIndex, currentStack, false))
+                    allPaths.add(path.history + path.currentState?.name)
+                    nextPaths.add(path.copy(history = path.history + null, currentState = null, alive = false))
                     return@forEach
                 }
 
@@ -193,11 +193,11 @@ class PushDownMachine(
 
                     nextPaths.add(
                         Path(
-                            path.history + path.currentState?.name,
-                            nextState,
-                            path.inputIndex + 1,
-                            newStack,
-                            true
+                            history = path.history + path.currentState?.name,
+                            currentState = nextState,
+                            inputIndex = path.inputIndex + 1,
+                            symbolStack = newStack,
+                            alive = true
                         )
                     )
                 }
@@ -206,31 +206,49 @@ class PushDownMachine(
             paths = nextPaths
         }
 
-        // пост-обработка
-        var maxDepth = 0
-        finishedPaths.forEach { maxDepth = maxOf(maxDepth, it.size) }
-
-        val normalizedPaths = finishedPaths.map { path ->
-            val mutablePath = path.toMutableList()
-            while (mutablePath.size < maxDepth) {
-                mutablePath.add(null)
-            }
-            mutablePath.toList()
+        val acceptedPaths = allPaths.filter { path ->
+            val last = path.lastOrNull()
+            last != null && states.any { it.name == last && it.finite }
         }
+
+        val maxDepth = allPaths.maxOfOrNull { it.size } ?: 0
+        val normalizedPaths = allPaths.map { path ->
+            buildList {
+                addAll(path)
+                while (size < maxDepth) add(null)
+            }
+        }
+
+        val tree = mutableListOf<List<TreeNode>>()
 
         for (level in 1 until maxDepth) {
-            val levelMap = mutableMapOf<String?, Float>()
-            for (path in normalizedPaths) {
-                if (path.size > level) {
-                    val stateName = path[level]
-                    levelMap[stateName] = (levelMap[stateName] ?: 0f) + 1f
-                }
+            val nodeMap = mutableMapOf<String?, MutableList<Int>>()
+
+            normalizedPaths.forEachIndexed { index, path ->
+                val stateName = path[level]
+                nodeMap.computeIfAbsent(stateName) { mutableListOf() }.add(index)
             }
-            result.add(levelMap)
+
+            val levelNodes = nodeMap.map { (stateName, indices) ->
+                val weight = indices.size.toFloat()
+                val isAccepted = indices.any { acceptedPaths.contains(normalizedPaths[it]) }
+                //Не корректно сравнивать по имени
+                val isCurrent = (stateName != null && states.firstOrNull { it.name == stateName }?.isCurrent == true)&&currentTreePosition==level
+
+                TreeNode(
+                    stateName = stateName,
+                    weight = weight,
+                    isAccepted = isAccepted,
+                    isCurrent = isCurrent
+                )
+            }
+
+            tree.add(levelNodes)
         }
 
-        return result
+        return tree
     }
+
 
 
     override fun canReachFinalState(input: StringBuilder): Boolean {
@@ -365,7 +383,7 @@ fun BottomPushDownBar(pushDownMachine: PushDownMachine) {
                 )
                 .clip(MaterialTheme.shapes.medium)
                 .background(MaterialTheme.colorScheme.surface)
-                .height(100.dp)
+                .height(80.dp)
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter),
             contentPadding = PaddingValues(10.dp),
@@ -375,13 +393,19 @@ fun BottomPushDownBar(pushDownMachine: PushDownMachine) {
             items(pushDownMachine.symbolStack) { symbol ->
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(60.dp)
                         .clip(MaterialTheme.shapes.large)
-                        .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large),
+                        .border(
+                            2.dp,
+                            MaterialTheme.colorScheme.tertiary,
+                            MaterialTheme.shapes.large
+                        )
+                        .background(MaterialTheme.colorScheme.background),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(text = symbol.toString(), fontSize = 30.sp, color = MaterialTheme.colorScheme.tertiary)
                 }
+                Spacer(modifier = Modifier.size(16.dp))
             }
         }
     }

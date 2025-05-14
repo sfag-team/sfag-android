@@ -119,7 +119,7 @@ fun AutomataScreen(navBack: ()->Unit) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(if(automata.machineType==MachineType.Finite)500.dp else 600.dp)
+                        .height(if (automata.machineType == MachineType.Finite) 500.dp else 600.dp)
                         .background(MaterialTheme.colorScheme.surface)
                         .border(
                             2.dp,
@@ -243,6 +243,9 @@ private fun BottomScreenPart(currentScreenState: MutableState<MainScreenStates>,
     when (currentScreenState.value) {
         MainScreenStates.SIMULATING -> {
             automata.DerivationTree()
+        }
+        MainScreenStates.EDITING_MACHINE -> {
+            automata.EditingMachineBottom()
         }
 
         else -> {}

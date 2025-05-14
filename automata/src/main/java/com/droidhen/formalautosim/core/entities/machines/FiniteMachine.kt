@@ -10,7 +10,7 @@ class FiniteMachine(
 ) : Machine(
     name, version,
     machineType = MachineType.Finite,
-    states, transitions, savedInputs
+    states, transitions, savedInputs = savedInputs
 ) {
     override var currentState: Int? = null
 
@@ -51,6 +51,7 @@ class FiniteMachine(
         input.clear()
         input.append(newInputValue)
 
+        currentTreePosition++
         AnimationOfTransition(
             start = startState.position,
             end = endState.position,
@@ -84,8 +85,8 @@ class FiniteMachine(
      * Each map it's a level of the tree, Key - name of transition, Float - number of leaves under this state
      *
      */
-    override fun getDerivationTreeElements(): List<Map<String?, Float>> {
-        val result = mutableListOf<MutableMap<String?, Float>>()
+    override fun getDerivationTreeElements(): List<List<TreeNode>> {
+        val allPaths = mutableListOf<List<String?>>()
 
         data class Path(
             val history: List<String?>,
@@ -94,36 +95,33 @@ class FiniteMachine(
             val alive: Boolean
         )
 
-        var paths = mutableListOf<Path>()
-        val startState = states.firstOrNull { it.isCurrent }
-        if (startState != null) {
-            paths.add(Path(listOf(null), startState, 0, true))
-        }
-
-        val finishedPaths = mutableListOf<List<String?>>()
+        val startStates = states.filter { it.initial }
+        var paths = startStates.map {
+            Path(listOf(null), it, 0, true)
+        }.toMutableList()
 
         while (paths.any { it.alive }) {
             val nextPaths = mutableListOf<Path>()
 
             paths.forEach { path ->
                 if (!path.alive) {
-                    // тянем мёртвый путь дальше
                     nextPaths.add(Path(path.history + null, null, path.inputIndex, false))
                     return@forEach
                 }
 
-                if (path.inputIndex == input.length) {
-                    finishedPaths.add(path.history + path.currentState?.name)
+                if (path.inputIndex == imuInput.length) {
+                    allPaths.add(path.history + path.currentState?.name)
                     nextPaths.add(Path(path.history + null, null, path.inputIndex, false))
                     return@forEach
                 }
 
-                val currentChar = input[path.inputIndex]
-                val possibleTransitions =
-                    transitions.filter { it.startState == path.currentState?.index && it.name.first() == currentChar }
+                val currentChar = imuInput[path.inputIndex]
+                val possibleTransitions = transitions.filter {
+                    it.startState == path.currentState?.index && it.name.firstOrNull() == currentChar
+                }
 
                 if (possibleTransitions.isEmpty()) {
-                    finishedPaths.add(path.history + path.currentState?.name)
+                    allPaths.add(path.history + path.currentState?.name)
                     nextPaths.add(Path(path.history + null, null, path.inputIndex, false))
                     return@forEach
                 }
@@ -144,31 +142,48 @@ class FiniteMachine(
             paths = nextPaths
         }
 
-        // теперь строим уровни
-        var maxDepth = 0
-        finishedPaths.forEach { maxDepth = maxOf(maxDepth, it.size) }
-
-        val normalizedPaths = finishedPaths.map { path ->
-            val mutablePath = path.toMutableList()
-            while (mutablePath.size < maxDepth) {
-                mutablePath.add(null)
-            }
-            mutablePath.toList()
+        val acceptedPaths = allPaths.filter { path ->
+            val last = path.lastOrNull()
+            last != null && states.any { it.name == last && it.finite }
         }
+
+        val maxDepth = allPaths.maxOfOrNull { it.size } ?: 0
+        val normalizedPaths = allPaths.map { path ->
+            buildList {
+                addAll(path)
+                while (size < maxDepth) add(null)
+            }
+        }
+
+        val tree = mutableListOf<List<TreeNode>>()
 
         for (level in 1 until maxDepth) {
-            val levelMap = mutableMapOf<String?, Float>()
-            for (path in normalizedPaths) {
-                if (path.size > level) {
-                    val stateName = path[level]
-                    levelMap[stateName] = (levelMap[stateName] ?: 0f) + 1f
-                }
+            val nodeMap = mutableMapOf<String?, MutableList<Int>>()
+            normalizedPaths.forEachIndexed { pathIndex, path ->
+                val stateName = path[level]
+                if (stateName !in nodeMap) nodeMap[stateName] = mutableListOf()
+                nodeMap[stateName]?.add(pathIndex)
             }
-            result.add(levelMap)
+
+            val levelNodes = nodeMap.map { (stateName, indices) ->
+                val weight = indices.size.toFloat()
+                val isAccepted = indices.any { acceptedPaths.contains(normalizedPaths[it]) }
+                val isCurrent = (stateName != null && states.firstOrNull { it.name == stateName }?.isCurrent == true) && currentTreePosition == level
+
+                TreeNode(
+                    stateName = stateName,
+                    weight = weight,
+                    isCurrent = isCurrent,
+                    isAccepted = isAccepted
+                )
+            }
+
+            tree.add(levelNodes)
         }
 
-        return result
+        return tree
     }
+
 
 
     override fun canReachFinalState(input: StringBuilder): Boolean {
