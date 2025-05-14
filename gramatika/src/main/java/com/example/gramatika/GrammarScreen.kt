@@ -151,7 +151,7 @@ fun GrammarScreen(grammarViewModel: Grammar) {
                             modifier = Modifier.padding(horizontal = 8.dp)
                         )
                         Text(
-                            text = "S",
+                            text = "S = S",
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                             style = MaterialTheme.typography.headlineMedium,
                             modifier = Modifier.padding(horizontal = 8.dp)
@@ -323,11 +323,15 @@ fun AddRule(
         Spacer(modifier = Modifier.width(4.dp))
         FilledIconButton(
             onClick = {
-                if(leftText.text.any { it.isUpperCase() }){
+                val validChars = leftText.text.all { it.isLetterOrDigit() || it == '|' || it == 'ε' } &&
+                        rightText.text.all { it.isLetterOrDigit() || it == '|' || it == 'ε' }
+                if (!validChars) {
+                    Toast.makeText(context, "Only letters, digits, ε or | are allowed", Toast.LENGTH_SHORT).show()
+                } else if (!leftText.text.any { it.isUpperCase() }) {
+                    Toast.makeText(context, "Non-terminal symbol missing on the left side", Toast.LENGTH_SHORT).show()
+                } else {
                     onAddRule()
                     focusManager.clearFocus()
-                }else{
-                    Toast.makeText(context, "Non-terminal symbol missing on the left side", Toast.LENGTH_SHORT).show()
                 }
 
             },

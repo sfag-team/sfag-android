@@ -62,15 +62,15 @@ import kotlinx.coroutines.launch
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
-fun TestInputScreen(grammarViewModel: Grammar, preInput: String = "") {
-    var input by remember { mutableStateOf(preInput) }
+fun TestInputScreen(grammarViewModel: Grammar, preInput: String) {
+    var input by remember { mutableStateOf(if (preInput == ".") "" else preInput) }
     var printInput by remember { mutableStateOf(preInput) }
     val rules = grammarViewModel.getIndividualRules()
     val terminals =  grammarViewModel.terminals.value ?: emptySet()
     val type = grammarViewModel.grammarType.value ?: GrammarType.UNRESTRICTED
     var result by remember { mutableStateOf(parse(preInput, rules, terminals, type)) }
-    var parseFlag by remember { mutableStateOf(preInput.isNotBlank()) }
-    var showTable by remember { mutableStateOf(preInput.isNotBlank()) }
+    var parseFlag by remember { mutableStateOf(preInput != ".") }
+    var showTable by remember { mutableStateOf(preInput != ".") }
     var showLin by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     var showTree by remember { mutableStateOf(false) }
@@ -723,4 +723,5 @@ suspend fun focusNodeAnimated(
         offsetY.animateTo(canvasHeight / 2f - targetY * scale)
     }
 }
+
 

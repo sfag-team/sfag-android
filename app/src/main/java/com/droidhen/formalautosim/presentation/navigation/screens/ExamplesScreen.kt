@@ -118,7 +118,20 @@ object ExampleSources {
             "a little bit long automata description",
         )
     )
-    val gramatikaExamples = listOf<Pair<Uri, ExampleDescription>>() //TODO add here your grammar examples, as I did on the example. Provide real uri to the file. and save file into res/values package of chosen by you package
+    val gramatikaExamples = listOf<Pair<Uri, ExampleDescription>>(
+        "app/src/main/res/values/g-reg.jff".toUri() to ExampleDescription(
+            "Regular Grammar",
+            "RG: String of 0 and 1"
+        ),
+        "app/src/main/res/values/g-cf.xml".toUri() to ExampleDescription(
+            "Context-Free Grammar",
+            "CFG: Language where the number of a's and b'smust match (aⁿbⁿ)"
+        ),
+        "app/src/main/res/values/g-cs.jff".toUri() to ExampleDescription(
+            "Context-Sensitive Grammar",
+            "CSG: Language where the number of a's, b's, and c's must match (aⁿbⁿcⁿ)"
+        )
+    ) //TODO add here your grammar examples, as I did on the example. Provide real uri to the file. and save file into res/values package of chosen by you package
 }
 
 data class ExampleDescription(val name: String, val description: String)

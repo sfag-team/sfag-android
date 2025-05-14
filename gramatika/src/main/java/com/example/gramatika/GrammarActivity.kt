@@ -1,5 +1,6 @@
 package com.example.gramatika
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,6 +14,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
@@ -32,18 +34,23 @@ class GrammarActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        val exampleUri: Uri? = intent.getParcelableExtra("example uri")
         setContent {
             GramatikaTheme {
                 // Create NavController for navigation
                 val navController = rememberNavController()
                 val grammarViewModel: Grammar = viewModel()
                 val inputsViewModel: Inputs = viewModel()
+                LaunchedEffect(Unit) {
+                    exampleUri?.let {
+                        grammarViewModel.loadFromXmlUri(this@GrammarActivity, it)
+                    }
+                }
                 // Set up NavHost with two composable screens
-
                 Scaffold(
                     // Bottom navigation
                     topBar = {
-                        TopNavigationBar(navController = navController)
+                        TopNavigationBar(navController = navController, grammarViewModel)
                     }, content = { padding ->
                         // Nav host: where screens are placed
                         NavHostContainer(navController = navController, padding = padding, grammarViewModel, inputsViewModel)
@@ -76,12 +83,12 @@ fun NavHostContainer(
             arguments = listOf(
                 navArgument("input") {
                     type = NavType.StringType
-                    defaultValue = "" // Default empty input
+                    defaultValue = "." // Default empty input
                     nullable = true
                 }
             )
         ) { backStackEntry ->
-            val input = backStackEntry.arguments?.getString("input") ?: ""
+            val input = backStackEntry.arguments?.getString("input") ?: "."
             TestInputScreen(grammarViewModel, preInput = input)
         }
         composable("filePick") {
@@ -96,7 +103,7 @@ fun NavHostContainer(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopNavigationBar(navController: NavHostController) {
+fun TopNavigationBar(navController: NavHostController, grammarViewModel: Grammar) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -125,7 +132,7 @@ fun TopNavigationBar(navController: NavHostController) {
             Constants.TopNavItems.forEach { navItem ->
                 IconButton(
                     onClick = {
-                        if (currentRoute != navItem.route) {
+                        if (currentRoute != navItem.route && grammarViewModel.isGrammarFinished.value == true) {
                             navController.navigate(navItem.route)
                         }
                     }

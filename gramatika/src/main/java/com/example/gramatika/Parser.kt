@@ -4,9 +4,7 @@ import kotlin.collections.ArrayDeque
 import kotlin.math.exp
 
 data class State(val stateString: String, val appliedRule: GrammarRule)
-
 fun parse(input: String, rules: List<GrammarRule>, terminals: Set<Char>, type: GrammarType): List<Step>? {
-
     if (input != "" && input.any { it !in terminals }) {
         return null
     }
@@ -35,6 +33,9 @@ fun parse(input: String, rules: List<GrammarRule>, terminals: Set<Char>, type: G
             val currentState = states.removeFirst()
             val cleanCurrentState = currentState.replace("ε", "")
             steps++
+            if(cleanCurrentState == input){
+                return reconstructDerivation(currentState,stateHistory)
+            }
 
             for (rule in rules) {
                 if (cleanCurrentState.contains(rule.left)) {
@@ -75,6 +76,9 @@ fun parse(input: String, rules: List<GrammarRule>, terminals: Set<Char>, type: G
             val currentState = states.removeFirst()
             val cleanCurrentState = currentState.replace("ε", "")
             steps++
+            if(cleanCurrentState == input){
+                return reconstructDerivation(currentState,stateHistory)
+            }
 
             for (rule in rules) {
                 if (cleanCurrentState.contains(rule.left)) {
