@@ -67,10 +67,10 @@ fun DefaultFASDialogWindow(
                     Modifier.fillMaxWidth(0.90f),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    FASButton(text = "Done", enabled = conditionToEnable) {
+                    FASButton(text = "Done", enabled = conditionToEnable, modifier = Modifier.weight(1f)) {
                         onConfirm()
                     }
-                    FASButton(text = "Cancel") {
+                    FASButton(text = "Cancel", modifier = Modifier.weight(1.3f)) {
                         onDismiss()
                     }
                 }

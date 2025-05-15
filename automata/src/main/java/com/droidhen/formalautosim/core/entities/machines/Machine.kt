@@ -643,7 +643,7 @@ abstract class Machine(
                         text = stringResource(R.string.editing_input_headline),
                         style = MaterialTheme.typography.headlineLarge
                     )
-                    Spacer(modifier = Modifier.width(40.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                     FASButton(text = "ADD") {
                         savedInputs.add(input)
                         input = StringBuilder()
@@ -684,7 +684,7 @@ abstract class Machine(
                                         setInitialStateAsCurrent()
                                         editingRecompose++
                                     }
-                                    .width(260.dp)
+                                    .width(200.dp)
                                     .height(40.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(painter = painterResource(id = R.drawable.bin),
