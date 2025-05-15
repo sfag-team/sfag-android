@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.droidhen.automata.R
 import com.droidhen.formalautosim.core.entities.machines.Machine
+import com.droidhen.formalautosim.core.entities.machines.MachineType
 import com.droidhen.formalautosim.core.viewModel.AutomataViewModel
 import com.droidhen.formalautosim.core.viewModel.CurrentMachine
 import com.droidhen.formalautosim.data.local.ExternalStorageController
@@ -48,7 +49,7 @@ import views.FASDefaultTextField
 import views.FASImmutableTextField
 
 @Composable
-fun AutomataScreen() {
+fun AutomataScreen(navBack: ()->Unit) {
     val viewModel:AutomataViewModel = hiltViewModel()
     val automata by remember {
         mutableStateOf(CurrentMachine.machine!!)
@@ -73,7 +74,8 @@ fun AutomataScreen() {
     BackHandler {
         when (currentScreenState.value) {
             MainScreenStates.SIMULATING -> {
-                currentScreenState.value = MainScreenStates.SIMULATION_RUN
+                viewModel.saveMachine(automata)
+                navBack()
             }
 
             MainScreenStates.SIMULATION_RUN -> {}
@@ -110,9 +112,6 @@ fun AutomataScreen() {
                     FASButton(text = "Export") {
                         exportFileWindow = true
                     }
-                    FASButton(text = "Save") {
-                        viewModel.saveMachine(automata)
-                    }
                     FASButton(text = "Share") {
                         ExternalStorageController.shareJffFile(context = context, jffContent = automata.exportToJFF(), fileName = automata.name)
                     }
@@ -120,7 +119,7 @@ fun AutomataScreen() {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(500.dp)
+                        .height(if (automata.machineType == MachineType.Finite) 500.dp else 600.dp)
                         .background(MaterialTheme.colorScheme.surface)
                         .border(
                             2.dp,
@@ -244,6 +243,9 @@ private fun BottomScreenPart(currentScreenState: MutableState<MainScreenStates>,
     when (currentScreenState.value) {
         MainScreenStates.SIMULATING -> {
             automata.DerivationTree()
+        }
+        MainScreenStates.EDITING_MACHINE -> {
+            automata.EditingMachineBottom()
         }
 
         else -> {}

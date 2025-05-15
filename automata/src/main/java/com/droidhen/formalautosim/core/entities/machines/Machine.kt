@@ -3,6 +3,7 @@ package com.droidhen.formalautosim.core.entities.machines
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PathMeasure
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -15,6 +16,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -27,6 +29,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -35,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -74,6 +78,8 @@ import com.droidhen.formalautosim.core.entities.states.State
 import com.droidhen.formalautosim.core.entities.transitions.Transition
 import com.droidhen.formalautosim.presentation.theme.light_blue
 import com.droidhen.formalautosim.presentation.theme.perlamutr_white
+import com.droidhen.formalautosim.presentation.theme.unable_views
+import com.droidhen.formalautosim.presentation.views.BottomBar
 import views.DefaultFASDialogWindow
 import views.FASDefaultTextField
 import views.DropdownSelector
@@ -113,17 +119,29 @@ fun Modifier.onTapFindMyString(
 
 
 @Suppress("UNREACHABLE_CODE")
-abstract class Machine(val name: String, var version:Int, val machineType: MachineType, val states:MutableList<State>, protected val transitions:MutableList<Transition>, val savedInputs:MutableList<StringBuilder>) {
+abstract class Machine(
+    val name: String,
+    var version: Int,
+    val machineType: MachineType,
+    val states: MutableList<State>,
+    protected val transitions: MutableList<Transition>,
+    protected var imuInput: StringBuilder = java.lang.StringBuilder(),
+    val savedInputs: MutableList<StringBuilder>
+) {
 
     private lateinit var density: Density
     private lateinit var context: Context
     private var globalCanvasPosition: LayoutCoordinates? = null
     var input = StringBuilder()
+    var currentTreePosition = 1
 
     private var offsetXGraph = 0f
     private var offsetYGraph = 0f
     private var editMode = EditMachineStates.ADD_STATES
     abstract var currentState: Int?
+
+    private var onBottomTransitionClicked: (Transition) -> Unit = {}
+    private var onBottomStateClicked: (State) -> Unit = {}
 
 
     /**
@@ -347,7 +365,11 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         Transitions(dragModifier = dragModifier, offsetY, offsetX, onTransitionClick = null)
         States(dragModifier = dragModifier, null, offsetY, offsetX, onStateClick = {})
         InputBar()
+        if (machineType == MachineType.Pushdown) {
+            BottomPushDownBar(this as PushDownMachine)
+        }
     }
+
 
     @SuppressLint("DefaultLocale", "UnrememberedMutableState")
     @Composable
@@ -388,6 +410,21 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         var chosedStateForEditing by remember {
             mutableStateOf<State?>(null)
         }
+
+        LaunchedEffect(Unit) {
+            onBottomStateClicked = { state ->
+                chosedStateForEditing = state
+                addStateWindowFocused = true
+            }
+
+            onBottomTransitionClicked = { transition ->
+                choosedTransitionName = transition.name
+                choosedStateForTransitionStart = getStateByIndex(transition.startState)
+                choosedStateForTransitionEnd = getStateByIndex(transition.endState)
+                addTransitionWindowFocused = true
+            }
+        }
+
 
         key(currentEditingState) {
             val dragModifier = when (currentEditingState) {
@@ -480,16 +517,109 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         }
     }
 
+
+    @Composable
+    fun EditingMachineBottom() {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(500.dp)
+                .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
+                .background(MaterialTheme.colorScheme.surface)
+                .clip(MaterialTheme.shapes.large),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Spacer(modifier = Modifier.size(8.dp))
+            Text("States", fontSize = 30.sp)
+            Spacer(modifier = Modifier.size(8.dp))
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth(0.95f)
+                    .height(190.dp)
+                    .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clip(MaterialTheme.shapes.large),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                items(states) { state ->
+
+                    Spacer(modifier = Modifier.size(12.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .height(30.dp)
+                            .background(MaterialTheme.colorScheme.background)
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.shapes.medium
+                            )
+                            .clickable {
+                                onBottomStateClicked(state)
+                            },
+                        verticalAlignment = CenterVertically,
+                    ) {
+                        Spacer(modifier = Modifier.size(16.dp))
+                        Text(text = state.name, fontSize = 24.sp)
+                    }
+
+                }
+            }
+            Spacer(modifier = Modifier.size(8.dp))
+            Text("Transitions", fontSize = 30.sp)
+            Spacer(modifier = Modifier.size(8.dp))
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth(0.95f)
+                    .height(190.dp)
+                    .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clip(MaterialTheme.shapes.large),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                items(transitions) { trans ->
+                    Spacer(modifier = Modifier.size(12.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .height(30.dp)
+                            .background(MaterialTheme.colorScheme.background)
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.shapes.medium
+                            )
+                            .clickable {
+                                onBottomTransitionClicked(trans)
+                            },
+                        verticalAlignment = CenterVertically,
+                    ) {
+                        Spacer(modifier = Modifier.size(16.dp))
+                        Text(
+                            text = "${getStateByIndex(trans.startState).name} -> ${
+                                getStateByIndex(
+                                    trans.endState
+                                ).name
+                            }: \"${trans.name}\"", fontSize = 24.sp
+                        )
+                    }
+
+                }
+            }
+        }
+    }
+
     @SuppressLint("DefaultLocale")
     private fun getDpOffsetWithPxOffset(pxPosition: Offset): Offset {
         return Offset(
             String.format(
                 "%.2f",
-                (pxPosition.x - offsetXGraph.dp.value) / density.density
+                (pxPosition.x) / density.density
             ).replace(',', '.').toFloat(),
             String.format(
                 "%.2f",
-                (pxPosition.y - offsetYGraph.dp.value) / density.density
+                (pxPosition.y) / density.density
             ).replace(',', '.').toFloat()
         )
     }
@@ -535,6 +665,7 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                             input.clear()
                             input.append(newInput.reversed())
                             inputValue.value = newInput
+                            imuInput = StringBuilder(input.toString())
                         }) {
                         input.contains("^[A-Za-z]+$".toRegex())
                     }
@@ -549,6 +680,7 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                                 modifier = Modifier
                                     .clickable {
                                         this@Machine.input = StringBuilder(input.toString())
+                                        imuInput = StringBuilder(input.toString())
                                         setInitialStateAsCurrent()
                                         editingRecompose++
                                     }
@@ -581,15 +713,17 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
 
     }
 
-    private fun setInitialStateAsCurrent() {
-        currentState?.let{
+    protected fun setInitialStateAsCurrent() {
+        currentState?.let {
             getStateByIndex(it).isCurrent = false
         }
         val initialState = states.filter { it.initial }
         if (initialState.isNotEmpty()) {
             initialState[0].isCurrent = true
             currentState = initialState[0].index
+            currentTreePosition = 1
         }
+        if (machineType == MachineType.Pushdown) (this as PushDownMachine).symbolStack.clear()
     }
 
     /**
@@ -635,6 +769,7 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                                     )
                                     state.setX(state.position.x + localOffset.x)
                                     state.setY(state.position.y + localOffset.y)
+
 
                                 }, onDragEnd = { recompose() })
                             } else {
@@ -749,15 +884,17 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
             .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }) {
             paths.forEach { path ->
                 val controlPoint = transitionLocalList[paths.indexOf(path)].controlPoint!!
+                val transition = transitionLocalList[paths.indexOf(path)]
+
                 drawArrow(path!!, borderColor)
                 drawContext.canvas.nativeCanvas.apply {
                     drawText(
-                        transitionLocalList[paths.indexOf(path)].name,
+                        "${transition.name}${if (machineType == MachineType.Pushdown) ";${(transition as PushDownTransition).pop};${transition.pull}" else ""}",
                         controlPoint.x,
                         controlPoint.y,
                         android.graphics.Paint().apply {
                             color = android.graphics.Color.BLACK
-                            textSize = 40f
+                            textSize = 60f
                             textAlign = android.graphics.Paint.Align.CENTER
                         }
                     )
@@ -787,6 +924,25 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         }
         if (iterations == 0) {
             transitions.add(Transition(name, startState.index, endState.index))
+        }
+    }
+
+    private fun addNewTransition(
+        name: String,
+        startState: State,
+        endState: State,
+        pop: String,
+        pull: String
+    ) {
+        var iterations = 0
+        transitions.filter { transition ->
+            transition.startState == startState.index && transition.endState == endState.index
+        }.forEach {
+            iterations++
+            it.name += name
+        }
+        if (iterations == 0) {
+            transitions.add(PushDownTransition(name, startState.index, endState.index, pop, pull))
         }
     }
 
@@ -1041,26 +1197,60 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         var endState: State by remember {
             mutableStateOf(end)
         }
+        var pop by remember {
+            mutableStateOf("")
+        }
+        var pull by remember {
+            mutableStateOf("")
+        }
+
+        if (machineType == MachineType.Pushdown && nameParam != null) {
+            pop = (transitions.first { it.name == nameParam } as PushDownTransition).pop
+            pull = (transitions.first { it.name == nameParam } as PushDownTransition).pull
+        }
 
         DefaultFASDialogWindow(
             title = if (nameParam == null) stringResource(R.string.new_transition) else "editing transition: $name",
             onDismiss = { onFinished() },
             onConfirm = {
                 if (nameParam == null) {
-                    addNewTransition(
-                        name = name,
-                        startState = startState,
-                        endState = endState
-                    )
+                    if (machineType == MachineType.Finite) {
+                        addNewTransition(
+                            name = name,
+                            startState = startState,
+                            endState = endState
+                        )
+                    } else {
+                        addNewTransition(
+                            name = name,
+                            startState = startState,
+                            endState = endState,
+                            pop = pop,
+                            pull = pull
+                        )
+                    }
                 } else {
-                    transitions.filter { transition ->
-                        transition.startState == startState.index && transition.endState == endState.index
-                    }.forEach {
-                        it.name = name
+                    if (machineType == MachineType.Finite) {
+                        transitions.filter { transition ->
+                            transition.startState == startState.index && transition.endState == endState.index
+                        }.forEach {
+                            it.name = name
+                        }
+                    } else {
+                        transitions.filter { transition ->
+                            transition.startState == startState.index && transition.endState == endState.index
+                        }.forEach {
+                            it as PushDownTransition
+                            it.name = name
+                            it.pop = pop
+                            it.pull = pull
+                        }
                     }
                 }
                 onFinished()
-            }) {
+            },
+            modifier = if (machineType == MachineType.Pushdown) Modifier.height(650.dp) else Modifier
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(0.8f),
                 verticalAlignment = CenterVertically
@@ -1075,7 +1265,7 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .height(48.dp), verticalAlignment = CenterVertically
+                    .height(44.dp), verticalAlignment = CenterVertically
             ) {
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(text = "from")
@@ -1088,11 +1278,11 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                     startState = selectedItem as State
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .height(48.dp), verticalAlignment = CenterVertically
+                    .height(44.dp), verticalAlignment = CenterVertically
             ) {
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(text = "to")
@@ -1103,6 +1293,49 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                     defaultSelectedIndex = states.indexOf(end)
                 ) { selectedItem ->
                     endState = selectedItem as State
+                }
+            }
+
+            if (machineType == MachineType.Pushdown) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(96.dp),
+                    verticalAlignment = CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .width(96.dp)
+                            .height(96.dp)
+                    ) {
+                        FASDefaultTextField(
+                            hint = "pop",
+                            value = pop,
+                            requirementText = "max length is 1",
+                            onTextChange = { pop = it },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            pop.length <= 1
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(
+                        modifier = Modifier
+                            .width(96.dp)
+                            .height(96.dp)
+                    ) {
+                        FASDefaultTextField(
+                            hint = "push",
+                            value = pull,
+                            requirementText = "max length is 1",
+                            onTextChange = { pull = it },
+                            modifier = Modifier.width(84.dp)
+                        ) {
+                            pull.length <= 1
+                        }
+                    }
                 }
             }
         }
@@ -1249,91 +1482,87 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
     }
 
 
-    abstract fun getDerivationTreeElements(): List<Map<String?, Float>>
+    abstract fun getDerivationTreeElements(): List<List<TreeNode>>
 
     @Composable
     fun DerivationTree() {
         val derivationTreeElements = remember {
-            mutableStateOf<List<Map<String?, Float>>>(listOf())
+            mutableStateOf<List<List<TreeNode>>>(listOf())
         }
 
         LaunchedEffect(Unit) {
             derivationTreeElements.value = getDerivationTreeElements()
         }
 
-        LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .background(perlamutr_white)
-                .clip(MaterialTheme.shapes.large)
-                .border(3.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large),
-        ) {
-            items(derivationTreeElements.value) { treeLevel ->
-                Column(
-                    modifier = Modifier.width(30.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    treeLevel.forEach { (stateName, weight) ->
-                        if (stateName != null) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.primaryContainer)
-                                    .clip(MaterialTheme.shapes.medium)
-                                    .weight(weight)
-                                    .border(
-                                        1.dp,
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.shapes.medium
-                                    ),
-                                contentAlignment = Alignment.Center
+        if (derivationTreeElements.value.isNotEmpty()) {
+            val sumOfLeafesWeight = derivationTreeElements.value.last().sumOf { node ->
+                node.weight.toInt()
+            }
+            val height =
+                if (sumOfLeafesWeight <= 10) 350.dp else 350.dp + ((sumOfLeafesWeight - 10) * 30).dp
+            LazyColumn(
+                Modifier
+                    .height(350.dp)
+                    .fillMaxWidth()
+                    .background(perlamutr_white)
+                    .clip(MaterialTheme.shapes.large)
+                    .border(3.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
+            ) {
+                item {
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(height),
+                    ) {
+                        items(derivationTreeElements.value) { treeLevel ->
+                            Column(
+                                modifier = Modifier.width(30.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
                             ) {
-                                Text(text = stateName, fontSize = 18.sp)
+                                treeLevel.forEach { treeNode ->
+                                    if (treeNode.stateName != null) {
+                                        val backgroundColor = if (treeNode.isAccepted) {
+                                            if (treeNode.isCurrent) {
+                                                MaterialTheme.colorScheme.primaryContainer
+                                            } else {
+                                                MaterialTheme.colorScheme.background
+                                            }
+                                        } else {
+                                            if (treeNode.isCurrent) unable_views else MaterialTheme.colorScheme.errorContainer
+                                        }
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(MaterialTheme.shapes.medium)
+                                                .weight(treeNode.weight)
+                                                .border(
+                                                    1.dp,
+                                                    MaterialTheme.colorScheme.primary,
+                                                    MaterialTheme.shapes.medium
+                                                )
+                                                .background(backgroundColor),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(text = treeNode.stateName, fontSize = 18.sp)
+                                        }
+                                    } else {
+                                        Spacer(modifier = Modifier.weight(treeNode.weight))
+                                    }
+                                }
                             }
-                        } else {
-                            Spacer(modifier = Modifier.weight(weight))
+                            Spacer(modifier = Modifier.width(5.dp))
                         }
                     }
                 }
-                Spacer(modifier = Modifier.width(5.dp))
             }
         }
+
     }
 
-    abstract fun canReachFinalState(input:StringBuilder) : Boolean
+    abstract fun canReachFinalState(input: StringBuilder): Boolean
 
-    fun exportToJFF(): String {
-        val builder = StringBuilder()
-        builder.appendLine("""<?xml version="1.0" encoding="UTF-8" standalone="no"?>""")
-        builder.appendLine("<structure>")
-        builder.appendLine("    <type>${machineType}</type>")
-        builder.appendLine("    <automaton>")
-
-
-        for (state in states) {
-            builder.appendLine("""        <state id="${state.index}" name="${state.name}">""")
-            builder.appendLine("""            <x>${state.position.x}</x>""")
-            builder.appendLine("""            <y>${state.position.y}</y>""")
-            if (state.initial) builder.appendLine("            <initial/>")
-            if (state.finite) builder.appendLine("            <final/>")
-            builder.appendLine("        </state>")
-        }
-
-        for (transition in transitions) {
-            builder.appendLine("        <transition>")
-            builder.appendLine("            <from>${transition.startState}</from>")
-            builder.appendLine("            <to>${transition.endState}</to>")
-            builder.appendLine("            <read>${transition.name}</read>")
-            builder.appendLine("        </transition>")
-        }
-
-        builder.appendLine("    </automaton>")
-        builder.appendLine("</structure>")
-
-        return builder.toString()
-    }
+    abstract fun exportToJFF(): String
 
     private fun getStatesByClick(clickOffset: Offset): State? {
         var result: State? = null
@@ -1377,3 +1606,10 @@ sealed class MachineType(val tag: String) {
 
     override fun toString(): String = tag
 }
+
+data class TreeNode(
+    val stateName: String?, // null если мёртвый узел
+    val weight: Float = 1f,
+    val isCurrent: Boolean = false,
+    val isAccepted: Boolean = false
+)
