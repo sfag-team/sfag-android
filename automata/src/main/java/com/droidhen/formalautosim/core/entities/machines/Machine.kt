@@ -615,11 +615,11 @@ abstract class Machine(
         return Offset(
             String.format(
                 "%.2f",
-                (pxPosition.x - offsetXGraph.dp.value) / density.density
+                (pxPosition.x) / density.density
             ).replace(',', '.').toFloat(),
             String.format(
                 "%.2f",
-                (pxPosition.y - offsetYGraph.dp.value) / density.density
+                (pxPosition.y) / density.density
             ).replace(',', '.').toFloat()
         )
     }
@@ -769,6 +769,7 @@ abstract class Machine(
                                     )
                                     state.setX(state.position.x + localOffset.x)
                                     state.setY(state.position.y + localOffset.y)
+
 
                                 }, onDragEnd = { recompose() })
                             } else {
