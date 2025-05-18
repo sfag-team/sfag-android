@@ -33,8 +33,8 @@ import views.FASImmutableTextField
 @Composable
 fun ExamplesScreen(
     navBack: () -> Unit,
-    navToAutomata: (machineUri: Uri) -> Unit,
-    navToGrammar: (grammarUri: Uri) -> Unit
+    navToAutomata: (machineUri: String) -> Unit,
+    navToGrammar: (grammarUri: String) -> Unit
 ) {
 
     Column(
@@ -75,7 +75,7 @@ fun ExamplesScreen(
 
 
 @Composable
-private fun ExamplesColumn(items: List<Pair<Uri, ExampleDescription>>,onItemClicked: (Uri) -> Unit){
+private fun ExamplesColumn(items: List<Pair<String, ExampleDescription>>,onItemClicked: (String) -> Unit){
     LazyColumn(
         modifier = Modifier
             .height(240.dp)
@@ -112,22 +112,26 @@ private fun ExamplesColumn(items: List<Pair<Uri, ExampleDescription>>,onItemClic
 }
 
 object ExampleSources {
-    val automataExamples = listOf<Pair<Uri, ExampleDescription>>(
-        "/example/link/1.jff".toUri() to ExampleDescription(
-            "automata name",
-            "a little bit long automata description",
-        )
+    val automataExamples = listOf(
+        "automata/pda_determ.jff" to ExampleDescription(
+            "PDA deterministic",
+            "Push-down automata, tests aⁿbⁿ words"
+        ),
+        "automata/pda_no_determ.jff" to ExampleDescription(
+            "PDA no deterministic",
+            "Push-down automata, no deterministic tests"
+        ),
     )
-    val gramatikaExamples = listOf<Pair<Uri, ExampleDescription>>(
-        "app/src/main/res/values/g-reg.jff".toUri() to ExampleDescription(
+    val gramatikaExamples = listOf(
+        "app/src/main/assets/grammar/g-reg.jff" to ExampleDescription(
             "Regular Grammar",
             "RG: String of 0 and 1"
         ),
-        "app/src/main/res/values/g-cf.xml".toUri() to ExampleDescription(
+        "app/src/main/assets/grammar/g-cf.jff" to ExampleDescription(
             "Context-Free Grammar",
             "CFG: Language where the number of a's and b'smust match (aⁿbⁿ)"
         ),
-        "app/src/main/res/values/g-cs.jff".toUri() to ExampleDescription(
+        "app/src/main/assets/grammar/g-cs.jff" to ExampleDescription(
             "Context-Sensitive Grammar",
             "CSG: Language where the number of a's, b's, and c's must match (aⁿbⁿcⁿ)"
         )

@@ -93,13 +93,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun navToGrammarActivity(uri: Uri?){
+    private fun navToGrammarActivity(uri: String?){
         val intent = Intent(this, GrammarActivity::class.java)
         uri?.apply { intent.putExtra("example uri", this) }
         startActivity(intent)
     }
 
-    private fun navToAutomataActivity(uri: Uri?){
+    private fun navToAutomataActivity(uri: String?){
         val intent = Intent(this, AutomataActivity::class.java)
         uri?.apply { intent.putExtra("example uri", this) }
         startActivity(intent)

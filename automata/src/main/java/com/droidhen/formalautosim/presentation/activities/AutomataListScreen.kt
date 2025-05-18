@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -50,11 +51,18 @@ import views.FASImmutableTextField
 import views.ItemSpecificationIcon
 
 @Composable
-fun AutomataListScreen(navBack: () -> Unit, navToAutomata: () -> Unit) {
+fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navToAutomata: () -> Unit) {
     val context = LocalContext.current
     val viewModel: AutomataViewModel = hiltViewModel()
     var createNewMachine by remember {
         mutableStateOf(false)
+    }
+    LaunchedEffect (Unit) {
+        if(exampleMachine!=null&&CurrentMachine.machine==null){
+            viewModel.saveMachine(machine = exampleMachine)
+            CurrentMachine.machine = exampleMachine
+            navToAutomata()
+        }
     }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
