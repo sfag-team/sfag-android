@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -157,7 +158,9 @@ fun AutomataScreen(navBack: ()->Unit) {
                         }
 
                         MainScreenStates.EDITING_MACHINE -> {
-                            automata.EditingMachine()
+                            automata.EditingMachine{
+                                recompose.intValue++
+                            }
                         }
                     }
 
@@ -218,7 +221,7 @@ fun AutomataScreen(navBack: ()->Unit) {
 
                 Spacer(modifier = Modifier.size(24.dp))
 
-                BottomScreenPart(currentScreenState, automata)
+                BottomScreenPart(currentScreenState, automata, bottomRecompose = recompose)
 
                 Spacer(modifier = Modifier.size(30.dp))
             }
@@ -239,13 +242,15 @@ fun AutomataScreen(navBack: ()->Unit) {
  * Shows additional info for related screen state  (ex.: for simulating it shows derivation tree and shows interface for multipling testing)
  */
 @Composable
-private fun BottomScreenPart(currentScreenState: MutableState<MainScreenStates>, automata: Machine) {
+private fun BottomScreenPart(currentScreenState: MutableState<MainScreenStates>, automata: Machine, bottomRecompose: MutableIntState) {
     when (currentScreenState.value) {
         MainScreenStates.SIMULATING -> {
             automata.DerivationTree()
+            Spacer(modifier = Modifier.size(32.dp))
+            automata.MathFormat()
         }
         MainScreenStates.EDITING_MACHINE -> {
-            automata.EditingMachineBottom()
+            automata.EditingMachineBottom(bottomRecompose)
         }
 
         else -> {}

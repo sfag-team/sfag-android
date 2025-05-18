@@ -1,6 +1,16 @@
 package com.droidhen.formalautosim.core.entities.machines
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.droidhen.formalautosim.core.entities.states.State
 import com.droidhen.formalautosim.core.entities.transitions.Transition
 
@@ -182,6 +192,37 @@ class FiniteMachine(
         }
 
         return tree
+    }
+
+    @Composable
+    override fun MathFormat() {
+        val initialState = states.firstOrNull { it.initial }?.name ?: "q₀"
+        val finalStates = states.filter { it.finite }.joinToString(", ") { it.name }
+        val inputAlphabet = transitions.mapNotNull { it.name.firstOrNull() }.toSet().joinToString(", ")
+
+        val deltaList = transitions.joinToString("\n") { t ->
+            val fromState = states.find { it.index == t.startState }?.name ?: "?"
+            val toState = states.find { it.index == t.endState }?.name ?: "?"
+            val readSymbol = if (t.name.isEmpty()) "ε" else t.name
+            "δ($fromState, $readSymbol) = $toState"
+        }
+
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+        ) {
+            Text("M = (Q, Σ, δ, q₀, F)", fontSize = 18.sp)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text("Q = { ${states.joinToString(", ") { it.name }} }")
+            Text("Σ = { $inputAlphabet }")
+            Text("q₀ = $initialState")
+            Text("F = { $finalStates }")
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text("δ:", fontWeight = FontWeight.Bold)
+            Text(deltaList, fontFamily = FontFamily.Monospace)
+        }
     }
 
 
