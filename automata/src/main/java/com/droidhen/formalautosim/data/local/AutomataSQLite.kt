@@ -7,6 +7,7 @@ import com.droidhen.formalautosim.core.entities.machines.FiniteMachine
 import com.droidhen.formalautosim.core.entities.machines.Machine
 import com.droidhen.formalautosim.core.entities.machines.MachineType
 import com.droidhen.formalautosim.core.entities.machines.PushDownMachine
+import com.droidhen.formalautosim.core.entities.machines.PushDownTransition
 import com.droidhen.formalautosim.data.local.MachineCard.COLUMN_MACHINE_DATA
 import com.droidhen.formalautosim.data.local.MachineCard.COLUMN_MACHINE_ID
 import com.droidhen.formalautosim.data.local.MachineCard.COLUMN_MACHINE_NAME
@@ -16,6 +17,7 @@ import com.droidhen.formalautosim.data.local.MachineCard.COLUMN_SAVED_INPUTS
 import com.droidhen.formalautosim.data.local.MachineCard.TABLE_MACHINES
 import javax.inject.Inject
 
+@Suppress("UNCHECKED_CAST")
 class AutomataSQLite @Inject constructor(private val database: AutomataSQLModel) {
 
     fun insertUser(user: AutomataUser): Long {
@@ -107,9 +109,9 @@ class AutomataSQLite @Inject constructor(private val database: AutomataSQLModel)
             transitions.toMutableList(),
             savedInputs
         ) else PushDownMachine(
-            name, version,
-            states.toMutableList(),
-            transitions.toMutableList(),
+            name = name, version = version,
+            states = states.toMutableList(),
+            transitions = transitions.toMutableList() as MutableList<PushDownTransition>,
             savedInputs
         )
         return result

@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.droidhen.automata.R
 import com.droidhen.formalautosim.core.entities.machines.Machine
+import com.droidhen.formalautosim.core.entities.machines.MachineType
 import com.droidhen.formalautosim.core.viewModel.AutomataViewModel
 import com.droidhen.formalautosim.core.viewModel.CurrentMachine
 import com.droidhen.formalautosim.data.local.ExternalStorageController
@@ -48,7 +50,7 @@ import views.FASDefaultTextField
 import views.FASImmutableTextField
 
 @Composable
-fun AutomataScreen() {
+fun AutomataScreen(navBack: ()->Unit) {
     val viewModel:AutomataViewModel = hiltViewModel()
     val automata by remember {
         mutableStateOf(CurrentMachine.machine!!)
@@ -73,7 +75,8 @@ fun AutomataScreen() {
     BackHandler {
         when (currentScreenState.value) {
             MainScreenStates.SIMULATING -> {
-                currentScreenState.value = MainScreenStates.SIMULATION_RUN
+                viewModel.saveMachine(automata)
+                navBack()
             }
 
             MainScreenStates.SIMULATION_RUN -> {}
@@ -110,9 +113,6 @@ fun AutomataScreen() {
                     FASButton(text = "Export") {
                         exportFileWindow = true
                     }
-                    FASButton(text = "Save") {
-                        viewModel.saveMachine(automata)
-                    }
                     FASButton(text = "Share") {
                         ExternalStorageController.shareJffFile(context = context, jffContent = automata.exportToJFF(), fileName = automata.name)
                     }
@@ -120,7 +120,7 @@ fun AutomataScreen() {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(500.dp)
+                        .height(if (automata.machineType == MachineType.Finite) 500.dp else 600.dp)
                         .background(MaterialTheme.colorScheme.surface)
                         .border(
                             2.dp,
@@ -158,7 +158,9 @@ fun AutomataScreen() {
                         }
 
                         MainScreenStates.EDITING_MACHINE -> {
-                            automata.EditingMachine()
+                            automata.EditingMachine{
+                                recompose.intValue++
+                            }
                         }
                     }
 
@@ -219,7 +221,7 @@ fun AutomataScreen() {
 
                 Spacer(modifier = Modifier.size(24.dp))
 
-                BottomScreenPart(currentScreenState, automata)
+                BottomScreenPart(currentScreenState, automata, bottomRecompose = recompose)
 
                 Spacer(modifier = Modifier.size(30.dp))
             }
@@ -240,10 +242,15 @@ fun AutomataScreen() {
  * Shows additional info for related screen state  (ex.: for simulating it shows derivation tree and shows interface for multipling testing)
  */
 @Composable
-private fun BottomScreenPart(currentScreenState: MutableState<MainScreenStates>, automata: Machine) {
+private fun BottomScreenPart(currentScreenState: MutableState<MainScreenStates>, automata: Machine, bottomRecompose: MutableIntState) {
     when (currentScreenState.value) {
         MainScreenStates.SIMULATING -> {
             automata.DerivationTree()
+            Spacer(modifier = Modifier.size(32.dp))
+            automata.MathFormat()
+        }
+        MainScreenStates.EDITING_MACHINE -> {
+            automata.EditingMachineBottom(bottomRecompose)
         }
 
         else -> {}

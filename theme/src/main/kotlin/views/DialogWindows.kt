@@ -33,47 +33,49 @@ fun DefaultFASDialogWindow(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(medium_gray),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(0.7f)
-                .fillMaxHeight(0.67f)
-                .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.background)
-                .border(
-                    3.dp,
-                    MaterialTheme.colorScheme.primary,
-                    shape = MaterialTheme.shapes.medium
-                ),
-            horizontalAlignment = Alignment.CenterHorizontally
+    Box(Modifier.fillMaxSize().background(medium_gray)){
+        Box(
+            modifier = modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = title,
-                fontSize = 24.sp,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-            content()
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                Modifier.fillMaxWidth(0.90f),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(0.7f)
+                    .fillMaxHeight(0.67f)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.background)
+                    .border(
+                        3.dp,
+                        MaterialTheme.colorScheme.primary,
+                        shape = MaterialTheme.shapes.medium
+                    ),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                FASButton(text = "Done", enabled = conditionToEnable) {
-                    onConfirm()
-                }
-                FASButton(text = "Cancel") {
-                    onDismiss()
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = title,
+                    fontSize = 24.sp,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+                content()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    Modifier.fillMaxWidth(0.90f),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    FASButton(text = "Done", enabled = conditionToEnable, modifier = Modifier.weight(1f)) {
+                        onConfirm()
+                    }
+                    FASButton(text = "Cancel", modifier = Modifier.weight(1.3f)) {
+                        onDismiss()
+                    }
                 }
             }
         }
     }
+
 }

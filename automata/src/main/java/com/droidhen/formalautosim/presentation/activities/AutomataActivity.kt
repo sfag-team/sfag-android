@@ -61,11 +61,13 @@ class AutomataActivity : ComponentActivity() {
                             modifier = Modifier.weight(9f)
                         ) {
                             composable(route = AutomataDestinations.AUTOMATA.route) {
-                                AutomataScreen()
+                                AutomataScreen{
+                                    navigate(AutomataDestinations.AUTOMATA_LIST.route)
+                                }
                             }
                             composable(route = AutomataDestinations.AUTOMATA_LIST.route){
                                 AutomataListScreen(navBack = {
-                                    //navigateToMainActivity()
+                                    finish()
                                 }) {
                                     navigate(AutomataDestinations.AUTOMATA.route)
                                 }

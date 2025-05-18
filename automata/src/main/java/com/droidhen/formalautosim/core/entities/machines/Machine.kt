@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +26,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
@@ -74,12 +75,13 @@ import com.droidhen.formalautosim.core.entities.states.State
 import com.droidhen.formalautosim.core.entities.transitions.Transition
 import com.droidhen.formalautosim.presentation.theme.light_blue
 import com.droidhen.formalautosim.presentation.theme.perlamutr_white
-import views.DefaultFASDialogWindow
-import views.FASDefaultTextField
-import views.DropdownSelector
-import views.FASButton
+import com.droidhen.formalautosim.presentation.theme.unable_views
 import com.droidhen.formalautosim.utils.enums.EditMachineStates
 import com.droidhen.formalautosim.utils.extensions.drawArrow
+import views.DefaultFASDialogWindow
+import views.DropDownSelector
+import views.FASButton
+import views.FASDefaultTextField
 import views.FASImmutableTextField
 import views.ItemSpecificationIcon
 import kotlin.math.atan
@@ -113,17 +115,29 @@ fun Modifier.onTapFindMyString(
 
 
 @Suppress("UNREACHABLE_CODE")
-abstract class Machine(val name: String, var version:Int, val machineType: MachineType, val states:MutableList<State>, protected val transitions:MutableList<Transition>, val savedInputs:MutableList<StringBuilder>) {
+abstract class Machine(
+    val name: String,
+    var version: Int,
+    val machineType: MachineType,
+    val states: MutableList<State>,
+    protected val transitions: MutableList<Transition>,
+    protected var imuInput: StringBuilder = java.lang.StringBuilder(),
+    val savedInputs: MutableList<StringBuilder>
+) {
 
     private lateinit var density: Density
     private lateinit var context: Context
     private var globalCanvasPosition: LayoutCoordinates? = null
     var input = StringBuilder()
+    var currentTreePosition = 1
 
     private var offsetXGraph = 0f
     private var offsetYGraph = 0f
     private var editMode = EditMachineStates.ADD_STATES
     abstract var currentState: Int?
+
+    private var onBottomTransitionClicked: (Transition) -> Unit = {}
+    private var onBottomStateClicked: (State) -> Unit = {}
 
 
     /**
@@ -347,11 +361,15 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         Transitions(dragModifier = dragModifier, offsetY, offsetX, onTransitionClick = null)
         States(dragModifier = dragModifier, null, offsetY, offsetX, onStateClick = {})
         InputBar()
+        if (machineType == MachineType.Pushdown) {
+            BottomPushDownBar(this as PushDownMachine)
+        }
     }
+
 
     @SuppressLint("DefaultLocale", "UnrememberedMutableState")
     @Composable
-    fun EditingMachine() {
+    fun EditingMachine( increaseRecomposeValue :() -> Unit) {
         var recomposition by remember {
             mutableIntStateOf(0)
         }
@@ -385,9 +403,37 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
             mutableStateOf<String?>(null)
         }
 
+        var push by remember {
+            mutableStateOf<String?>(null)
+        }
+
+        var pop by remember {
+            mutableStateOf<String?>(null)
+        }
+
         var chosedStateForEditing by remember {
             mutableStateOf<State?>(null)
         }
+
+        LaunchedEffect(Unit) {
+            onBottomStateClicked = { state ->
+                chosedStateForEditing = state
+                addStateWindowFocused = true
+            }
+
+            onBottomTransitionClicked = { transition ->
+                choosedTransitionName = transition.name
+                if (machineType == MachineType.Pushdown) {
+                    transition as PushDownTransition
+                    push = transition.push
+                    pop = transition.pop
+                }
+                choosedStateForTransitionStart = getStateByIndex(transition.startState)
+                choosedStateForTransitionEnd = getStateByIndex(transition.endState)
+                addTransitionWindowFocused = true
+            }
+        }
+
 
         key(currentEditingState) {
             val dragModifier = when (currentEditingState) {
@@ -417,12 +463,18 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                             choosedStateForTransitionStart = getStateByIndex(transition.startState)
                             choosedStateForTransitionEnd = getStateByIndex(transition.endState)
                             choosedTransitionName = transition.name
+                            if (machineType == MachineType.Pushdown) {
+                                transition as PushDownTransition
+                                push = transition.push
+                                pop = transition.pop
+                            }
                             addTransitionWindowFocused = true
                         }
 
                         EditMachineStates.DELETE -> { transition ->
                             deleteTransition(transition)
                             recomposition++
+                            increaseRecomposeValue()
                         }
 
                         else -> null
@@ -456,6 +508,7 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                     },
                     recompose = {
                         recomposition++
+                        increaseRecomposeValue()
                     }
                 )
             }
@@ -466,16 +519,117 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
             if (addStateWindowFocused) AddStateWindow(clickOffset, chosedStateForEditing) {
                 addStateWindowFocused = false
                 chosedStateForEditing = null
+                increaseRecomposeValue()
             }
             if (addTransitionWindowFocused) CreateTransitionWindow(
                 choosedStateForTransitionStart!!,
                 choosedStateForTransitionEnd!!,
-                choosedTransitionName
+                choosedTransitionName,
+                push,
+                pop
             ) {
                 addTransitionWindowFocused = false
                 choosedStateForTransitionStart = null
                 choosedStateForTransitionEnd = null
                 choosedTransitionName = null
+                push = null
+                pop = null
+                increaseRecomposeValue()
+            }
+        }
+    }
+
+
+    @Composable
+    fun EditingMachineBottom(recompose: MutableIntState) {
+        key(recompose.intValue){
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(500.dp)
+                    .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clip(MaterialTheme.shapes.large),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Spacer(modifier = Modifier.size(8.dp))
+                Text("States", fontSize = 30.sp)
+                Spacer(modifier = Modifier.size(8.dp))
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .height(190.dp)
+                        .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .clip(MaterialTheme.shapes.large),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    items(states) { state ->
+
+                        Spacer(modifier = Modifier.size(12.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(0.8f)
+                                .height(30.dp)
+                                .background(MaterialTheme.colorScheme.background)
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.shapes.medium
+                                )
+                                .clickable {
+                                    onBottomStateClicked(state)
+                                },
+                            verticalAlignment = CenterVertically,
+                        ) {
+                            Spacer(modifier = Modifier.size(16.dp))
+                            Text(text = "(${state.index}) ${state.name}:${if(state.finite) " final" else ""}${if(state.initial) " initial" else ""}", fontSize = 24.sp)
+                        }
+
+                    }
+                }
+                Spacer(modifier = Modifier.size(8.dp))
+                Text("Transitions", fontSize = 30.sp)
+                Spacer(modifier = Modifier.size(8.dp))
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .height(190.dp)
+                        .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .clip(MaterialTheme.shapes.large),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    items(transitions) { trans ->
+                        Spacer(modifier = Modifier.size(12.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(0.8f)
+                                .height(30.dp)
+                                .background(MaterialTheme.colorScheme.background)
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.shapes.medium
+                                )
+                                .clickable {
+                                    onBottomTransitionClicked(trans)
+                                },
+                            verticalAlignment = CenterVertically,
+                        ) {
+                            Spacer(modifier = Modifier.size(16.dp))
+                            Text(
+                                text = "${getStateByIndex(trans.startState).name} -> ${
+                                    getStateByIndex(
+                                        trans.endState
+                                    ).name
+                                }: \"${trans.name}\" ${if(machineType==MachineType.Pushdown) "; "+(trans as PushDownTransition).pop+"; "+ trans.push+"." else "."}", fontSize = 24.sp
+                            )
+                        }
+
+                    }
+                }
             }
         }
     }
@@ -485,11 +639,11 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         return Offset(
             String.format(
                 "%.2f",
-                (pxPosition.x - offsetXGraph.dp.value) / density.density
+                (pxPosition.x) / density.density
             ).replace(',', '.').toFloat(),
             String.format(
                 "%.2f",
-                (pxPosition.y - offsetYGraph.dp.value) / density.density
+                (pxPosition.y) / density.density
             ).replace(',', '.').toFloat()
         )
     }
@@ -513,13 +667,33 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                         text = stringResource(R.string.editing_input_headline),
                         style = MaterialTheme.typography.headlineLarge
                     )
-                    Spacer(modifier = Modifier.width(40.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                     FASButton(text = "ADD") {
                         savedInputs.add(input)
                         input = StringBuilder()
                         editingRecompose++
                     }
                 }
+
+                if (machineType == MachineType.Pushdown) {
+                    this@Machine as PushDownMachine
+                    val listOfCriteria = listOf(
+                        AcceptanceCriteria.BY_FINITE_STATE.text,
+                        AcceptanceCriteria.BY_INITIAL_STACK.text
+                    )
+                    Spacer(modifier = Modifier.size(12.dp))
+                    Text(fontSize = 24.sp, text = "Accept input by reaching:")
+                    Spacer(modifier = Modifier.size(4.dp))
+                    DropDownSelector(
+                        items = listOfCriteria,
+                        defaultSelectedIndex = listOfCriteria.indexOf(acceptanceCriteria.text)
+                    ) { newCriteria ->
+                        acceptanceCriteria =
+                            if (newCriteria.toString() == AcceptanceCriteria.BY_FINITE_STATE.text) AcceptanceCriteria.BY_FINITE_STATE else AcceptanceCriteria.BY_INITIAL_STACK
+                    }
+
+                }
+
 
                 Spacer(modifier = Modifier.size(16.dp))
                 Column(
@@ -535,6 +709,7 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                             input.clear()
                             input.append(newInput.reversed())
                             inputValue.value = newInput
+                            imuInput = StringBuilder(input.toString())
                         }) {
                         input.contains("^[A-Za-z]+$".toRegex())
                     }
@@ -549,10 +724,11 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                                 modifier = Modifier
                                     .clickable {
                                         this@Machine.input = StringBuilder(input.toString())
+                                        imuInput = StringBuilder(input.toString())
                                         setInitialStateAsCurrent()
                                         editingRecompose++
                                     }
-                                    .width(260.dp)
+                                    .width(200.dp)
                                     .height(40.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(painter = painterResource(id = R.drawable.bin),
@@ -565,7 +741,23 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                                     .size(30.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
-                                painter = painterResource(id = if (canReachFinalState(input)) com.droidhen.theme.R.drawable.check else com.droidhen.theme.R.drawable.cross),
+                                painter = painterResource(
+                                    id =
+                                    if(machineType == MachineType.Finite || ((this@Machine as PushDownMachine).acceptanceCriteria == AcceptanceCriteria.BY_FINITE_STATE)){
+                                        if (canReachFinalState(input)) {
+                                            com.droidhen.theme.R.drawable.check
+                                        } else {
+                                            com.droidhen.theme.R.drawable.cross
+                                        }
+                                    } else {
+                                        if (canReachInitialStack(input)) {
+                                            com.droidhen.theme.R.drawable.check
+                                        } else {
+                                            com.droidhen.theme.R.drawable.cross
+                                        }
+                                    }
+
+                                ),
                                 contentDescription = "",
                                 modifier = Modifier.size(30.dp)
                             )
@@ -581,14 +773,19 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
 
     }
 
-    private fun setInitialStateAsCurrent() {
-        currentState?.let{
+    protected fun setInitialStateAsCurrent() {
+        currentState?.let {
             getStateByIndex(it).isCurrent = false
         }
         val initialState = states.filter { it.initial }
         if (initialState.isNotEmpty()) {
             initialState[0].isCurrent = true
             currentState = initialState[0].index
+            currentTreePosition = 1
+        }
+        if (machineType == MachineType.Pushdown) {
+            (this as PushDownMachine).symbolStack.clear()
+            this.symbolStack.add('Z')
         }
     }
 
@@ -635,6 +832,7 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                                     )
                                     state.setX(state.position.x + localOffset.x)
                                     state.setY(state.position.y + localOffset.y)
+
 
                                 }, onDragEnd = { recompose() })
                             } else {
@@ -715,54 +913,79 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         offsetY: Float,
         offsetX: Float,
         borderColor: Color = MaterialTheme.colorScheme.tertiary,
-        onTransitionClick: ((Transition) -> Unit)?,
+        onTransitionClick: ((Transition) -> Unit)?
     ) {
         val transitionLocalList = mutableListOf<Transition>()
-        val paths = getAllPath { transition ->
-            transitionLocalList.add(transition)
+        val paths = getAllPath { transition -> transitionLocalList.add(transition) }
+
+        val grouped = transitionLocalList.withIndex().groupBy { (_, transition) ->
+            Pair(transition.startState, transition.endState)
         }
-        Canvas(modifier = Modifier
-            .fillMaxSize()
-            .then(
-                if (onTransitionClick == null) dragModifier else dragModifier.pointerInput(
-                    Unit
-                ) {
-                    detectTapGestures { tapOffset ->
-                        for (transition in transitions) {
-                            if (transition.isClicked(
-                                    tapOffset.x.toDp(),
-                                    tapOffset.y.toDp(),
-                                    ::getStateByIndex
-                                )
-                            ) {
-                                onTransitionClick(transition)
-                                break
+
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (onTransitionClick == null) dragModifier else dragModifier.pointerInput(Unit) {
+                        detectTapGestures { tapOffset ->
+                            for (transition in transitions) {
+                                if (transition.isClicked(
+                                        tapOffset.x.toDp(),
+                                        tapOffset.y.toDp(),
+                                        ::getStateByIndex
+                                    )
+                                ) {
+                                    onTransitionClick(transition)
+                                    break
+                                }
                             }
                         }
                     }
-                })
-            .onGloballyPositioned { position ->
-                globalCanvasPosition = position
-            }
+                )
+                .onGloballyPositioned { globalCanvasPosition = it }
+                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+        ) {
+            grouped.forEach { (_, indexedTransitions) ->
+                val firstIndex = indexedTransitions.first().index
+                val path = paths[firstIndex]
+                val transition = transitionLocalList[firstIndex]
+                val controlPoint = transition.controlPoint!!
 
-
-            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }) {
-            paths.forEach { path ->
-                val controlPoint = transitionLocalList[paths.indexOf(path)].controlPoint!!
+                // Рисуем одну стрелку
                 drawArrow(path!!, borderColor)
-                drawContext.canvas.nativeCanvas.apply {
-                    drawText(
-                        transitionLocalList[paths.indexOf(path)].name,
-                        controlPoint.x,
-                        controlPoint.y,
-                        android.graphics.Paint().apply {
-                            color = android.graphics.Color.BLACK
-                            textSize = 40f
-                            textAlign = android.graphics.Paint.Align.CENTER
+
+                val paint = android.graphics.Paint().apply {
+                    color = android.graphics.Color.BLACK
+                    textSize = 58f
+                    textAlign = android.graphics.Paint.Align.CENTER
+                    isAntiAlias = true
+                }
+
+                val lineHeight = 52f // увеличен
+                val padding = 8f
+                val verticalOffset = indexedTransitions.size * 20f
+                val baseY =
+                    controlPoint.y - ((indexedTransitions.size - 1) * lineHeight / 2) - verticalOffset
+
+                indexedTransitions.forEachIndexed { i, (index, transition) ->
+                    val label = buildString {
+                        append(transition.name)
+                        if (machineType == MachineType.Pushdown && transition is PushDownTransition) {
+                            append(";${transition.pop};${transition.push}")
                         }
+                    }
+
+                    val y = baseY + i * lineHeight
+
+                    drawContext.canvas.nativeCanvas.drawText(
+                        label,
+                        controlPoint.x,
+                        y + padding,
+                        paint
                     )
                 }
             }
+
         }
     }
 
@@ -788,6 +1011,44 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         if (iterations == 0) {
             transitions.add(Transition(name, startState.index, endState.index))
         }
+    }
+
+    private fun addNewTransition(
+        name: String,
+        startState: State,
+        endState: State,
+        pop: String,
+        checkState: String,
+        push: String
+    ) {
+
+        transitions.add(
+            if (pop != "") {
+                if (transitions.any {
+                        it as PushDownTransition
+                        it.name == name && it.startState == startState.index && it.endState == endState.index && it.pop == pop && it.push == ""
+                    }) return
+                PushDownTransition(
+                    name,
+                    startState.index,
+                    endState.index,
+                    pop = pop,
+                    push = "",
+                )
+            } else if (checkState != "") {
+                if (transitions.any {
+                        it as PushDownTransition
+                        it.name == name && it.startState == startState.index && it.endState == endState.index && it.pop == checkState && it.push == push + checkState
+                    }) return
+                PushDownTransition(
+                    name,
+                    startState.index,
+                    endState.index,
+                    checkState,
+                    push + checkState
+                )
+            } else throw Exception("Wrong transition type")
+        )
     }
 
 
@@ -1029,6 +1290,8 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         start: State,
         end: State,
         nameParam: String?,
+        push: String?,
+        pop: String?,
         onFinished: () -> Unit
     ) {
         var name by remember {
@@ -1041,26 +1304,84 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
         var endState: State by remember {
             mutableStateOf(end)
         }
+        var popVal by remember {
+            mutableStateOf(pop ?: "")
+        }
+        var checkStack by remember {
+            mutableStateOf("")
+        }
+        var pushVal by remember {
+            mutableStateOf(push ?: "")
+        }
+        var pdaTransitionType by remember { mutableStateOf("") }
+
+        LaunchedEffect(Unit) {
+            if (machineType == MachineType.Pushdown && nameParam != null) {
+                if (pushVal.isNotEmpty()) {
+                    pushVal = pushVal.removeSuffix(pushVal.last().toString())
+                    checkStack = popVal + "*"
+                    checkStack = checkStack.removeSuffix("*")
+                    pdaTransitionType = "push"
+                } else if (pushVal.isEmpty()) {
+                    pdaTransitionType = "pop"
+                }
+            }
+        }
+
 
         DefaultFASDialogWindow(
             title = if (nameParam == null) stringResource(R.string.new_transition) else "editing transition: $name",
             onDismiss = { onFinished() },
             onConfirm = {
                 if (nameParam == null) {
-                    addNewTransition(
-                        name = name,
-                        startState = startState,
-                        endState = endState
-                    )
+                    if (machineType == MachineType.Finite) {
+                        addNewTransition(
+                            name = name,
+                            startState = startState,
+                            endState = endState
+                        )
+                    } else {
+                        addNewTransition(
+                            name = name,
+                            startState = startState,
+                            endState = endState,
+                            pop = popVal,
+                            checkState = checkStack,
+                            push = pushVal
+                        )
+                    }
                 } else {
-                    transitions.filter { transition ->
-                        transition.startState == startState.index && transition.endState == endState.index
-                    }.forEach {
-                        it.name = name
+                    if (machineType == MachineType.Finite) {
+                        transitions.filter { transition ->
+                            transition.startState == start.index && transition.endState == end.index
+                        }.forEach {
+                            it.name = name
+                            it.startState = startState.index
+                            it.endState = endState.index
+                        }
+                    } else {
+                        transitions as MutableList<PushDownTransition>
+                        transitions.filter { transition ->
+                            transition.startState == start.index && transition.endState == end.index && transition.push == (push
+                                ?: "") && transition.pop == (pop ?: "")
+                        }.forEach {
+                            it.name = name
+                            it.startState = startState.index
+                            it.endState = endState.index
+                            if (pdaTransitionType == "pop") {
+                                it.pop = popVal
+                                it.push = ""
+                            } else {
+                                it.pop = checkStack
+                                it.push = pushVal + checkStack
+                            }
+                        }
                     }
                 }
                 onFinished()
-            }) {
+            },
+            modifier = if (machineType == MachineType.Pushdown) Modifier.height(650.dp) else Modifier
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(0.8f),
                 verticalAlignment = CenterVertically
@@ -1072,37 +1393,144 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
                     onTextChange = { name = it }) { true }
             }
             Spacer(modifier = Modifier.height(8.dp))
+
+            /**
+             * choosing states for transition
+             */
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .height(48.dp), verticalAlignment = CenterVertically
+                    .height(44.dp), verticalAlignment = CenterVertically
             ) {
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(text = "from")
                 Spacer(modifier = Modifier.width(8.dp))
-                DropdownSelector(
+                DropDownSelector(
                     items = states,
                     label = "start state",
                     defaultSelectedIndex = states.indexOf(start)
                 ) { selectedItem ->
                     startState = selectedItem as State
                 }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .height(48.dp), verticalAlignment = CenterVertically
-            ) {
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(text = "to")
-                Spacer(modifier = Modifier.width(24.dp))
-                DropdownSelector(
+                Spacer(modifier = Modifier.width(8.dp))
+                DropDownSelector(
                     items = states,
                     label = "end state",
                     defaultSelectedIndex = states.indexOf(end)
                 ) { selectedItem ->
                     endState = selectedItem as State
+                }
+            }
+
+            /**
+             *what type of transition (pop/push)
+             */
+            if (machineType == MachineType.Pushdown) {
+                DropDownSelector(
+                    items = listOf("pop", "push"),
+                    defaultSelectedIndex = if (pdaTransitionType == "pop") 0 else 1
+                ) { selected ->
+                    pdaTransitionType = selected.toString()
+                }
+                Spacer(modifier = Modifier.size(4.dp))
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(96.dp),
+                    verticalAlignment = CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    if (pdaTransitionType == "pop") {
+                        FASDefaultTextField(
+                            hint = "pop",
+                            value = popVal,
+                            requirementText = "length is 1",
+                            onTextChange = {
+                                popVal = it
+                                pushVal = ""
+                                checkStack = ""
+                            },
+                            modifier = Modifier
+                                .width(96.dp)
+                                .height(70.dp)
+                                .padding(start = 16.dp)
+                        ) {
+                            popVal.length == 1
+
+                        }
+                        Icon(
+                            painter = painterResource(id = com.droidhen.theme.R.drawable.question),
+                            contentDescription = "",
+                            modifier = Modifier
+                                .fillMaxHeight(0.3f)
+                                .width(46.dp)
+                                .padding(end = 16.dp)
+                                .clickable {
+                                    Toast
+                                        .makeText(
+                                            context,
+                                            "set the char that will be popped from the top of the stack",
+                                            Toast.LENGTH_LONG
+                                        )
+                                        .show()
+                                })
+                    } else if (pdaTransitionType == "push") {
+                        FASDefaultTextField(
+                            hint = "pop-check",
+                            value = checkStack,
+                            requirementText = "length is 1",
+                            onTextChange = {
+                                checkStack = it
+                                popVal = ""
+                            },
+                            modifier = Modifier
+                                .width(130.dp)
+                                .height(60.dp)
+                                .padding(start = 16.dp)
+                        ) {
+                            checkStack.length == 1
+                        }
+                        FASDefaultTextField(
+                            hint = "push",
+                            value = pushVal,
+                            requirementText = "max length is 1",
+                            onTextChange = {
+                                pushVal = it
+                                popVal = ""
+                            },
+                            modifier = Modifier
+                                .width(80.dp)
+                                .height(60.dp)
+
+                        ) {
+                            pushVal.length <= 1
+                        }
+                        Icon(
+                            painter = painterResource(id = com.droidhen.theme.R.drawable.question),
+                            contentDescription = "",
+                            modifier = Modifier
+                                .fillMaxHeight(0.25f)
+                                .width(42.dp)
+                                .padding(end = 16.dp)
+                                .clickable {
+                                    Toast
+                                        .makeText(
+                                            context,
+                                            "set the char that will be checked on the top of the stack",
+                                            Toast.LENGTH_LONG
+                                        )
+                                        .show()
+                                    Toast
+                                        .makeText(
+                                            context,
+                                            "set the char that will be pushed to the stack",
+                                            Toast.LENGTH_LONG
+                                        )
+                                        .show()
+                                })
+                    }
                 }
             }
         }
@@ -1249,91 +1677,90 @@ abstract class Machine(val name: String, var version:Int, val machineType: Machi
     }
 
 
-    abstract fun getDerivationTreeElements(): List<Map<String?, Float>>
+    abstract fun getDerivationTreeElements(): List<List<TreeNode>>
 
     @Composable
     fun DerivationTree() {
         val derivationTreeElements = remember {
-            mutableStateOf<List<Map<String?, Float>>>(listOf())
+            mutableStateOf<List<List<TreeNode>>>(listOf())
         }
 
         LaunchedEffect(Unit) {
             derivationTreeElements.value = getDerivationTreeElements()
         }
 
-        LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .background(perlamutr_white)
-                .clip(MaterialTheme.shapes.large)
-                .border(3.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large),
-        ) {
-            items(derivationTreeElements.value) { treeLevel ->
-                Column(
-                    modifier = Modifier.width(30.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    treeLevel.forEach { (stateName, weight) ->
-                        if (stateName != null) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.primaryContainer)
-                                    .clip(MaterialTheme.shapes.medium)
-                                    .weight(weight)
-                                    .border(
-                                        1.dp,
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.shapes.medium
-                                    ),
-                                contentAlignment = Alignment.Center
+        if (derivationTreeElements.value.isNotEmpty()) {
+            val sumOfLeafesWeight = derivationTreeElements.value.last().sumOf { node ->
+                node.weight.toInt()
+            }
+            val height =
+                if (sumOfLeafesWeight <= 10) 350.dp else 350.dp + ((sumOfLeafesWeight - 10) * 30).dp
+            LazyColumn(
+                Modifier
+                    .height(350.dp)
+                    .fillMaxWidth()
+                    .background(perlamutr_white)
+                    .clip(MaterialTheme.shapes.large)
+                    .border(3.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
+            ) {
+                item {
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(height),
+                    ) {
+                        items(derivationTreeElements.value) { treeLevel ->
+                            Column(
+                                modifier = Modifier.width(30.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
                             ) {
-                                Text(text = stateName, fontSize = 18.sp)
+                                treeLevel.forEach { treeNode ->
+                                    if (treeNode.stateName != null) {
+                                        val backgroundColor = if (treeNode.isAccepted) {
+                                            if (treeNode.isCurrent) {
+                                                MaterialTheme.colorScheme.primaryContainer
+                                            } else {
+                                                MaterialTheme.colorScheme.background
+                                            }
+                                        } else {
+                                            if (treeNode.isCurrent) unable_views else MaterialTheme.colorScheme.errorContainer
+                                        }
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(MaterialTheme.shapes.medium)
+                                                .weight(treeNode.weight)
+                                                .border(
+                                                    1.dp,
+                                                    MaterialTheme.colorScheme.primary,
+                                                    MaterialTheme.shapes.medium
+                                                )
+                                                .background(backgroundColor),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(text = treeNode.stateName, fontSize = 18.sp)
+                                        }
+                                    } else {
+                                        Spacer(modifier = Modifier.weight(treeNode.weight))
+                                    }
+                                }
                             }
-                        } else {
-                            Spacer(modifier = Modifier.weight(weight))
+                            Spacer(modifier = Modifier.width(5.dp))
                         }
                     }
                 }
-                Spacer(modifier = Modifier.width(5.dp))
             }
         }
+
     }
 
-    abstract fun canReachFinalState(input:StringBuilder) : Boolean
+    @Composable
+    abstract fun MathFormat()
 
-    fun exportToJFF(): String {
-        val builder = StringBuilder()
-        builder.appendLine("""<?xml version="1.0" encoding="UTF-8" standalone="no"?>""")
-        builder.appendLine("<structure>")
-        builder.appendLine("    <type>${machineType}</type>")
-        builder.appendLine("    <automaton>")
+    abstract fun canReachFinalState(input: StringBuilder): Boolean
 
-
-        for (state in states) {
-            builder.appendLine("""        <state id="${state.index}" name="${state.name}">""")
-            builder.appendLine("""            <x>${state.position.x}</x>""")
-            builder.appendLine("""            <y>${state.position.y}</y>""")
-            if (state.initial) builder.appendLine("            <initial/>")
-            if (state.finite) builder.appendLine("            <final/>")
-            builder.appendLine("        </state>")
-        }
-
-        for (transition in transitions) {
-            builder.appendLine("        <transition>")
-            builder.appendLine("            <from>${transition.startState}</from>")
-            builder.appendLine("            <to>${transition.endState}</to>")
-            builder.appendLine("            <read>${transition.name}</read>")
-            builder.appendLine("        </transition>")
-        }
-
-        builder.appendLine("    </automaton>")
-        builder.appendLine("</structure>")
-
-        return builder.toString()
-    }
+    abstract fun exportToJFF(): String
 
     private fun getStatesByClick(clickOffset: Offset): State? {
         var result: State? = null
@@ -1377,3 +1804,10 @@ sealed class MachineType(val tag: String) {
 
     override fun toString(): String = tag
 }
+
+data class TreeNode(
+    val stateName: String?, // null если мёртвый узел
+    val weight: Float = 1f,
+    val isCurrent: Boolean = false,
+    val isAccepted: Boolean = false
+)

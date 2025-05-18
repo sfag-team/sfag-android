@@ -5,7 +5,7 @@ import androidx.compose.ui.unit.Dp
 import com.droidhen.formalautosim.core.entities.states.State
 import kotlin.math.*
 
-class Transition(var name: String = "a", val startState: Int, val endState: Int) {
+open class Transition(open var name: String = "a", open var startState: Int, open var endState: Int) {
 
     var controlPoint: Offset? = null
 

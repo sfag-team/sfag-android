@@ -8,6 +8,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.compose.ui.geometry.Offset
 import androidx.core.content.FileProvider
+import com.droidhen.formalautosim.core.entities.machines.PushDownTransition
 import com.droidhen.formalautosim.core.entities.states.State
 import com.droidhen.formalautosim.core.entities.transitions.Transition
 import org.w3c.dom.Element
@@ -80,12 +81,16 @@ class ExternalStorageController {
         val docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
         val inputStream = jffXml.byteInputStream()
         val doc = docBuilder.parse(inputStream)
-        val automaton = doc.getElementsByTagName("automaton").item(0)
 
+        val root = doc.documentElement
+        val machineType = root.getElementsByTagName("type").item(0).textContent.trim().lowercase()
+        val isPda = machineType == "pda"
+
+        val automaton = root.getElementsByTagName("automaton").item(0)
         val nodeList = automaton.childNodes
+
         for (i in 0 until nodeList.length) {
             val node = nodeList.item(i)
-
             if (node.nodeType != Node.ELEMENT_NODE) continue
             val element = node as Element
 
@@ -115,7 +120,22 @@ class ExternalStorageController {
                     val to = element.getElementsByTagName("to").item(0).textContent.toInt()
                     val read = element.getElementsByTagName("read").item(0)?.textContent ?: ""
 
-                    transitions.add(Transition(read, from, to))
+                    if (isPda) {
+                        val pop = element.getElementsByTagName("pop").item(0)?.textContent ?: ""
+                        val push = element.getElementsByTagName("push").item(0)?.textContent ?: ""
+
+                        transitions.add(
+                            PushDownTransition(
+                                name = read,
+                                startState = from,
+                                endState = to,
+                                pop = pop,
+                                push = push
+                            )
+                        )
+                    } else {
+                        transitions.add(Transition(read, from, to))
+                    }
                 }
             }
         }
