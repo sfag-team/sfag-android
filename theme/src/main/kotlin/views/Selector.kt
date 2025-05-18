@@ -20,7 +20,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.droidhen.theme.R
 
 @Composable
-fun DropdownSelector(
+fun DropDownSelector(
     items: List<Any>,
     label: Any = "Chose an item",
     defaultSelectedIndex: Int = 0,
@@ -55,7 +54,7 @@ fun DropdownSelector(
     Box(
         modifier = Modifier
             .wrapContentSize(Alignment.TopCenter)
-            .padding(4.dp)
+            .padding(start = 4.dp, end = 4.dp)
     ) {
 
         OutlinedButton(onClick = { expanded = true }) {

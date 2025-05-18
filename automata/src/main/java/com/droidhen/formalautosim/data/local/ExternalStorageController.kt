@@ -130,7 +130,7 @@ class ExternalStorageController {
                                 startState = from,
                                 endState = to,
                                 pop = pop,
-                                pull = push
+                                push = push
                             )
                         )
                     } else {
