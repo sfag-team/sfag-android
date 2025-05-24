@@ -1,5 +1,7 @@
 package com.example.gramatika
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -7,6 +9,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -17,6 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat.startActivity
+import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -34,23 +41,24 @@ class GrammarActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        val exampleUri: Uri? = intent.getParcelableExtra("example uri")
+        val assetPath = intent?.getStringExtra("example uri")
         setContent {
             GramatikaTheme {
                 // Create NavController for navigation
                 val navController = rememberNavController()
                 val grammarViewModel: Grammar = viewModel()
                 val inputsViewModel: Inputs = viewModel()
-                LaunchedEffect(Unit) {
-                    exampleUri?.let {
-                        grammarViewModel.loadFromXmlUri(this@GrammarActivity, it)
+                LaunchedEffect(assetPath) {
+                    if (assetPath != null) {
+                        val inputStream = assets.open(assetPath)
+                        grammarViewModel.loadFromXmlStream(inputStream)
                     }
                 }
                 // Set up NavHost with two composable screens
                 Scaffold(
                     // Bottom navigation
                     topBar = {
-                        TopNavigationBar(navController = navController, grammarViewModel)
+                        TopNavigationBar(navController = navController, grammarViewModel, context = this)
                     }, content = { padding ->
                         // Nav host: where screens are placed
                         NavHostContainer(navController = navController, padding = padding, grammarViewModel, inputsViewModel)
@@ -66,7 +74,7 @@ fun NavHostContainer(
     navController: NavHostController,
     padding: PaddingValues,
     grammarViewModel: Grammar,
-    inputsViewModel: Inputs
+    inputsViewModel: Inputs,
 ) {
 
     NavHost(navController = navController, startDestination = "grammarScreen",
@@ -103,7 +111,7 @@ fun NavHostContainer(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopNavigationBar(navController: NavHostController, grammarViewModel: Grammar) {
+fun TopNavigationBar(navController: NavHostController, grammarViewModel: Grammar, context: Context) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -113,6 +121,17 @@ fun TopNavigationBar(navController: NavHostController, grammarViewModel: Grammar
         },
         navigationIcon = {
             Row{
+                IconButton(onClick = {
+                    val intent = Intent().setClassName(
+                        context,
+                        "com.droidhen.formalautosim.presentation.activities.MainActivity"
+                    ).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(intent)
+                }) {
+                    Icon(Icons.Default.Home, contentDescription = "Return to Home", tint = MaterialTheme.colorScheme.primary)
+                }
             IconButton(
                 onClick = {
                     navController.navigate("filePick")
@@ -129,7 +148,7 @@ fun TopNavigationBar(navController: NavHostController, grammarViewModel: Grammar
             }}
         },
         actions = {
-            Constants.TopNavItems.forEach { navItem ->
+            NavConstants.TopNavItems.forEach { navItem ->
                 IconButton(
                     onClick = {
                         if (currentRoute != navItem.route && grammarViewModel.isGrammarFinished.value == true) {

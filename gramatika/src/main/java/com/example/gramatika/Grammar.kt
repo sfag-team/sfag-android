@@ -7,11 +7,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.MutableLiveData
 import org.w3c.dom.Document
 import org.w3c.dom.Element
+import java.io.InputStream
 import java.io.OutputStream
 import java.nio.charset.Charset
 import javax.xml.parsers.DocumentBuilderFactory
-
-
 
 class Grammar : ViewModel() {
     // LiveData to hold the list of grammar rules
@@ -41,7 +40,9 @@ class Grammar : ViewModel() {
             return
         }
         _rules.value = _rules.value?.plus(newRule)
-        grammarType(newRule)
+        for(ruleRight in newRule.right.split('|')){
+            grammarType(GrammarRule(newRule.left,ruleRight))
+        }
         updateSymbols()
     }
 
@@ -159,6 +160,7 @@ class Grammar : ViewModel() {
                         }
                     }
                 }
+                toggleGrammarFinished()
             }
         } catch (e: Exception) {
 
@@ -196,7 +198,28 @@ class Grammar : ViewModel() {
         }
     }
 
+    fun loadFromXmlStream(inputStream: InputStream) {
+        try {
+            val dbFactory = DocumentBuilderFactory.newInstance()
+            val dBuilder = dbFactory.newDocumentBuilder()
+            val doc = dBuilder.parse(inputStream)
 
+            doc.documentElement.normalize()
+            val nodeList = doc.getElementsByTagName("production")
+            _rules.value = emptyList()
+
+            for (i in 0 until nodeList.length) {
+                val element = nodeList.item(i) as Element
+                val left = element.getElementsByTagName("left").item(0).textContent
+                val rightNode = element.getElementsByTagName("right").item(0)
+                val right = if (rightNode == null || rightNode.textContent.isBlank()) "ε" else rightNode.textContent
+
+                addRule(left, right)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
 
 }

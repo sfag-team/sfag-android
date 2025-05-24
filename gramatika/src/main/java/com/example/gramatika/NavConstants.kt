@@ -12,7 +12,7 @@ data class NavItem(
     val route: String
 )
 
-object Constants {
+object NavConstants {
     val TopNavItems = listOf(
         NavItem("Grammar", Icons.Default.Build, "grammarScreen"),
         NavItem("Test", Icons.Default.PlayArrow, "testScreen"),

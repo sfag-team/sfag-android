@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
 
     private fun navToGrammarActivity(uri: String?){
         val intent = Intent(this, GrammarActivity::class.java)
-        uri?.apply { intent.putExtra("example uri", this) }
+        uri?.let { intent.putExtra("example uri", uri) }
         startActivity(intent)
     }
 

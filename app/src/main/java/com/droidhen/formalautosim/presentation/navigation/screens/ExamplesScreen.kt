@@ -123,15 +123,15 @@ object ExampleSources {
         ),
     )
     val gramatikaExamples = listOf(
-        "app/src/main/assets/grammar/g-reg.jff" to ExampleDescription(
+        "grammar/g-reg.jff" to ExampleDescription(
             "Regular Grammar",
             "RG: String of 0 and 1"
         ),
-        "app/src/main/assets/grammar/g-cf.jff" to ExampleDescription(
+        "grammar/g-cf.jff" to ExampleDescription(
             "Context-Free Grammar",
             "CFG: Language where the number of a's and b'smust match (aⁿbⁿ)"
         ),
-        "app/src/main/assets/grammar/g-cs.jff" to ExampleDescription(
+        "grammar/g-cs.jff" to ExampleDescription(
             "Context-Sensitive Grammar",
             "CSG: Language where the number of a's, b's, and c's must match (aⁿbⁿcⁿ)"
         )

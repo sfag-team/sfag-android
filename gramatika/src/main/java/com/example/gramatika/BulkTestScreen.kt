@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,9 +15,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,26 +41,38 @@ fun BulkTestScreen(navController: NavController, grammarViewModel: Grammar, inpu
     Column(modifier = Modifier
         .fillMaxSize()
         .padding(16.dp)) {
+        Text(
+            text = "Test multiple inputs",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 8.dp, end = 8.dp)
+        )
+        HorizontalDivider(
+            modifier = Modifier
+                .height(4.dp)
+                .fillMaxWidth(),
+            color = MaterialTheme.colorScheme.primary
+        )
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(inputs.indices.toList()) { index ->
                 if(inputs.size > 5 && index != inputs.lastIndex && inputs[index] == ""){
                     inputsViewModel.removeRowAt(index)
                 }else{
-                TableRow(
-                    text = inputs[index],
-                    onTextChange = { newText ->
-                        inputsViewModel.updateRowText(index, newText)
-                        if (index == inputs.lastIndex && newText.isNotBlank()) {
-                            inputsViewModel.addRow()
+                    TableRow(
+                        text = inputs[index],
+                        onTextChange = { newText ->
+                            inputsViewModel.updateRowText(index, newText)
+                            if (index == inputs.lastIndex && newText.isNotBlank()) {
+                                inputsViewModel.addRow()
+                            }
+                        },
+                        rules = rules,
+                        terminals = terminals,
+                        type = grammarType,
+                        navToDerivation = { inputText ->
+                            navController.navigate("testScreen?input=${Uri.encode(inputText)}")
                         }
-                    },
-                    rules = rules,
-                    terminals = terminals,
-                    type = grammarType,
-                    navToDerivation = { inputText ->
-                        navController.navigate("testScreen?input=${Uri.encode(inputText)}")
-                    }
-                )}
+                    )}
             }
         }
     }
@@ -78,7 +93,7 @@ fun TableRow(text: String, onTextChange: (String) -> Unit, rules: List<GrammarRu
             onValueChange = onTextChange,
             modifier = Modifier.weight(1f),
 
-        )
+            )
 
         Spacer(modifier = Modifier.width(8.dp))
 
