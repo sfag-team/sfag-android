@@ -750,7 +750,7 @@ abstract class Machine(
                                             com.droidhen.theme.R.drawable.cross
                                         }
                                     } else {
-                                        if (canReachInitialStack(input)) {
+                                        if (canReachInitialStackPDA(input, listOf('Z'))) {
                                             com.droidhen.theme.R.drawable.check
                                         } else {
                                             com.droidhen.theme.R.drawable.cross
@@ -1354,7 +1354,7 @@ abstract class Machine(
                     if (machineType == MachineType.Finite) {
                         transitions.filter { transition ->
                             transition.startState == start.index && transition.endState == end.index
-                        }.forEach {
+                        }[0].let {
                             it.name = name
                             it.startState = startState.index
                             it.endState = endState.index
@@ -1364,7 +1364,7 @@ abstract class Machine(
                         transitions.filter { transition ->
                             transition.startState == start.index && transition.endState == end.index && transition.push == (push
                                 ?: "") && transition.pop == (pop ?: "")
-                        }.forEach {
+                        }[0].let {
                             it.name = name
                             it.startState = startState.index
                             it.endState = endState.index
