@@ -83,8 +83,8 @@ class PushDownMachine(
             currentState = nextState.index
 
             val result = when (acceptanceCriteria) {
-                AcceptanceCriteria.BY_FINITE_STATE -> canReachFinalState(StringBuilder(nextInput))
-                AcceptanceCriteria.BY_INITIAL_STACK -> canReachInitialStack(StringBuilder(nextInput))
+                AcceptanceCriteria.BY_FINITE_STATE -> canReachFinalStatePDA(StringBuilder(nextInput), tempStack)
+                AcceptanceCriteria.BY_INITIAL_STACK -> canReachInitialStackPDA(StringBuilder(nextInput), tempStack)
             }
 
 
@@ -224,7 +224,6 @@ class PushDownMachine(
             paths = nextPaths
         }
 
-        // === Условие приёма ===
         val acceptedPaths = allPaths.filter { (path, stack) ->
             val last = path.lastOrNull()
             when (acceptanceCriteria) {
@@ -236,7 +235,6 @@ class PushDownMachine(
             }
         }.map { it.first }
 
-        // === Постобработка ===
         val maxDepth = allPaths.maxOfOrNull { it.first.size } ?: 0
         val normalizedPaths = allPaths.map { (path, _) ->
             buildList {
@@ -314,8 +312,15 @@ class PushDownMachine(
     }
 
 
-
     override fun canReachFinalState(input: StringBuilder): Boolean {
+        return canReachFinalStatePDA(input, initialStack = symbolStack)
+    }
+
+    private fun canReachFinalStatePDA(
+        input: StringBuilder,
+        initialStack: List<Char>
+    ): Boolean {
+
         data class Path(
             val currentState: State,
             val inputIndex: Int,
@@ -329,7 +334,7 @@ class PushDownMachine(
         }
         if (startState == null) return false
 
-        var paths = mutableListOf(Path(startState, 0, listOf('Z')))
+        var paths = mutableListOf(Path(startState, 0, initialStack))
 
         while (paths.isNotEmpty()) {
             val nextPaths = mutableListOf<Path>()
@@ -353,14 +358,12 @@ class PushDownMachine(
                     val newStack = path.symbolStack.toMutableList()
 
                     if (transition is PushDownTransition) {
-                        // POP
                         if (transition.pop.isNotEmpty()) {
                             val expectedTop = transition.pop.first()
                             if (newStack.isEmpty() || newStack.last() != expectedTop) continue
                             newStack.removeLast()
                         }
 
-                        // PUSH
                         if (transition.push.isNotEmpty()) {
                             transition.push.reversed().forEach { symbol ->
                                 newStack.add(symbol)
@@ -388,7 +391,7 @@ class PushDownMachine(
 
 
 
-    fun canReachInitialStack(input: StringBuilder): Boolean {
+    fun canReachInitialStackPDA(input: StringBuilder, symbolStack: List<Char>): Boolean {
         data class Path(
             val currentState: State,
             val inputIndex: Int,
@@ -400,7 +403,7 @@ class PushDownMachine(
             states.firstOrNull { it.isCurrent }
         } ?: return false
 
-        var paths = mutableListOf(Path(startState, 0, listOf('Z')))
+        var paths = mutableListOf(Path(startState, 0,symbolStack))
 
         while (paths.isNotEmpty()) {
             val nextPaths = mutableListOf<Path>()
