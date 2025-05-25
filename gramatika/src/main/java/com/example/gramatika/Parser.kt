@@ -14,16 +14,11 @@ fun parse(input: String, rules: List<GrammarRule>, terminals: Set<Char>, type: G
 
     // Initialize the queue with rules with the start symbol "S"
     rules.filter { it.left == "S" }.forEach { rule ->
-        if(rule.right == input){
-            stateHistory[rule.right] = State("S", rule)
-            return reconstructDerivation(rule.right, stateHistory)
-        }else{
-            states.add(rule.right)
-            stateHistory[rule.right] = State("S", rule)
-        }
+        states.add(rule.right)
+        stateHistory[rule.right] = State("S", rule)
     }
 
-    val maxDepth = (100*exp(0.5*input.length)).toInt()
+    val maxDepth = (100*exp(0.7*input.length)).toInt()
     var steps = 0
     // Process the queue
     if (type == GrammarType.UNRESTRICTED || type == GrammarType.CONTEXT_SENSITIVE) {
@@ -31,41 +26,27 @@ fun parse(input: String, rules: List<GrammarRule>, terminals: Set<Char>, type: G
         while (states.isNotEmpty()) {
             if (steps > maxDepth) return null
             val currentState = states.removeFirst()
-            val cleanCurrentState = currentState.replace("ε", "")
+//            val cleanCurrentState = currentState.replace("ε", "")
             steps++
-            if(cleanCurrentState == input){
-                return reconstructDerivation(currentState,stateHistory)
-            }
 
             for (rule in rules) {
-                if (cleanCurrentState.contains(rule.left)) {
-                    val newStates = mutableListOf<String>()
-                    var index = cleanCurrentState.indexOf(rule.left)
-                    while (index != -1) {
-                        val newState = currentState.substring(0, index) +
-                                rule.right +
-                                currentState.substring(index + rule.left.length)
 
-                        if (newState.replace("ε", "") == input) {
-                            stateHistory[newState] = State(currentState, rule)
-                            return reconstructDerivation(newState, stateHistory)
-                        }
 
-                        if (!rules.any { newState.replace("ε", "").contains(it.left) }) {
-                            index = cleanCurrentState.indexOf(rule.left, index + 1)
-                            continue
-                        }
+                val newState = currentState.replaceFirst(rule.left,rule.right)
 
-                        newStates.add(newState)
-                        index = cleanCurrentState.indexOf(rule.left, index + 1)
-                    }
+                if (newState.replace("ε", "") == input) {
+                    stateHistory[newState] = State(currentState, rule)
+                    return reconstructDerivation(newState, stateHistory)
+                }
 
-                    for (state in newStates) {
-                        if (!stateHistory.containsKey(state)) {
-                            states.add(state)
-                            stateHistory[state] = State(currentState, rule)
-                        }
-                    }
+                if (!rules.any { newState.replace("ε", "").contains(it.left) }) {
+
+                    continue
+                }
+
+                if (!stateHistory.containsKey(newState)) {
+                    states.add(newState)
+                    stateHistory[newState] = State(currentState, rule)
                 }
             }
         }
@@ -74,35 +55,30 @@ fun parse(input: String, rules: List<GrammarRule>, terminals: Set<Char>, type: G
         while (states.isNotEmpty()) {
             if (steps > maxDepth) return null
             val currentState = states.removeFirst()
-            val cleanCurrentState = currentState.replace("ε", "")
+
             steps++
-            if(cleanCurrentState == input){
-                return reconstructDerivation(currentState,stateHistory)
-            }
+
 
             for (rule in rules) {
-                if (cleanCurrentState.contains(rule.left)) {
-                    val newState = currentState.replaceFirst(rule.left, rule.right)
+                val newState = currentState.replaceFirst(rule.left, rule.right)
 
-                    if (newState.replace("ε", "") == input) {
+                if (newState.replace("ε", "") == input) {
+                    if(newState != currentState)
                         stateHistory[newState] = State(currentState, rule)
-                        return reconstructDerivation(newState, stateHistory)
-                    }
+                    return reconstructDerivation(newState, stateHistory)
+                }
 
-                    if (!rules.any { newState.replace("ε", "").contains(it.left) }) continue
+                if (!rules.any { newState.replace("ε", "").contains(it.left) }) continue
 
-                    if (!stateHistory.containsKey(newState)) {
-                        val terminalPart = extractLargestTerminalSubstring(newState.replace("ε", ""))
-                        if (!input.contains(terminalPart)) continue
-
-                        states.add(newState)
-                        stateHistory[newState] = State(currentState, rule)
-                    }
+                if (!stateHistory.containsKey(newState)) {
+                    val terminalPart = extractLargestTerminalSubstring(newState.replace("ε", ""))
+                    if (!input.contains(terminalPart)) continue
+                    states.add(newState)
+                    stateHistory[newState] = State(currentState, rule)
                 }
             }
         }
     }
-
     // If no match is found
     return null
 }
