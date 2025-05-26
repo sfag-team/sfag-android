@@ -21,6 +21,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -29,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.gramatika.ui.theme.light_blue
 
 
 @Composable
@@ -92,7 +95,10 @@ fun TableRow(text: String, onTextChange: (String) -> Unit, rules: List<GrammarRu
             value = text,
             onValueChange = onTextChange,
             modifier = Modifier.weight(1f),
-
+            colors = TextFieldDefaults.colors(
+                unfocusedContainerColor = light_blue,
+                focusedContainerColor = light_blue
+            )
             )
 
         Spacer(modifier = Modifier.width(8.dp))

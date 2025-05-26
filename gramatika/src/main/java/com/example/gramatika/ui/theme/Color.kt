@@ -1,8 +1,24 @@
 package com.example.gramatika.ui.theme
 import androidx.compose.ui.graphics.Color
 
-val primaryLight = Color(0xFF4F5B92)
+val blue_one = Color(0xFF6C8176) //primary
+val light_gray = Color(0xFFEDFFF5)//background
+val medium_gray = Color(0x4F1A030C)
+val blue_two = Color(0xFF2E3D3D) //secondary
+val blue_three = Color(0xFF052836) //tertiary
+val perlamutr_white = Color(0xFFF4FFFF) //surface
+val light_blue = Color(0xFFB1E6D1) //primaryContainer
+val darker_light_blue = Color(0xFF7FC7A7)
+val unable_views = Color(0xFFA0BBB9)
+val error_red_light = Color(0xFFEC5C49) //error container
+val error_red = Color(0xFF8C230F)
+
+//primary
+//secondaryContainer
+//onSecondaryContainer
+
 val onPrimaryLight = Color(0xFFFFFFFF)
+val primaryLight = Color(0xFF4F5B92)
 val primaryContainerLight = Color(0xFFDDE1FF)
 val onPrimaryContainerLight = Color(0xFF374379)
 val secondaryLight = Color(0xFF5A5D72)

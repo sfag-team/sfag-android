@@ -131,7 +131,7 @@ fun GrammarScreen(grammarViewModel: Grammar) {
                     Column(){
                         Text(
                             text = "Type",
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.secondary,
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.padding(horizontal = 8.dp)
                         )
@@ -146,7 +146,7 @@ fun GrammarScreen(grammarViewModel: Grammar) {
                     Column(){
                         Text(
                             text = "Start symbol",
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.secondary,
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.padding(horizontal = 8.dp)
                         )
@@ -161,7 +161,7 @@ fun GrammarScreen(grammarViewModel: Grammar) {
                 Text(
                     text = "Non-terminals",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
                 )
                 Text(
@@ -179,7 +179,7 @@ fun GrammarScreen(grammarViewModel: Grammar) {
                 Text(
                     text = "Terminals",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
                 )
                 Text(
