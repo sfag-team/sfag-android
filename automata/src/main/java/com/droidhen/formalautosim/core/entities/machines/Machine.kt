@@ -978,7 +978,7 @@ abstract class Machine(
     private fun addNewTransition(name: String, startState: State, endState: State) {
         var iterations = 0
         transitions.filter { transition ->
-            transition.startState == startState.index && transition.endState == endState.index
+            transition.startState == startState.index && transition.endState == endState.index && transition.name == name
         }.forEach {
             iterations++
             it.name += name

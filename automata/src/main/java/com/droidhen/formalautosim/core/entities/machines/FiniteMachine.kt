@@ -26,7 +26,11 @@ class FiniteMachine(
 
     @Composable
     override fun calculateTransition(onAnimationEnd: (Boolean?) -> Unit) {
-        if (currentState == null) return
+        if (currentState == null) currentState = states.firstOrNull { it.initial }?.index
+        if (currentState == null) {
+            onAnimationEnd(null)
+            return
+        }
 
         val startState = getStateByIndex(currentState!!)
 

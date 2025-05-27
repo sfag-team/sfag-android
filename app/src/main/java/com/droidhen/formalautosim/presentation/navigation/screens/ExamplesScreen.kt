@@ -113,15 +113,15 @@ private fun ExamplesColumn(items: List<Pair<String, ExampleDescription>>,onItemC
 
 object ExampleSources {
     val automataExamples = listOf(
-        "automata/pda_determ.jff" to ExampleDescription(
-            "PDA deterministic",
-            "Push-down automata, tests aⁿbⁿ words"
-        ),
-        "automata/pda_no_determ.jff" to ExampleDescription(
-            "PDA no deterministic",
-            "Push-down automata, no deterministic tests"
-        ),
+        "automata/a-n.jff" to ExampleDescription("aⁿ", "deterministic finite automaton"),
+        "automata/3k-1.jff" to ExampleDescription("3k +1", "deterministic finite automaton"),
+        "automata/ends-dfa.jff" to ExampleDescription("ends 01 to 10", "deterministic finite automaton"),
+        "automata/ends-nfa.jff" to ExampleDescription("ends 01 to 10", "nondeterministic finite automaton"),
+        "automata/an-bn-pda.jff" to ExampleDescription("aⁿbⁿ", "deterministic pushdown automaton"),
+        "automata/wcw-r.jff" to ExampleDescription("wcwR", "deterministic pushdown automaton"),
+        "automata/ww-r.jff" to ExampleDescription("wwR", "nondeterministic pushdown automaton")
     )
+
     val gramatikaExamples = listOf(
         "grammar/g-reg.jff" to ExampleDescription(
             "aⁿ",

@@ -3,50 +3,54 @@
     <type>pda</type>
     <automaton>
         <state id="1" name="q0">
-            <x>176.84</x>
-            <y>126.27</y>
+            <x>20.269989</x>
+            <y>236.1499</y>
             <initial/>
         </state>
         <state id="2" name="q1">
-            <x>191.13</x>
-            <y>334.55</y>
+            <x>130.07986</x>
+            <y>241.74004</y>
         </state>
         <state id="3" name="q2">
-            <x>181.99</x>
-            <y>526.83</y>
+            <x>254.68994</x>
+            <y>243.49995</y>
+        </state>
+        <state id="4" name="q3">
+            <x>255.29001</x>
+            <y>353.92</y>
             <final/>
         </state>
         <transition>
             <from>1</from>
-            <to>1</to>
+            <to>2</to>
             <read>a</read>
             <pop>Z</pop>
             <push>AZ</push>
         </transition>
         <transition>
-            <from>1</from>
-            <to>1</to>
+            <from>2</from>
+            <to>2</to>
             <read>a</read>
             <pop>A</pop>
             <push>AA</push>
         </transition>
         <transition>
-            <from>1</from>
-            <to>2</to>
-            <read>b</read>
-            <pop>A</pop>
-            <push></push>
-        </transition>
-        <transition>
-            <from>2</from>
-            <to>2</to>
-            <read>b</read>
-            <pop>A</pop>
-            <push></push>
-        </transition>
-        <transition>
             <from>2</from>
             <to>3</to>
+            <read>b</read>
+            <pop>A</pop>
+            <push></push>
+        </transition>
+        <transition>
+            <from>3</from>
+            <to>3</to>
+            <read>b</read>
+            <pop>A</pop>
+            <push></push>
+        </transition>
+        <transition>
+            <from>3</from>
+            <to>4</to>
             <read></read>
             <pop>Z</pop>
             <push>Z</push>

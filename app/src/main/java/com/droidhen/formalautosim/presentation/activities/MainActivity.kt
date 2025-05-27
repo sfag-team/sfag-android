@@ -76,8 +76,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
-
     private fun navToGrammarActivity(uri: String?){
         val intent = Intent(this, GrammarActivity::class.java)
         uri?.let { intent.putExtra("example uri", uri) }
