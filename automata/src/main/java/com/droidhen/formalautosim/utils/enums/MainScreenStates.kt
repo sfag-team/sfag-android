@@ -4,5 +4,5 @@ enum class MainScreenStates {
     SIMULATING,
     SIMULATION_RUN,
     EDITING_INPUT,
-    EDITING_MACHINE
+    EDITING_MACHINE,
 }

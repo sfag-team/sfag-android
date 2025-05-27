@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">FAS</string>
+    <string name="app_name">AutoGram</string>
     <string name="icon_image">icon image</string>
     <string name="sign_in">SIGN-IN</string>
     <string name="email">email</string>

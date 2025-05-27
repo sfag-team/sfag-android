@@ -1,5 +1,6 @@
 package com.droidhen.formalautosim.presentation.navigation.screens
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -50,8 +51,8 @@ import views.FASDefaultTextField
 import views.FASImmutableTextField
 
 @Composable
-fun AutomataScreen(navBack: ()->Unit) {
-    val viewModel:AutomataViewModel = hiltViewModel()
+fun AutomataScreen(navBack: () -> Unit) {
+    val viewModel: AutomataViewModel = hiltViewModel()
     val automata by remember {
         mutableStateOf(CurrentMachine.machine!!)
     }
@@ -82,12 +83,15 @@ fun AutomataScreen(navBack: ()->Unit) {
             MainScreenStates.SIMULATION_RUN -> {}
 
             MainScreenStates.EDITING_INPUT -> {
+                viewModel.saveMachine(automata)
                 currentScreenState.value = MainScreenStates.SIMULATING
             }
 
             MainScreenStates.EDITING_MACHINE -> {
+                viewModel.saveMachine(automata)
                 currentScreenState.value = MainScreenStates.SIMULATING
             }
+
         }
     }
     Box(
@@ -114,7 +118,11 @@ fun AutomataScreen(navBack: ()->Unit) {
                         exportFileWindow = true
                     }
                     FASButton(text = "Share") {
-                        ExternalStorageController.shareJffFile(context = context, jffContent = automata.exportToJFF(), fileName = automata.name)
+                        ExternalStorageController.shareJffFile(
+                            context = context,
+                            jffContent = automata.exportToJFF(),
+                            fileName = automata.name
+                        )
                     }
                 }
                 Box(
@@ -123,9 +131,7 @@ fun AutomataScreen(navBack: ()->Unit) {
                         .height(if (automata.machineType == MachineType.Finite) 500.dp else 600.dp)
                         .background(MaterialTheme.colorScheme.surface)
                         .border(
-                            2.dp,
-                            MaterialTheme.colorScheme.tertiary,
-                            MaterialTheme.shapes.large
+                            2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large
                         )
                         .clip(MaterialTheme.shapes.large)
                 ) {
@@ -139,10 +145,23 @@ fun AutomataScreen(navBack: ()->Unit) {
                         MainScreenStates.SIMULATION_RUN -> {
                             key(animation.intValue) {
                                 if (isLockedAnimation.not()) {
-                                    automata.calculateTransition {
+                                    automata.calculateTransition { state ->
                                         isLockedAnimation = true
                                         recompose.intValue++
                                         currentScreenState.value = MainScreenStates.SIMULATING
+                                        if (state != null && state) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Your machine finished successfully",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            } else if(state!=null) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Your machine failed",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                        }
                                     }
                                 }
                             }
@@ -158,7 +177,7 @@ fun AutomataScreen(navBack: ()->Unit) {
                         }
 
                         MainScreenStates.EDITING_MACHINE -> {
-                            automata.EditingMachine{
+                            automata.EditingMachine {
                                 recompose.intValue++
                             }
                         }
@@ -176,30 +195,25 @@ fun AutomataScreen(navBack: ()->Unit) {
                         .height(65.dp)
                         .clip(MaterialTheme.shapes.large)
                         .border(
-                            2.dp,
-                            MaterialTheme.colorScheme.tertiary,
-                            MaterialTheme.shapes.large
+                            2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large
                         )
                         .background(light_blue),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.editing_machine),
+                    Icon(painter = painterResource(id = R.drawable.editing_machine),
                         contentDescription = "",
                         modifier = Modifier.clickable {
                             currentScreenState.value = MainScreenStates.EDITING_MACHINE
                         })
                     Spacer(modifier = Modifier.width(36.dp))
-                    Icon(
-                        painter = painterResource(id = R.drawable.input_ic),
+                    Icon(painter = painterResource(id = R.drawable.input_ic),
                         contentDescription = "",
                         modifier = Modifier.clickable {
                             currentScreenState.value = MainScreenStates.EDITING_INPUT
                         })
                     Spacer(modifier = Modifier.width(36.dp))
-                    Icon(
-                        painter = painterResource(id = R.drawable.go_to_next),
+                    Icon(painter = painterResource(id = R.drawable.go_to_next),
                         contentDescription = "",
                         modifier = Modifier.clickable {
                             if (currentScreenState.value != MainScreenStates.SIMULATING && currentScreenState.value != MainScreenStates.SIMULATION_RUN) {
@@ -229,7 +243,7 @@ fun AutomataScreen(navBack: ()->Unit) {
 
         key(exportFileWindow) {
             if (exportFileWindow) {
-                ExportWindow(automata){
+                ExportWindow(automata) {
                     exportFileWindow = false
                 }
             }
@@ -242,13 +256,18 @@ fun AutomataScreen(navBack: ()->Unit) {
  * Shows additional info for related screen state  (ex.: for simulating it shows derivation tree and shows interface for multipling testing)
  */
 @Composable
-private fun BottomScreenPart(currentScreenState: MutableState<MainScreenStates>, automata: Machine, bottomRecompose: MutableIntState) {
+private fun BottomScreenPart(
+    currentScreenState: MutableState<MainScreenStates>,
+    automata: Machine,
+    bottomRecompose: MutableIntState
+) {
     when (currentScreenState.value) {
         MainScreenStates.SIMULATING -> {
             automata.DerivationTree()
             Spacer(modifier = Modifier.size(32.dp))
             automata.MathFormat()
         }
+
         MainScreenStates.EDITING_MACHINE -> {
             automata.EditingMachineBottom(bottomRecompose)
         }
@@ -266,33 +285,34 @@ private fun ExportWindow(machine: Machine, finished: () -> Unit = {}) {
 
     val context = LocalContext.current
 
-    DefaultFASDialogWindow(
-        title = "export machine as .jff",
-        onDismiss = finished,
-        onConfirm = {
-            ExternalStorageController.saveJffToDownloads(
-                context,
-                jFFMachine,
-                fileName
-            )
-            finished()
-        }) {
-        Column(modifier = Modifier
-            .fillMaxHeight(0.6f)
-            .fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Top) {
+    DefaultFASDialogWindow(title = "export machine as .jff", onDismiss = finished, onConfirm = {
+        ExternalStorageController.saveJffToDownloads(
+            context, jFFMachine, fileName
+        )
+        finished()
+    }) {
+        Column(
+            modifier = Modifier
+                .fillMaxHeight(0.6f)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
             Spacer(modifier = Modifier.size(40.dp))
-            FASDefaultTextField(
-                modifier = Modifier.fillMaxWidth(0.7f),
+            FASDefaultTextField(modifier = Modifier.fillMaxWidth(0.7f),
                 hint = "file name",
                 value = fileName,
                 requirementText = "file name: without ' ', '%', '.'",
                 onTextChange = {
                     fileName = it
-                }, isRequirementsComplete = {
+                },
+                isRequirementsComplete = {
                     fileName.let { !(it.contains(' ') || it.contains('%') || it.contains('.')) }
                 })
             Spacer(modifier = Modifier.size(40.dp))
-            FASImmutableTextField(text = "File will be saved to downloads", modifier = Modifier.fillMaxWidth(0.85f))
+            FASImmutableTextField(
+                text = "File will be saved to downloads", modifier = Modifier.fillMaxWidth(0.85f)
+            )
         }
     }
 }

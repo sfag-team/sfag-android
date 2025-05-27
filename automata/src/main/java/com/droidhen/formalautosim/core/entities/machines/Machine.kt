@@ -89,31 +89,6 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-class MyStringModifier(val value: String) : Modifier.Element
-
-fun Modifier.myString(value: String): Modifier {
-    return this.then(MyStringModifier(value))
-}
-
-fun Modifier.findMyString(): String? {
-    return this.foldIn<String?>(null) { acc, element ->
-        acc ?: (element as? MyStringModifier)?.value
-    }
-}
-
-fun Modifier.onTapFindMyString(
-    onTap: (String?) -> Unit
-): Modifier = composed {
-    val foundString = this.findMyString()
-
-    pointerInput(foundString) {
-        detectTapGestures {
-            onTap(foundString)
-        }
-    }
-}
-
-
 @Suppress("UNREACHABLE_CODE")
 abstract class Machine(
     val name: String,
@@ -318,7 +293,7 @@ abstract class Machine(
      */
     @Composable
     @SuppressLint("ComposableNaming")
-    abstract fun calculateTransition(onAnimationEnd: () -> Unit)
+    abstract fun calculateTransition(onAnimationEnd: (Boolean?) -> Unit)
 
     /**
      * convert machine to key - value String format for saving machine on relative database
@@ -662,7 +637,7 @@ abstract class Machine(
         key(editingRecompose) {
             Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Spacer(modifier = Modifier.size(24.dp))
-                Row(modifier = Modifier.fillMaxWidth(0.8f)) {
+                Row(modifier = Modifier.fillMaxWidth(0.9f)) {
                     Text(
                         text = stringResource(R.string.editing_input_headline),
                         style = MaterialTheme.typography.headlineLarge
@@ -670,7 +645,7 @@ abstract class Machine(
                     Spacer(modifier = Modifier.width(10.dp))
                     FASButton(text = "ADD") {
                         savedInputs.add(input)
-                        input = StringBuilder()
+                        input = java.lang.StringBuilder(savedInputs.last().toString().reversed()+"")
                         editingRecompose++
                     }
                 }
@@ -744,13 +719,13 @@ abstract class Machine(
                                 painter = painterResource(
                                     id =
                                     if(machineType == MachineType.Finite || ((this@Machine as PushDownMachine).acceptanceCriteria == AcceptanceCriteria.BY_FINITE_STATE)){
-                                        if (canReachFinalState(input)) {
+                                        if (canReachFinalState(input, true)) {
                                             com.droidhen.theme.R.drawable.check
                                         } else {
                                             com.droidhen.theme.R.drawable.cross
                                         }
                                     } else {
-                                        if (canReachInitialStackPDA(input, listOf('Z'))) {
+                                        if (canReachInitialStackPDA(input, true, listOf('Z'))) {
                                             com.droidhen.theme.R.drawable.check
                                         } else {
                                             com.droidhen.theme.R.drawable.cross
@@ -1121,7 +1096,7 @@ abstract class Machine(
         start: Offset,
         end: Offset,
         radius: Float,
-        duration: Int = 4500,
+        duration: Int = 500,
         onAnimationEnd: () -> Unit,
     ) {
         val progress = remember { Animatable(0f) }
@@ -1758,44 +1733,9 @@ abstract class Machine(
     @Composable
     abstract fun MathFormat()
 
-    abstract fun canReachFinalState(input: StringBuilder): Boolean
+    abstract fun canReachFinalState(input: StringBuilder, fromInit:Boolean): Boolean
 
     abstract fun exportToJFF(): String
-
-    private fun getStatesByClick(clickOffset: Offset): State? {
-        var result: State? = null
-        val radius = if (states.any()) states[0].radius.times(2) else 80f
-
-        states.filter {
-            (it.position.x + radius >= clickOffset.x && it.position.x - radius <= clickOffset.x) && (it.position.y + radius >= clickOffset.y && it.position.y - radius <= clickOffset.y)
-        }.forEach {
-            result = it
-        }
-        return result
-    }
-
-    private fun getTransitionByClick(clickOffset: Offset): Transition? {
-        var result: Transition? = null
-        val radius = if (states.any()) states[0].radius else 40f
-
-        fun isPointInRectangle(a: Offset, b: Offset, radius: Float, point: Offset): Boolean {
-            val left = minOf(a.x, b.x) - radius
-            val right = maxOf(a.x, b.x) + radius
-            val top = minOf(a.y, b.y) - radius
-            val bottom = maxOf(a.y, b.y) + radius
-            return point.x in left..right && point.y in top..bottom
-        }
-
-        transitions.filter {
-            val startPosition = getStateByIndex(it.startState).position
-            val endPosition = getStateByIndex(it.endState).position
-
-            isPointInRectangle(startPosition, endPosition, radius, clickOffset)
-        }.forEach {
-            result = it
-        }
-        return result
-    }
 }
 
 sealed class MachineType(val tag: String) {

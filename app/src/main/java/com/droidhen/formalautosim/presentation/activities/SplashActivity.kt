@@ -7,6 +7,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -26,6 +27,7 @@ class SplashActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             FormalAutoSimTheme {
                 SetDefaultSettings()
@@ -35,7 +37,7 @@ class SplashActivity : ComponentActivity() {
                         startDestination = AppDestinations.SPLASH.route
                     ) {
                         composable(AppDestinations.SPLASH.route) {
-                            SplashScreen(navigateToNextScreen = {
+                            SplashScreen(lifecycleScope, navigateToNextScreen = {
                                 navigate(AppDestinations.SIGN_IN.route)
                             }, ::navigateToMainActivity)
                         }
