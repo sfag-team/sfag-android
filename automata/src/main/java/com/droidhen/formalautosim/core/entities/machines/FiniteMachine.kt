@@ -25,12 +25,17 @@ class FiniteMachine(
     override var currentState: Int? = null
 
     @Composable
-    override fun calculateTransition(onAnimationEnd: () -> Unit) {
+    override fun calculateTransition(onAnimationEnd: (Boolean?) -> Unit) {
         if (currentState == null) return
 
         val startState = getStateByIndex(currentState!!)
+
+
         val possibleTransitions = getListOfAppropriateTransitions(startState)
-        if (possibleTransitions.isEmpty()) return
+        if (possibleTransitions.isEmpty()) {
+            onAnimationEnd(startState.finite)
+            return
+        }
 
         var validTransition: Transition? = null
 
@@ -43,7 +48,7 @@ class FiniteMachine(
             nextState.isCurrent = true
             currentState = nextState.index
 
-            val result = canReachFinalState(StringBuilder(nextInput))
+            val result = canReachFinalState(StringBuilder(nextInput), false)
 
             nextState.isCurrent = false
             getStateByIndex(previousCurrent!!).isCurrent = true
@@ -66,12 +71,12 @@ class FiniteMachine(
             start = startState.position,
             end = endState.position,
             radius = startState.radius,
-            duration = 3000,
+            duration = 500,
             onAnimationEnd = {
                 startState.isCurrent = false
                 endState.isCurrent = true
                 currentState = endState.index
-                onAnimationEnd()
+                onAnimationEnd(if(input.isEmpty() && endState.finite) true else null)
             }
         )
     }
@@ -211,12 +216,11 @@ class FiniteMachine(
             modifier = Modifier
                 .padding(16.dp)
         ) {
-            Text("M = (Q, Σ, δ, q₀, F)", fontSize = 18.sp)
+            Text("M = (Q, Σ, δ, $initialState, F)", fontSize = 18.sp)
             Spacer(modifier = Modifier.height(12.dp))
 
             Text("Q = { ${states.joinToString(", ") { it.name }} }")
             Text("Σ = { $inputAlphabet }")
-            Text("q₀ = $initialState")
             Text("F = { $finalStates }")
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -227,14 +231,14 @@ class FiniteMachine(
 
 
 
-    override fun canReachFinalState(input: StringBuilder): Boolean {
+    override fun canReachFinalState(input: StringBuilder, fromInit:Boolean): Boolean {
         data class Path(
             val currentState: State,
             val inputIndex: Int
         )
 
         var paths = mutableListOf<Path>()
-        var startState = states.firstOrNull { it.isCurrent }
+        var startState = states.firstOrNull { if(!fromInit) it.isCurrent else it.initial}
         if(startState==null){
             setInitialStateAsCurrent()
             startState = states.firstOrNull { it.isCurrent }

@@ -41,7 +41,6 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class AutomataActivity : ComponentActivity() {
-    private var hideStatusBar = mutableIntStateOf(0)
 
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,9 +76,6 @@ class AutomataActivity : ComponentActivity() {
 
             FormalAutoSimTheme {
                 SetDefaultSettings()
-                key(hideStatusBar) {
-                    hideSystemBars()
-                }
                 rememberNavController().apply {
                     Column(
                         modifier = Modifier
@@ -110,25 +106,9 @@ class AutomataActivity : ComponentActivity() {
                                 UserProfileScreen()
                             }
                         }
-                        BottomBar(this@apply)
                     }
                 }
             }
         }
     }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        hideStatusBar.intValue += 1
-    }
-
-    @SuppressLint("ComposableNaming")
-    @Composable
-    private fun hideSystemBars() {
-        WindowCompat.getInsetsController(window, LocalView.current).apply {
-            hide(WindowInsetsCompat.Type.systemBars())
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
-    }
-
 }

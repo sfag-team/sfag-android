@@ -45,12 +45,17 @@ class PushDownMachine(
 
 
     @Composable
-    override fun calculateTransition(onAnimationEnd: () -> Unit) {
+    override fun calculateTransition(onAnimationEnd: (Boolean?) -> Unit) {
         if (currentState == null) return
 
+
         val startState = getStateByIndex(currentState!!)
+        val conditionDone = if(acceptanceCriteria == AcceptanceCriteria.BY_FINITE_STATE) startState.finite else symbolStack.size==1
         val possibleTransitions = getListOfAppropriateTransitions(startState)
-        if (possibleTransitions.isEmpty()) return
+        if (possibleTransitions.isEmpty()) {
+            onAnimationEnd(conditionDone)
+            return
+        }
 
         var validTransition: Transition? = null
 
@@ -83,8 +88,8 @@ class PushDownMachine(
             currentState = nextState.index
 
             val result = when (acceptanceCriteria) {
-                AcceptanceCriteria.BY_FINITE_STATE -> canReachFinalStatePDA(StringBuilder(nextInput), tempStack)
-                AcceptanceCriteria.BY_INITIAL_STACK -> canReachInitialStackPDA(StringBuilder(nextInput), tempStack)
+                AcceptanceCriteria.BY_FINITE_STATE -> canReachFinalStatePDA(StringBuilder(nextInput),false,  tempStack)
+                AcceptanceCriteria.BY_INITIAL_STACK -> canReachInitialStackPDA(StringBuilder(nextInput),false, tempStack)
             }
 
 
@@ -126,12 +131,12 @@ class PushDownMachine(
             start = startState.position,
             end = endState.position,
             radius = startState.radius,
-            duration = 3000,
+            duration = 500,
             onAnimationEnd = {
                 startState.isCurrent = false
                 endState.isCurrent = true
                 currentState = endState.index
-                onAnimationEnd()
+                onAnimationEnd(if(input.isEmpty() && if(acceptanceCriteria == AcceptanceCriteria.BY_FINITE_STATE) {endState.finite} else {symbolStack.size==1})  true else null)
             }
         )
     }
@@ -296,13 +301,12 @@ class PushDownMachine(
             modifier = Modifier
                 .padding(16.dp)
         ) {
-            Text("M = (Q, Σ, Γ, δ, q₀, $symbolStack, F)", fontSize = 18.sp)
+            Text("M = (Q, Σ, Γ, δ, $initialState, $symbolStack, F)", fontSize = 18.sp)
             Spacer(modifier = Modifier.height(12.dp))
 
             Text("Q = { ${states.joinToString(", ") { it.name }} }")
             Text("Σ = { $inputAlphabet }")
             Text("Γ = { $stackAlphabet }")
-            Text("q₀ = $initialState")
             Text("Z = 'Z'")
             Text("F = { $finalStates }")
             Spacer(modifier = Modifier.height(12.dp))
@@ -312,12 +316,13 @@ class PushDownMachine(
     }
 
 
-    override fun canReachFinalState(input: StringBuilder): Boolean {
-        return canReachFinalStatePDA(input, initialStack = symbolStack)
+    override fun canReachFinalState(input: StringBuilder, fromInit: Boolean): Boolean {
+        return canReachFinalStatePDA(input,fromInit = fromInit, initialStack = if(fromInit) listOf('Z') else symbolStack)
     }
 
     private fun canReachFinalStatePDA(
         input: StringBuilder,
+        fromInit:Boolean,
         initialStack: List<Char>
     ): Boolean {
 
@@ -327,7 +332,7 @@ class PushDownMachine(
             val symbolStack: List<Char>
         )
 
-        var startState = states.firstOrNull { it.isCurrent }
+        var startState = states.firstOrNull { if(!fromInit) it.isCurrent else it.initial }
         if (startState == null) {
             setInitialStateAsCurrent()
             startState = states.firstOrNull { it.isCurrent }
@@ -391,14 +396,14 @@ class PushDownMachine(
 
 
 
-    fun canReachInitialStackPDA(input: StringBuilder, symbolStack: List<Char>): Boolean {
+    fun canReachInitialStackPDA(input: StringBuilder, fromInit: Boolean = false, symbolStack: List<Char>): Boolean {
         data class Path(
             val currentState: State,
             val inputIndex: Int,
             val symbolStack: List<Char>
         )
 
-        var startState = states.firstOrNull { it.isCurrent } ?: run {
+        var startState = states.firstOrNull { if(!fromInit) it.isCurrent else it.initial } ?: run {
             setInitialStateAsCurrent()
             states.firstOrNull { it.isCurrent }
         } ?: return false
