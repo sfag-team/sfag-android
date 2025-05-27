@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
@@ -47,8 +48,8 @@ fun GrammarScreen(grammarViewModel: Grammar) {
             .fillMaxWidth()
     ) {
         Text(
-            text = "Rules",
-            style = MaterialTheme.typography.bodyLarge,
+            text = "Rules P:",
+            fontSize = with(LocalDensity.current) { 15.dp.toSp() },
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
         )
@@ -121,83 +122,170 @@ fun GrammarScreen(grammarViewModel: Grammar) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp)
+                .height(290.dp)
                 .background(MaterialTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center
         ) {
-            Column(modifier = Modifier.fillMaxSize().padding(vertical = 8.dp)){
-
-                Row(){
-                    Column(){
-                        Text(
-                            text = "Type",
-                            color = MaterialTheme.colorScheme.secondary,
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                        Text(
-                            text = type.toString(),
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            style = MaterialTheme.typography.headlineMedium,
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Column(){
-                        Text(
-                            text = "Start symbol",
-                            color = MaterialTheme.colorScheme.secondary,
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                        Text(
-                            text = "S = S",
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            style = MaterialTheme.typography.headlineMedium,
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                    }
-                }
-                Text(
-                    text = "Non-terminals",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
-                )
-                Text(
-                    text = if(nonterminals.isNotEmpty()){
-                        "N = " +
-                                nonterminals.joinToString(
-                                    separator = ", ",          // Separator between elements
-                                    prefix = "{",              // String before the first element
-                                    postfix = "}"              // String after the last element
-                                )}else "N = {}",
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
-                Text(
-                    text = "Terminals",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
-                )
-                Text(
-                    text = if(terminals.isNotEmpty()){
-                        "T = " +
-                                terminals.joinToString(
-                                    separator = ", ",          // Separator between elements
-                                    prefix = "{",              // String before the first element
-                                    postfix = "}"              // String after the last element
-                                )}else "T = {}",
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
-            }
+//            Column(modifier = Modifier.fillMaxSize().padding(vertical = 8.dp)){
+//                Text(
+//                    text = "Start symbol",
+//                    color = MaterialTheme.colorScheme.secondary,
+//                    fontSize = with(LocalDensity.current){16.dp.toSp()},
+//                    modifier = Modifier.padding(horizontal = 8.dp)
+//                )
+//                Text(
+//                    text = "S",
+//                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+//                    fontSize = with(LocalDensity.current){12.dp.toSp()},
+//                    modifier = Modifier.padding(horizontal = 8.dp)
+//                )
+//                Text(
+//                    text = "Non-terminals",
+//                    fontSize = with(LocalDensity.current){14.dp.toSp()},
+//                    color = MaterialTheme.colorScheme.secondary,
+//                    modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
+//                )
+//                Text(
+//                    text = if(nonterminals.isNotEmpty()){
+//                        "N = " +
+//                                nonterminals.joinToString(
+//                                    separator = ", ",          // Separator between elements
+//                                    prefix = "{",              // String before the first element
+//                                    postfix = "}"              // String after the last element
+//                                )}else "N = {}",
+//                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+//                    fontSize = with(LocalDensity.current){10.dp.toSp()},
+//                    modifier = Modifier.padding(horizontal = 8.dp)
+//                )
+//                Text(
+//                    text = "Terminals",
+//                    fontSize = with(LocalDensity.current){12.dp.toSp()},
+//                    color = MaterialTheme.colorScheme.secondary,
+//                    modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
+//                )
+//                Text(
+//                    text = if(terminals.isNotEmpty()){
+//                        "T = " +
+//                                terminals.joinToString(
+//                                    separator = ", ",          // Separator between elements
+//                                    prefix = "{",              // String before the first element
+//                                    postfix = "}"              // String after the last element
+//                                )}else "T = {}",
+//                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+//                    fontSize = with(LocalDensity.current){8.dp.toSp()},
+//                    modifier = Modifier.padding(horizontal = 8.dp)
+//                )
+//                Text(
+//                    text = "Type",
+//                    color = MaterialTheme.colorScheme.secondary,
+//                    style = MaterialTheme.typography.bodyLarge,
+//                    modifier = Modifier.padding(horizontal = 8.dp)
+//                )
+//                Text(
+//                    text = type.toString(),
+//                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+//                    style = MaterialTheme.typography.headlineMedium,
+//                    modifier = Modifier.padding(horizontal = 8.dp)
+//                )
+//            }
+            GrammarInfo(nonterminals,terminals,type)
         }
     }
 }
+
+@Composable
+fun GrammarInfo(
+    nonterminals: Set<Char>,
+    terminals: Set<Char>,
+    type: GrammarType?
+) {
+    val density = LocalDensity.current
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(vertical = 8.dp)
+    ) {
+        item{
+            Text(
+                text = "G = (N, T, P, S)",
+                color = MaterialTheme.colorScheme.secondary,
+                fontSize = with(density) { 25.dp.toSp() },
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+        }
+        item {
+            Text(
+                text = "Start symbol",
+                color = MaterialTheme.colorScheme.secondary,
+                fontSize = with(density) { 15.dp.toSp() },
+                modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
+            )
+        }
+        item {
+            Text(
+                text = "S",
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                fontSize = with(density) { 25.dp.toSp() },
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+        }
+        item {
+            Text(
+                text = "Non-terminals",
+                fontSize = with(density) { 15.dp.toSp() },
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
+            )
+        }
+        item {
+            Text(
+                text = if (nonterminals.isNotEmpty()) {
+                    "N = ${nonterminals.joinToString(", ", "{", "}")}"
+                } else "N = {}",
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                fontSize = with(density) { 25.dp.toSp() },
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+        }
+        item {
+            Text(
+                text = "Terminals",
+                fontSize = with(density) { 15.dp.toSp() },
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
+            )
+        }
+        item {
+            Text(
+                text = if (terminals.isNotEmpty()) {
+                    "T = ${terminals.joinToString(", ", "{", "}")}"
+                } else "T = {}",
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                fontSize = with(density) { 25.dp.toSp() },
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+        }
+        item {
+            Text(
+                text = "Type",
+                color = MaterialTheme.colorScheme.secondary,
+                fontSize = with(density) { 15.dp.toSp() },
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+        }
+        item {
+            Text(
+                text = type.toString(),
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                fontSize = with(density) { 25.dp.toSp() },
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+        }
+    }
+}
+
+
 
 @Composable
 fun DisplayRule(rule: GrammarRule, grammarViewModel: Grammar, finnishGrammar: Boolean, onEditClick: () -> Unit) {

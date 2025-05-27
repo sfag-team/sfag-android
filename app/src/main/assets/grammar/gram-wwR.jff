@@ -3,10 +3,14 @@
 	<!--The list of productions.-->&#13;
 	<production>&#13;
 		<left>S</left>&#13;
-		<right>a</right>&#13;
+		<right>aSa</right>&#13;
 	</production>&#13;
 	<production>&#13;
 		<left>S</left>&#13;
-		<right>aS</right>&#13;
+		<right>bSb</right>&#13;
+	</production>&#13;
+	<production>&#13;
+		<left>S</left>&#13;
+		<right/>&#13;
 	</production>&#13;
 </structure>

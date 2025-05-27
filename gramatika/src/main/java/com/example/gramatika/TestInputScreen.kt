@@ -15,11 +15,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
-
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
@@ -59,6 +56,7 @@ import com.example.gramatika.ui.theme.Chevron_left
 import com.example.gramatika.ui.theme.Chevron_right
 import com.example.gramatika.ui.theme.Keyboard_double_arrow_right
 import com.example.gramatika.ui.theme.Tree
+import com.example.gramatika.ui.theme.light_blue
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
@@ -122,7 +120,11 @@ fun TestInputScreen(grammarViewModel: Grammar, preInput: String) {
                 }, // Update the state on value change
                 placeholder = { Text("string containing only terminals") }, // Update the label text
                 modifier = Modifier.weight(1f).padding(top = 4.dp),
-                singleLine = true
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    unfocusedContainerColor = light_blue,
+                    focusedContainerColor = light_blue
+                )
             )
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(
@@ -348,6 +350,9 @@ fun LinearDerivation(steps: List<Step>) {
         modifier = Modifier
             .border(BorderStroke(2.dp, MaterialTheme.colorScheme.primary))
             .padding(8.dp) // Inner padding
+            .fillMaxWidth(),
+        contentAlignment = Alignment.Center
+
     ) {
         Text(
             text = "S ⇒ " + steps.joinToString(" ⇒ ") {

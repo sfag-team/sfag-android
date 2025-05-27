@@ -216,6 +216,7 @@ class Grammar : ViewModel() {
 
                 addRule(left, right)
             }
+            toggleGrammarFinished()
         } catch (e: Exception) {
             e.printStackTrace()
         }

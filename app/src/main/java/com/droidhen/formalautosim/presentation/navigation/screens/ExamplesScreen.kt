@@ -124,18 +124,34 @@ object ExampleSources {
     )
     val gramatikaExamples = listOf(
         "grammar/g-reg.jff" to ExampleDescription(
-            "Regular Grammar",
-            "RG: String of 0 and 1"
+            "aⁿ",
+            "Regular Grammar"
         ),
         "grammar/g-cf.jff" to ExampleDescription(
-            "Context-Free Grammar",
-            "CFG: Language where the number of a's and b'smust match (aⁿbⁿ)"
+            "aⁿbⁿ",
+            "Context-Free Grammar"
+        ),
+        "grammar/ab_norm.jff" to ExampleDescription(
+            "Normalized aⁿbⁿ",
+            "Context-Free Grammar"
         ),
         "grammar/g-cs.jff" to ExampleDescription(
-            "Context-Sensitive Grammar",
-            "CSG: Language where the number of a's, b's, and c's must match (aⁿbⁿcⁿ)"
-        )
-    ) //TODO add here your grammar examples, as I did on the example. Provide real uri to the file. and save file into res/values package of chosen by you package
+            "aⁿbⁿcⁿ",
+            "Context-Sensitive Grammar"
+        ),
+        "grammar/ggram-3kplus1-a.jff" to ExampleDescription(
+            "3k+1 a",
+            "Regular Grammar"
+        ),
+        "grammar/gram-01.jff" to ExampleDescription(
+            "String of 0 and 1",
+            "Regular grammar"
+        ),
+        "grammar/gram-wwR.jff" to ExampleDescription(
+            "wwR",
+            "Context-Free Grammar"
+        ),
+    )
 }
 
 data class ExampleDescription(val name: String, val description: String)
