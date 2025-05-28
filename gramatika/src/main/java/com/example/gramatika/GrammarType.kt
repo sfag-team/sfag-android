@@ -10,14 +10,13 @@ enum class GrammarType(val priority: Int, private val displayName: String) {
 }
 
 fun isRegular(rule: GrammarRule): Boolean {
-    if (rule.left.length == 1 && rule.left.first().isUpperCase()) {
-        if (rule.right.length <= 2) {
-            if (rule.right.length == 1 && (rule.right.first().isLowerCase() || rule.right.first().isDigit())) {
-                return true
-            } else if (rule.right.length == 2 &&
-                rule.right[0].isUpperCase().xor(rule.right[1].isUpperCase())) {
-                return true
-            }
+    if (rule.left.first().isUpperCase()) {
+        if (rule.right == "ε" ||
+            rule.right.matches(Regex("^\\d+\$")) ||                    // all digits
+            rule.right.matches(Regex("^[a-z]+\$")) ||                  // all lowercase
+            rule.right.matches(Regex("^[a-z\\d]*[A-Z]?\$"))            // optional 1 uppercase at end
+        ) {
+            return true
         }
     }
     return false

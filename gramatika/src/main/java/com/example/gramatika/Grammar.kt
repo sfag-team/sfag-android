@@ -49,9 +49,10 @@ class Grammar : ViewModel() {
     // Method to remove a rule
     fun removeRule(rule: GrammarRule) {
         val currentRules = _rules.value ?: emptyList()
-        _rules.value = currentRules.filter { it != rule }
+        val newRules = currentRules.filter { it != rule }
+        _rules.value =  newRules
         _grammarType.value = GrammarType.REGULAR
-        for(r in currentRules){
+        for(r in newRules){
             grammarType(r)
         }
         updateSymbols()
