@@ -3,24 +3,24 @@
 3    package="com.droidhen.theme.test" >
 4
 5    <uses-sdk
-5-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest5588259863227732034.xml:5:5-74
+5-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest14525996537321139158.xml:5:5-74
 6        android:minSdkVersion="24"
-6-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest5588259863227732034.xml:5:15-41
+6-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest14525996537321139158.xml:5:15-41
 7        android:targetSdkVersion="34" />
-7-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest5588259863227732034.xml:5:42-71
+7-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest14525996537321139158.xml:5:42-71
 8
 9    <instrumentation
-9-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest5588259863227732034.xml:11:5-15:73
+9-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest14525996537321139158.xml:11:5-15:73
 10        android:name="android.test.InstrumentationTestRunner"
-10-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest5588259863227732034.xml:11:22-75
+10-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest14525996537321139158.xml:11:22-75
 11        android:functionalTest="false"
-11-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest5588259863227732034.xml:14:22-52
+11-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest14525996537321139158.xml:14:22-52
 12        android:handleProfiling="false"
-12-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest5588259863227732034.xml:13:22-53
+12-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest14525996537321139158.xml:13:22-53
 13        android:label="Tests for com.droidhen.theme.test"
-13-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest5588259863227732034.xml:15:22-71
+13-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest14525996537321139158.xml:15:22-71
 14        android:targetPackage="com.droidhen.theme.test" />
-14-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest5588259863227732034.xml:12:22-69
+14-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest14525996537321139158.xml:12:22-69
 15
 16    <permission
 16-->[androidx.core:core:1.13.1] C:\Users\Вадим\.gradle\caches\transforms-4\162fa4ba9a611d9a0403ff133da315bd\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
@@ -34,14 +34,14 @@
 20-->[androidx.core:core:1.13.1] C:\Users\Вадим\.gradle\caches\transforms-4\162fa4ba9a611d9a0403ff133da315bd\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
 21
 22    <application
-22-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest5588259863227732034.xml:7:5-9:19
+22-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest14525996537321139158.xml:7:5-9:19
 23        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
 23-->[androidx.core:core:1.13.1] C:\Users\Вадим\.gradle\caches\transforms-4\162fa4ba9a611d9a0403ff133da315bd\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
 24        android:debuggable="true"
 25        android:extractNativeLibs="false" >
 26        <uses-library android:name="android.test.runner" />
-26-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest5588259863227732034.xml:8:9-60
-26-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest5588259863227732034.xml:8:23-57
+26-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest14525996537321139158.xml:8:9-60
+26-->C:\programming\work\FormalAutoSim\theme\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest14525996537321139158.xml:8:23-57
 27
 28        <provider
 28-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Вадим\.gradle\caches\transforms-4\a9d5e314aff04faffacf18fb1a18f1d8\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
