@@ -23,7 +23,7 @@ class Grammar : ViewModel() {
     private val _nonterminals = MutableLiveData<Set<Char>>(emptySet())
     val nonterminals: LiveData<Set<Char>> get() = _nonterminals
 
-    private val _grammarType = MutableLiveData<GrammarType>(GrammarType.UNRESTRICTED)
+    private val _grammarType = MutableLiveData<GrammarType>(GrammarType.REGULAR)
     val grammarType: LiveData<GrammarType> get() = _grammarType
 
     private val _isGrammarFinished = MutableLiveData(false)
@@ -50,6 +50,7 @@ class Grammar : ViewModel() {
     fun removeRule(rule: GrammarRule) {
         val currentRules = _rules.value ?: emptyList()
         _rules.value = currentRules.filter { it != rule }
+        _grammarType.value = GrammarType.REGULAR
         for(r in currentRules){
             grammarType(r)
         }
@@ -119,7 +120,7 @@ class Grammar : ViewModel() {
             else -> GrammarType.UNRESTRICTED
         }
 
-        if (_grammarType.value == null || newType.priority > _grammarType.value!!.priority) {
+        if (newType.priority > _grammarType.value!!.priority) {
             _grammarType.value = newType
         }
 
