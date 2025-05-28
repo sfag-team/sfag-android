@@ -645,7 +645,7 @@ abstract class Machine(
                     Spacer(modifier = Modifier.width(10.dp))
                     FASButton(text = "ADD") {
                         savedInputs.add(input)
-                        input = java.lang.StringBuilder(savedInputs.last().toString().reversed()+"")
+                        input = java.lang.StringBuilder(savedInputs.last().toString()+"")
                         editingRecompose++
                     }
                 }
@@ -678,11 +678,11 @@ abstract class Machine(
                 ) {
                     FASDefaultTextField(
                         hint = "",
-                        value = inputValue.value.reversed(),
+                        value = inputValue.value,
                         requirementText = stringResource(R.string.requirement_text_for_machine_input),
                         onTextChange = { newInput ->
                             input.clear()
-                            input.append(newInput.reversed())
+                            input.append(newInput)
                             inputValue.value = newInput
                             imuInput = StringBuilder(input.toString())
                         }) {
@@ -695,7 +695,7 @@ abstract class Machine(
                             horizontalArrangement = Arrangement.Center,
                             CenterVertically
                         ) {
-                            FASImmutableTextField(text = input.toString().reversed(),
+                            FASImmutableTextField(text = input.toString(),
                                 modifier = Modifier
                                     .clickable {
                                         this@Machine.input = StringBuilder(input.toString())
