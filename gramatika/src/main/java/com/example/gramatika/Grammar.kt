@@ -112,12 +112,17 @@ class Grammar : ViewModel() {
 
     private fun grammarType(rule: GrammarRule) {
 
-        _grammarType.value = when {
+        val newType = when {
             isRegular(rule) -> GrammarType.REGULAR
             isContextFree(rule) -> GrammarType.CONTEXT_FREE
             isContextSensitive(rule) -> GrammarType.CONTEXT_SENSITIVE
             else -> GrammarType.UNRESTRICTED
         }
+
+        if (_grammarType.value == null || newType.priority > _grammarType.value!!.priority) {
+            _grammarType.value = newType
+        }
+
     }
 
 

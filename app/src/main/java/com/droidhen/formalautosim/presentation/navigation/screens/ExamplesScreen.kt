@@ -115,8 +115,8 @@ object ExampleSources {
     val automataExamples = listOf(
         "automata/a-n.jff" to ExampleDescription("aⁿ", "deterministic finite automaton"),
         "automata/3k-1.jff" to ExampleDescription("3k +1", "deterministic finite automaton"),
-        "automata/ends-dfa.jff" to ExampleDescription("ends 01 to 10", "deterministic finite automaton"),
-        "automata/ends-nfa.jff" to ExampleDescription("ends 01 to 10", "nondeterministic finite automaton"),
+        "automata/ends-dfa.jff" to ExampleDescription("Ends 01 or 10", "deterministic finite automaton"),
+        "automata/ends-nfa.jff" to ExampleDescription("Ends 01 or 10", "nondeterministic finite automaton"),
         "automata/an-bn-pda.jff" to ExampleDescription("aⁿbⁿ", "deterministic pushdown automaton"),
         "automata/wcw-r.jff" to ExampleDescription("wcwR", "deterministic pushdown automaton"),
         "automata/ww-r.jff" to ExampleDescription("wwR", "nondeterministic pushdown automaton")
@@ -139,12 +139,12 @@ object ExampleSources {
             "aⁿbⁿcⁿ",
             "Context-Sensitive Grammar"
         ),
-        "grammar/ggram-3kplus1-a.jff" to ExampleDescription(
+        "grammar/gram-3kplus1-a.jff" to ExampleDescription(
             "3k+1 a",
             "Regular Grammar"
         ),
         "grammar/gram-01.jff" to ExampleDescription(
-            "String of 0 and 1",
+            "Ends 01 or 10",
             "Regular grammar"
         ),
         "grammar/gram-wwR.jff" to ExampleDescription(
