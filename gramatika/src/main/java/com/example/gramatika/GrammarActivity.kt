@@ -81,7 +81,7 @@ fun NavHostContainer(
         modifier = Modifier.padding(paddingValues = padding)) {
 
         composable("grammarScreen") {
-            GrammarScreen(grammarViewModel) // GrammarScreen composable
+            GrammarScreen(grammarViewModel)
         }
         composable("bulkTestScreen") {
             BulkTestScreen(navController, grammarViewModel, inputsViewModel)

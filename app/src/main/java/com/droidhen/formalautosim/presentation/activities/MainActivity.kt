@@ -24,6 +24,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.droidhen.formalautosim.presentation.navigation.AppDestinations
+import com.droidhen.formalautosim.presentation.navigation.screens.AboutScreen
 import com.droidhen.formalautosim.presentation.navigation.screens.ExamplesScreen
 import com.droidhen.formalautosim.presentation.navigation.screens.MainScreen
 import com.droidhen.formalautosim.presentation.theme.FormalAutoSimTheme
@@ -56,8 +57,7 @@ class MainActivity : ComponentActivity() {
                         ) {
                             composable(route = AppDestinations.MAIN.route) {
                                 MainScreen(navToGrammar = {navToGrammarActivity(null)}, navToAutomata = {navToAutomataActivity(null)}, navToExamplesScreen = {
-                                    navigate(AppDestinations.EXAMPLES.route)
-                                })
+                                    navigate(AppDestinations.EXAMPLES.route)}, navToAbout = {navigate(AppDestinations.ABOUT.route)})
                             }
                             composable(route = AppDestinations.EXAMPLES.route){
                                 ExamplesScreen(navBack = {
@@ -68,6 +68,9 @@ class MainActivity : ComponentActivity() {
                                     }, navToAutomata = { automataUri ->
                                         navToAutomataActivity(automataUri)
                                     })
+                            }
+                            composable(route = AppDestinations.ABOUT.route) {
+                                AboutScreen(navBack = {navigate(AppDestinations.MAIN.route)})
                             }
                         }
                     }

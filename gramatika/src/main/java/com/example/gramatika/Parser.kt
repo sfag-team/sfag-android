@@ -12,38 +12,29 @@ fun parse(input: String, rules: List<GrammarRule>, terminals: Set<Char>, type: G
     val states = ArrayDeque<String>()
     val stateHistory = mutableMapOf<String, State>()
 
-    // Initialize the queue with rules with the start symbol "S"
+    // Init with S
     rules.filter { it.left == "S" }.forEach { rule ->
         states.add(rule.right)
         stateHistory[rule.right] = State("S", rule)
     }
 
-    val maxDepth = (100*exp(0.7*input.length)).toInt()
+    val maxSteps = (100*exp(0.7*input.length)).toInt()
     var steps = 0
     // Process the queue
     if (type == GrammarType.UNRESTRICTED || type == GrammarType.CONTEXT_SENSITIVE) {
         // Handle unrestricted/context-sensitive
-        while (states.isNotEmpty()) {
-            if (steps > maxDepth) return null
+        while (states.isNotEmpty() && steps <= maxSteps) {
             val currentState = states.removeFirst()
-//            val cleanCurrentState = currentState.replace("ε", "")
             steps++
-
             for (rule in rules) {
-
-
                 val newState = currentState.replaceFirst(rule.left,rule.right)
-
                 if (newState.replace("ε", "") == input) {
                     stateHistory[newState] = State(currentState, rule)
                     return reconstructDerivation(newState, stateHistory)
                 }
-
                 if (!rules.any { newState.replace("ε", "").contains(it.left) }) {
-
                     continue
                 }
-
                 if (!stateHistory.containsKey(newState)) {
                     states.add(newState)
                     stateHistory[newState] = State(currentState, rule)
@@ -52,13 +43,9 @@ fun parse(input: String, rules: List<GrammarRule>, terminals: Set<Char>, type: G
         }
     } else {
         // Handle context-free/regular
-        while (states.isNotEmpty()) {
-            if (steps > maxDepth) return null
+        while (states.isNotEmpty() && steps <= maxSteps) {
             val currentState = states.removeFirst()
-
             steps++
-
-
             for (rule in rules) {
                 val newState = currentState.replaceFirst(rule.left, rule.right)
 
@@ -90,12 +77,12 @@ fun reconstructDerivation(finalState: String, stateHistory: Map<String, State>):
     var currentState = finalState
 
     // Backtrack through the history of states
-    while (currentState != "S") {  // Assuming "S" is the starting state
+    while (currentState != "S") {
         val step = stateHistory[currentState]!!
-        derivationSteps.add(Step(step.stateString, currentState, step.appliedRule))  // Add the step to the derivation path
-        currentState = step.stateString  // Move to the previous state
+        derivationSteps.add(Step(step.stateString, currentState, step.appliedRule))
+        currentState = step.stateString
     }
-    return derivationSteps.reversed()  // Return the derivation steps in the correct order
+    return derivationSteps.reversed()  // Correct order
 }
 
 fun extractLargestTerminalSubstring(state: String): String {
@@ -109,11 +96,10 @@ fun extractLargestTerminalSubstring(state: String): String {
             if (currentSubstring.length > maxSubstring.length) {
                 maxSubstring = currentSubstring
             }
-            currentSubstring = "" // Reset the current substring when a non-terminal is encountered
+            currentSubstring = ""
         }
     }
 
-    // Check the last substring if the state ends with terminals
     if (currentSubstring.length > maxSubstring.length) {
         maxSubstring = currentSubstring
     }

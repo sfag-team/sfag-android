@@ -126,68 +126,6 @@ fun GrammarScreen(grammarViewModel: Grammar) {
                 .background(MaterialTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center
         ) {
-//            Column(modifier = Modifier.fillMaxSize().padding(vertical = 8.dp)){
-//                Text(
-//                    text = "Start symbol",
-//                    color = MaterialTheme.colorScheme.secondary,
-//                    fontSize = with(LocalDensity.current){16.dp.toSp()},
-//                    modifier = Modifier.padding(horizontal = 8.dp)
-//                )
-//                Text(
-//                    text = "S",
-//                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-//                    fontSize = with(LocalDensity.current){12.dp.toSp()},
-//                    modifier = Modifier.padding(horizontal = 8.dp)
-//                )
-//                Text(
-//                    text = "Non-terminals",
-//                    fontSize = with(LocalDensity.current){14.dp.toSp()},
-//                    color = MaterialTheme.colorScheme.secondary,
-//                    modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
-//                )
-//                Text(
-//                    text = if(nonterminals.isNotEmpty()){
-//                        "N = " +
-//                                nonterminals.joinToString(
-//                                    separator = ", ",          // Separator between elements
-//                                    prefix = "{",              // String before the first element
-//                                    postfix = "}"              // String after the last element
-//                                )}else "N = {}",
-//                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-//                    fontSize = with(LocalDensity.current){10.dp.toSp()},
-//                    modifier = Modifier.padding(horizontal = 8.dp)
-//                )
-//                Text(
-//                    text = "Terminals",
-//                    fontSize = with(LocalDensity.current){12.dp.toSp()},
-//                    color = MaterialTheme.colorScheme.secondary,
-//                    modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
-//                )
-//                Text(
-//                    text = if(terminals.isNotEmpty()){
-//                        "T = " +
-//                                terminals.joinToString(
-//                                    separator = ", ",          // Separator between elements
-//                                    prefix = "{",              // String before the first element
-//                                    postfix = "}"              // String after the last element
-//                                )}else "T = {}",
-//                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-//                    fontSize = with(LocalDensity.current){8.dp.toSp()},
-//                    modifier = Modifier.padding(horizontal = 8.dp)
-//                )
-//                Text(
-//                    text = "Type",
-//                    color = MaterialTheme.colorScheme.secondary,
-//                    style = MaterialTheme.typography.bodyLarge,
-//                    modifier = Modifier.padding(horizontal = 8.dp)
-//                )
-//                Text(
-//                    text = type.toString(),
-//                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-//                    style = MaterialTheme.typography.headlineMedium,
-//                    modifier = Modifier.padding(horizontal = 8.dp)
-//                )
-//            }
             GrammarInfo(nonterminals,terminals,type)
         }
     }

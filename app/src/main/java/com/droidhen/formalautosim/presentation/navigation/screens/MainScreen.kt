@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import views.FASButton
 
 @Composable
-fun MainScreen(navToAutomata: () -> Unit, navToGrammar: () -> Unit, navToExamplesScreen: () -> Unit) {
+fun MainScreen(navToAutomata: () -> Unit, navToGrammar: () -> Unit, navToExamplesScreen: () -> Unit, navToAbout: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -36,6 +36,10 @@ fun MainScreen(navToAutomata: () -> Unit, navToGrammar: () -> Unit, navToExample
         Spacer(modifier = Modifier.height(100.dp))
         FASButton(text = "Examples", modifier = Modifier.width(200.dp)) {
             navToExamplesScreen()
+        }
+        Spacer(modifier = Modifier.height(100.dp))
+        FASButton(text = "About", modifier = Modifier.width(200.dp)) {
+            navToAbout()
         }
     }
 }
