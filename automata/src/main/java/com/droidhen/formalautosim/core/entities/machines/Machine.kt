@@ -253,19 +253,6 @@ abstract class Machine(
             close()
         }
     }
-
-    /**
-     * add new transition to machine
-     *
-     * @param transition - pair Int to Int where Int - evidence num of state
-     */
-    fun addTransition(transition: Transition) {
-        if (transitions.contains(transition)) return
-        if (states.any { transition.startState == it.index } && states.any { transition.endState == it.index }) {
-            transitions.add(transition)
-        }
-    }
-
     /**
      * delete transition
      *
@@ -946,7 +933,7 @@ abstract class Machine(
                     val label = buildString {
                         append(transition.name)
                         if (machineType == MachineType.Pushdown && transition is PushDownTransition) {
-                            append(";${transition.pop};${transition.push}")
+                            append(",${transition.pop};${transition.push}")
                         }
                     }
 
