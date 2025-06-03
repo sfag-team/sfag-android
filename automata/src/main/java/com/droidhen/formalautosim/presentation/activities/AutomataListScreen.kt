@@ -44,6 +44,7 @@ import com.droidhen.formalautosim.core.entities.machines.PushDownTransition
 import com.droidhen.formalautosim.core.viewModel.AutomataViewModel
 import com.droidhen.formalautosim.core.viewModel.CurrentMachine
 import com.droidhen.formalautosim.data.local.ExternalStorageController
+import com.droidhen.formalautosim.presentation.theme.perlamutr_white
 import views.DefaultFASDialogWindow
 import views.FASButton
 import views.FASDefaultTextField
@@ -99,25 +100,33 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
 
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.size(30.dp))
-        FASImmutableTextField(
-            text = "Nice to meet you!",
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .height(60.dp),
-            fontSize = 30.sp
-        )
+        Row (modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+            FASButton(text = "Back", modifier = Modifier.fillMaxWidth(0.25f)) {
+                navBack()
+            }
+            Spacer(modifier = Modifier.size(16.dp))
+            FASImmutableTextField(
+                text = "Nice to meet you!",
+                modifier = Modifier
+                    .fillMaxWidth(0.65f)
+                    .background(perlamutr_white)
+                    .clip(MaterialTheme.shapes.medium),
+                fontSize = 28.sp
+            )
+        }
+
         Spacer(modifier = Modifier.height(30.dp))
         LazyColumn(
             Modifier
                 .fillMaxWidth(0.9f)
-                .fillMaxHeight(0.8f)
+                .fillMaxHeight(0.85f)
                 .clip(MaterialTheme.shapes.large)
                 .border(4.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
-                .background(MaterialTheme.colorScheme.primaryContainer)
+                .background(perlamutr_white)
                 .padding(start = 16.dp)
         ) {
             items(viewModel.getAllMachinesName()) { item ->
-                Spacer(modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.size(12.dp))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
@@ -128,17 +137,17 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
                             MaterialTheme.colorScheme.tertiary,
                             MaterialTheme.shapes.large
                         )
-                        .background(MaterialTheme.colorScheme.surface),
+                        .background(MaterialTheme.colorScheme.primary)
+                        .clickable {
+                        CurrentMachine.machine = viewModel.getMachineByName(item)!!
+                        navToAutomata()
+                    },
                     verticalAlignment = CenterVertically
                 ) {
                     Spacer(modifier = Modifier.size(24.dp))
-                    FASImmutableTextField(
-                        text = item,
-                        modifier = Modifier.clickable {
-                            CurrentMachine.machine = viewModel.getMachineByName(item)!!
-                            navToAutomata()
-                        })
+                    FASImmutableTextField(text = item, textColor = perlamutr_white)
                 }
+                Spacer(modifier = Modifier.size(8.dp))
             }
         }
         Row(
@@ -186,6 +195,7 @@ private fun NewMachineWindow(finished: (Machine?) -> Unit) {
 
     DefaultFASDialogWindow(
         title = "Create new machine",
+        height = 350,
         conditionToEnable = name.isNotEmpty() && type != null,
         onDismiss = {
             finished(null)

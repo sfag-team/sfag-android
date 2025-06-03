@@ -26,6 +26,7 @@ fun FASButton(
     text:String,
     enabled:Boolean = true,
     modifier:Modifier = Modifier,
+    height:Int = 48,
     onClick: () -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
@@ -43,7 +44,7 @@ fun FASButton(
         modifier = modifier
             .padding(2.dp)
             .width(110.dp)
-            .height(48.dp)
+            .height(height.dp)
             .scale(scale)
             .border(3.dp,shape = RoundedCornerShape(10.dp),color = if(enabled) MaterialTheme.colorScheme.secondary else unable_views)
             .shadow(3.dp, RoundedCornerShape(10.dp), false, MaterialTheme.colorScheme.secondary)

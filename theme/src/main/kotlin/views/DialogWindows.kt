@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,9 +32,13 @@ fun DefaultFASDialogWindow(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier,
+    height: Int = 450,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Box(Modifier.fillMaxSize().background(medium_gray)){
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(medium_gray)){
         Box(
             modifier = modifier
                 .fillMaxSize(),
@@ -42,7 +47,7 @@ fun DefaultFASDialogWindow(
             Column(
                 modifier = Modifier
                     .fillMaxWidth(0.7f)
-                    .fillMaxHeight(0.67f)
+                    .height(height = height.dp)
                     .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.background)
                     .border(
@@ -50,7 +55,8 @@ fun DefaultFASDialogWindow(
                         MaterialTheme.colorScheme.primary,
                         shape = MaterialTheme.shapes.medium
                     ),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -65,7 +71,7 @@ fun DefaultFASDialogWindow(
 
                 Row(
                     Modifier.fillMaxWidth(0.90f),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     FASButton(text = "Done", enabled = conditionToEnable, modifier = Modifier.weight(1f)) {
                         onConfirm()
@@ -74,6 +80,7 @@ fun DefaultFASDialogWindow(
                         onDismiss()
                     }
                 }
+                Spacer(modifier = Modifier.size(8.dp))
             }
         }
     }

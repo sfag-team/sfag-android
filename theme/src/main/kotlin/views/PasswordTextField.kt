@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -161,12 +162,13 @@ fun FASDefaultTextField(
 fun FASImmutableTextField(
     text: String,
     modifier: Modifier = Modifier,
+    textColor: Color = MaterialTheme.colorScheme.tertiary,
     fontSize: TextUnit = 24.sp
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+            .clip(MaterialTheme.shapes.medium)
+            .border(3.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -174,7 +176,7 @@ fun FASImmutableTextField(
             text = text,
             style = TextStyle(color = blue_one, fontSize = fontSize),
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.tertiary,
+            color = textColor,
         )
     }
 }

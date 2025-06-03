@@ -114,6 +114,9 @@ fun AutomataScreen(navBack: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
+                    FASButton(text = "Back") {
+                        navBack()
+                    }
                     FASButton(text = "Export") {
                         exportFileWindow = true
                     }

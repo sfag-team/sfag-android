@@ -1006,10 +1006,12 @@ abstract class Machine(
                     name,
                     startState.index,
                     endState.index,
-                    checkState,
-                    push + checkState
+                    pop = checkState,
+                    push = push + checkState
                 )
-            } else throw Exception("Wrong transition type")
+            } else {
+                PushDownTransition(name, startState.index, endState.index, pop = "", push = push)
+            }
         )
     }
 
@@ -1043,18 +1045,12 @@ abstract class Machine(
                                     MaterialTheme.colorScheme.primary
                                 }
                             ),
-                        contentAlignment = Alignment.TopCenter
                     ) {
                         Text(
-                            index.toString(),
-                            fontSize = 12.sp,
-                            color = Color.White
-                        )
-                        Text(
                             inputChar.toString(),
-                            fontSize = 24.sp,
+                            fontSize = 28.sp,
                             color = Color.White,
-                            modifier = Modifier.padding(top = 14.dp)
+                            modifier = Modifier.align(Alignment.Center)
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
@@ -1536,6 +1532,7 @@ abstract class Machine(
 
         DefaultFASDialogWindow(
             title = if (chosedState == null) stringResource(id = R.string.new_state) else "edit state: ${chosedState.name}",
+            height = 400,
             conditionToEnable = name.isNotEmpty(),
             onDismiss = {
                 finished()
