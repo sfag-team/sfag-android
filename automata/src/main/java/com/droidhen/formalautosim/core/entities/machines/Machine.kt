@@ -728,7 +728,7 @@ abstract class Machine(
                     }
                 }
                 Spacer(modifier = Modifier.size(16.dp))
-                FASButton(text = "Confirm", onClick = finishedEditing)
+                FASButton(text = "Confirm", modifier = Modifier.width(130.dp), onClick = finishedEditing)
             }
         }
 

@@ -46,7 +46,7 @@ fun MainScreen(
 
         Column(
             modifier = Modifier
-                .height(380.dp)
+                .height(400.dp)
                 .width(280.dp)
                 .border(3.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -56,7 +56,7 @@ fun MainScreen(
                 navToAutomata()
             }
             Spacer(modifier = Modifier.height(40.dp))
-            FASButton(text = "navigate to Grammar simulator", modifier = Modifier.width(250.dp)) {
+            FASButton(text = "navigate to Grammar simulator", modifier = Modifier.width(250.dp), height = 60) {
                 navToGrammar()
             }
             Spacer(modifier = Modifier.height(40.dp))

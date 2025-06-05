@@ -136,7 +136,7 @@ class FiniteMachine(
 
                 val currentChar = imuInput[path.inputIndex]
                 val possibleTransitions = transitions.filter {
-                    it.startState == path.currentState?.index && it.name.firstOrNull() == currentChar
+                    it.startState == path.currentState?.index && (it.name.isEmpty() || it.name.firstOrNull() == currentChar)
                 }
 
                 if (possibleTransitions.isEmpty()) {
@@ -263,7 +263,7 @@ class FiniteMachine(
 
                 val currentChar = input[path.inputIndex]
                 val possibleTransitions = transitions.filter {
-                    it.startState == path.currentState.index && it.name.first() == currentChar
+                    it.startState == path.currentState.index && (it.name.isEmpty() || it.name.first() == currentChar)
                 }
 
                 for (transition in possibleTransitions) {

@@ -43,7 +43,7 @@ fun FASButton(
         },
         modifier = modifier
             .padding(2.dp)
-            .width(110.dp)
+            .width(95.dp)
             .height(height.dp)
             .scale(scale)
             .border(3.dp,shape = RoundedCornerShape(10.dp),color = if(enabled) MaterialTheme.colorScheme.secondary else unable_views)
