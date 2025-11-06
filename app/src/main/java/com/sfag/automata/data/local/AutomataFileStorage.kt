@@ -100,6 +100,7 @@ internal class AutomataFileStorage @Inject constructor(
      * Sanitize filename to remove invalid characters
      */
     private fun sanitizeFilename(name: String): String {
+
         return name.replace(Regex("[^a-zA-Z0-9._-]"), "_")
     }
 }
