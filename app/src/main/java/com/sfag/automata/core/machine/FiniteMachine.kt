@@ -73,6 +73,10 @@ class FiniteMachine(
         input.clear()
         input.append(newInputValue)
 
+        val consumed = validTransition.name.length
+        if (consumed > 0 && imuInput.isNotEmpty()) {
+            imuInput.delete(0, minOf(consumed, imuInput.length))
+        }
         currentTreePosition++
         AnimationOfTransition(
             start = startState.position,

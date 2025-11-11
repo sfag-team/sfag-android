@@ -31,6 +31,8 @@ abstract class Machine(
     var imuInput: StringBuilder = java.lang.StringBuilder(),
     val savedInputs: MutableList<StringBuilder>
 ) {
+    // hore medzi ostatné vlastnosti Machine
+    var fullInputSnapshot: String = ""
 
     lateinit var density: Density
     lateinit var context: Context
