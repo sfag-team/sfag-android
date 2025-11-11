@@ -146,7 +146,7 @@ fun AutomataScreen(navBack: () -> Unit) {
                     when (currentScreenState.value) {
                         AutomataScreenStates.SIMULATING -> {
                             key(recompose.intValue) {
-                                automata.SimulateMachine()
+                                automata.SimulateMachine(onEditInputClick = { currentScreenState.value = AutomataScreenStates.EDITING_INPUT })
                             }
                         }
 
@@ -174,7 +174,7 @@ fun AutomataScreen(navBack: () -> Unit) {
                                 }
                             }
                             key(recompose.intValue) {
-                                automata.SimulateMachine()
+                                automata.SimulateMachine(onEditInputClick = { currentScreenState.value = AutomataScreenStates.EDITING_INPUT })
                             }
                         }
 
@@ -213,12 +213,6 @@ fun AutomataScreen(navBack: () -> Unit) {
                         contentDescription = "",
                         modifier = Modifier.clickable {
                             currentScreenState.value = AutomataScreenStates.EDITING_MACHINE
-                        })
-                    Spacer(modifier = Modifier.width(36.dp))
-                    Icon(painter = painterResource(id = R.drawable.input_ic),
-                        contentDescription = "",
-                        modifier = Modifier.clickable {
-                            currentScreenState.value = AutomataScreenStates.EDITING_INPUT
                         })
                     Spacer(modifier = Modifier.width(36.dp))
                     Icon(painter = painterResource(id = R.drawable.go_to_next),
