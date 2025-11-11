@@ -1,7 +1,15 @@
 package com.sfag.automata.ui.edit
 
 import android.annotation.SuppressLint
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,22 +25,26 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -49,6 +61,7 @@ import com.sfag.automata.ui.common.DefaultTextField
 import com.sfag.automata.ui.common.DropDownSelector
 import com.sfag.automata.ui.common.ImmutableTextField
 import com.sfag.shared.ui.common.DefaultButton
+import kotlinx.coroutines.launch
 
 
 /**
@@ -113,6 +126,7 @@ fun Machine.EditingInput(finishedEditing: () -> Unit) {
                         input.append(newInput)
                         inputValue.value = newInput
                         imuInput = StringBuilder(input.toString())
+                        fullInputSnapshot = input.toString()
                     }) {
                     input.contains("^[A-Za-z]+$".toRegex())
                 }
@@ -128,6 +142,7 @@ fun Machine.EditingInput(finishedEditing: () -> Unit) {
                                 .clickable {
                                     this@EditingInput.input = StringBuilder(input.toString())
                                     imuInput = StringBuilder(input.toString())
+                                    fullInputSnapshot = this@EditingInput.input.toString()
                                     setInitialStateAsCurrent()
                                     editingRecompose++
                                 }
@@ -181,37 +196,65 @@ fun Machine.EditingInput(finishedEditing: () -> Unit) {
  *
  * Compose function that creates bar that shows input chars for the machine
  */
+// com.sfag.automata.ui.edit.InputBar.kt
 @Composable
-internal fun Machine.InputBar() {
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-        LazyRow(
+internal fun Machine.InputBar(
+    onEditInputClick: () -> Unit
+) {
+    val fullWord = remember(fullInputSnapshot, input.toString()) {
+        if (fullInputSnapshot.isNotEmpty()) fullInputSnapshot else input.toString()
+    }
+    val headIndex = remember(fullWord, imuInput.toString()) {
+        val consumed = (fullWord.length - imuInput.length).coerceIn(0, fullWord.length)
+        consumed.coerceAtMost((fullWord.length - 1).coerceAtLeast(0))
+    }
+
+    val listState = rememberLazyListState()
+    LaunchedEffect(fullWord, imuInput.toString(), headIndex) {
+        if (fullWord.isNotEmpty()) listState.animateScrollToItem(headIndex)
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp)
+            .background(light_blue)
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start
+    ) {
+        // 🖊️ pero – otvorí úpravu vstupu
+        Icon(
+            painter = painterResource(id = R.drawable.edit_icon), // alebo Icons.Default.Edit
+            contentDescription = "Edit input",
             modifier = Modifier
-                .fillMaxWidth()
-                .height(58.dp)
-                .background(light_blue)
-                .padding(start = 8.dp),
+                .size(28.dp)
+                .clip(MaterialTheme.shapes.small)
+                .clickable { onEditInputClick() },
+            tint = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // páska
+        LazyRow(
+            state = listState,
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Start,
-            verticalAlignment = CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            itemsIndexed(input.toString().toCharArray().toList()) { index, inputChar ->
+            itemsIndexed(fullWord.toList()) { index, ch ->
+                val isHead = index == headIndex
                 Box(
                     modifier = Modifier
                         .size(46.dp)
                         .clip(MaterialTheme.shapes.medium)
                         .background(
-                            if (index == 0) {
-                                MaterialTheme.colorScheme.secondary
-                            } else {
-                                MaterialTheme.colorScheme.primary
-                            }
+                            if (isHead) Color(0xFFE53935) else MaterialTheme.colorScheme.primary
                         ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        inputChar.toString(),
-                        fontSize = 28.sp,
-                        color = Color.White,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    Text(ch.toString(), fontSize = 28.sp, color = Color.White)
                 }
                 Spacer(modifier = Modifier.width(10.dp))
             }

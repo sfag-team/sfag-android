@@ -24,16 +24,15 @@ import com.sfag.automata.ui.edit.Transitions
  * draws machine with all states and transitions
  */
 @SuppressLint("ComposableNaming", "SuspiciousIndentation")
+// com.sfag.automata.ui.simulation.SimulateMachine.kt
 @Composable
-fun Machine.SimulateMachine() {
+fun Machine.SimulateMachine(
+    onEditInputClick: () -> Unit
+) {
     context = LocalContext.current
     density = LocalDensity.current
-    var offsetX by remember {
-        mutableFloatStateOf(offsetXGraph)
-    }
-    var offsetY by remember {
-        mutableFloatStateOf(offsetYGraph)
-    }
+    var offsetX by remember { mutableFloatStateOf(offsetXGraph) }
+    var offsetY by remember { mutableFloatStateOf(offsetYGraph) }
 
     val dragModifier = Modifier.pointerInput(Unit) {
         detectDragGestures { change, dragAmount ->
@@ -47,8 +46,12 @@ fun Machine.SimulateMachine() {
 
     Transitions(dragModifier = dragModifier, offsetY, offsetX, onTransitionClick = null)
     States(dragModifier = dragModifier, null, offsetY, offsetX, onStateClick = {})
-    InputBar()
+
+    // ⬆️ páska s ikonou pera vľavo
+    InputBar(onEditInputClick = onEditInputClick)
+
     if (machineType == MachineType.Pushdown) {
         BottomPushDownBar(this as PushDownMachine)
     }
 }
+
