@@ -40,6 +40,7 @@ import com.sfag.automata.core.machine.FiniteMachine
 import com.sfag.automata.core.machine.Machine
 import com.sfag.automata.core.machine.MachineType
 import com.sfag.automata.core.machine.PushDownMachine
+import com.sfag.automata.core.machine.isDeterministicFinite
 import com.sfag.automata.core.transition.PushDownTransition
 import com.sfag.automata.core.viewmodel.AutomataViewModel
 import com.sfag.automata.core.viewmodel.CurrentMachine
@@ -126,6 +127,14 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
                 .padding(start = 16.dp)
         ) {
             items(viewModel.getAllMachinesName()) { item ->
+                val machine = viewModel.getMachineByName(item)!!
+
+                val detLabel = when (machine.machineType) {
+                    MachineType.Finite ->
+                        if (machine.isDeterministicFinite()) "DFA" else "NFA"
+                    MachineType.Pushdown ->
+                        "PDA" // alebo neskôr DPDA/NDPDA
+                }
                 Spacer(modifier = Modifier.size(12.dp))
                 Row(
                     modifier = Modifier
@@ -145,7 +154,10 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
                     verticalAlignment = CenterVertically
                 ) {
                     Spacer(modifier = Modifier.size(24.dp))
-                    ImmutableTextField(text = item, textColor = perlamutr_white)
+                    ImmutableTextField(
+                        text = "$item ($detLabel)",
+                        textColor = perlamutr_white
+                    )
                 }
                 Spacer(modifier = Modifier.size(8.dp))
             }
