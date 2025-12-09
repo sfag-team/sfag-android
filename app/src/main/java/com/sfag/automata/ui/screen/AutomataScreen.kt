@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.MutableIntState
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.sfag.automata.core.machine.Machine
 import com.sfag.automata.core.machine.MachineType
+import com.sfag.automata.core.machine.isDeterministicFinite
 import com.sfag.automata.core.viewmodel.AutomataViewModel
 import com.sfag.automata.core.viewmodel.CurrentMachine
 import com.sfag.automata.theme.light_blue
@@ -53,7 +55,6 @@ import com.sfag.automata.util.enum.AutomataScreenStates
 import com.sfag.R
 import com.sfag.shared.data.local.FileStorage
 import com.sfag.shared.ui.common.DefaultButton
-
 
 @Composable
 fun AutomataScreen(navBack: () -> Unit) {
@@ -76,7 +77,12 @@ fun AutomataScreen(navBack: () -> Unit) {
     var exportFileWindow by remember {
         mutableStateOf(false)
     }
+
     val context = LocalContext.current
+
+    // stav pre DFA/NFA dialóg
+    var showDeterminismDialog by remember { mutableStateOf(false) }
+    var determinismText by remember { mutableStateOf("") }
 
     BackHandler {
         when (currentScreenState.value) {
@@ -85,7 +91,9 @@ fun AutomataScreen(navBack: () -> Unit) {
                 navBack()
             }
 
-            AutomataScreenStates.SIMULATION_RUN -> {}
+            AutomataScreenStates.SIMULATION_RUN -> {
+                // ignoruj back počas animácie
+            }
 
             AutomataScreenStates.EDITING_INPUT -> {
                 viewModel.saveMachine(automata)
@@ -96,9 +104,9 @@ fun AutomataScreen(navBack: () -> Unit) {
                 viewModel.saveMachine(automata)
                 currentScreenState.value = AutomataScreenStates.SIMULATING
             }
-
         }
     }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -111,35 +119,73 @@ fun AutomataScreen(navBack: () -> Unit) {
         ) {
             item {
                 Spacer(modifier = Modifier.height(30.dp))
+
+                // Horný panel s tlačidlami
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .height(80.dp)
                         .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                    horizontalArrangement = Arrangement.spacedBy(8.dp) // namiesto Spacerov
                 ) {
-                    DefaultButton(text = "Back") {
+                    val buttonModifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+
+                    DefaultButton(
+                        text = "Back",
+                        modifier = buttonModifier
+                    ) {
+                        viewModel.saveMachine(automata)
                         navBack()
                     }
-                    DefaultButton(text = "Export") {
+
+                    DefaultButton(
+                        text = "Export",
+                        modifier = buttonModifier
+                    ) {
                         exportFileWindow = true
                     }
-                    DefaultButton(text = "Share") {
+
+                    DefaultButton(
+                        text = "Share",
+                        modifier = buttonModifier
+                    ) {
                         FileStorage.shareJffFile(
                             context = context,
                             jffContent = automata.exportToJFF(),
                             filename = automata.name
                         )
                     }
+
+                    DefaultButton(
+                        text = "DFA",
+                        modifier = buttonModifier
+                    ) {
+                        determinismText = when (automata.machineType) {
+                            MachineType.Finite ->
+                                if (automata.isDeterministicFinite())
+                                    "Automat je deterministický (DFA)."
+                                else
+                                    "Automat je nedeterministický (NFA)."
+                            MachineType.Pushdown ->
+                                "Tento automat je zásobníkový (PDA). DFA/NFA kontrola sa naň nevzťahuje."
+                        }
+                        showDeterminismDialog = true
+                    }
                 }
+
+                // Canvas / hlavná plocha automatu
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(if (automata.machineType == MachineType.Finite) 500.dp else 600.dp)
                         .background(MaterialTheme.colorScheme.surface)
                         .border(
-                            2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large
+                            2.dp,
+                            MaterialTheme.colorScheme.tertiary,
+                            MaterialTheme.shapes.large
                         )
                         .clip(MaterialTheme.shapes.large)
                 ) {
@@ -152,23 +198,23 @@ fun AutomataScreen(navBack: () -> Unit) {
 
                         AutomataScreenStates.SIMULATION_RUN -> {
                             key(animation.intValue) {
-                                if (isLockedAnimation.not()) {
+                                if (!isLockedAnimation) {
                                     automata.calculateTransition { state ->
                                         isLockedAnimation = true
                                         recompose.intValue++
                                         currentScreenState.value = AutomataScreenStates.SIMULATING
                                         if (state != null && state) {
-                                                Toast.makeText(
-                                                    context,
-                                                    "Your machine finished successfully",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            } else if(state!=null) {
-                                                Toast.makeText(
-                                                    context,
-                                                    "Your machine failed",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
+                                            Toast.makeText(
+                                                context,
+                                                "Your machine finished successfully",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        } else if (state != null) {
+                                            Toast.makeText(
+                                                context,
+                                                "Your machine failed",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                         }
                                     }
                                 }
@@ -190,35 +236,48 @@ fun AutomataScreen(navBack: () -> Unit) {
                             }
                         }
                     }
-
                 }
+
                 Spacer(modifier = Modifier.size(18.dp))
 
-                /**
-                 * Bottom navigation row (Editing Machine, Editing Input, TestMachine)
-                 */
+                // Bottom navigation row (Editing Machine, Editing Input, TestMachine)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(65.dp)
                         .clip(MaterialTheme.shapes.large)
                         .border(
-                            2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large
+                            2.dp,
+                            MaterialTheme.colorScheme.tertiary,
+                            MaterialTheme.shapes.large
                         )
                         .background(light_blue),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    Icon(painter = painterResource(id = R.drawable.editing_machine),
+                    Icon(
+                        painter = painterResource(id = R.drawable.editing_machine),
                         contentDescription = "",
                         modifier = Modifier.clickable {
                             currentScreenState.value = AutomataScreenStates.EDITING_MACHINE
-                        })
+                        }
+                    )
                     Spacer(modifier = Modifier.width(36.dp))
-                    Icon(painter = painterResource(id = R.drawable.go_to_next),
+                    Icon(
+                        painter = painterResource(id = R.drawable.input_ic),
                         contentDescription = "",
                         modifier = Modifier.clickable {
-                            if (currentScreenState.value != AutomataScreenStates.SIMULATING && currentScreenState.value != AutomataScreenStates.SIMULATION_RUN) {
+                            currentScreenState.value = AutomataScreenStates.EDITING_INPUT
+                        }
+                    )
+                    Spacer(modifier = Modifier.width(36.dp))
+                    Icon(
+                        painter = painterResource(id = R.drawable.go_to_next),
+                        contentDescription = "",
+                        modifier = Modifier.clickable {
+                            if (currentScreenState.value != AutomataScreenStates.SIMULATING &&
+                                currentScreenState.value != AutomataScreenStates.SIMULATION_RUN
+                            ) {
                                 currentScreenState.value = AutomataScreenStates.SIMULATING
                             } else if (currentScreenState.value == AutomataScreenStates.SIMULATING) {
                                 currentScreenState.value = AutomataScreenStates.SIMULATION_RUN
@@ -232,7 +291,8 @@ fun AutomataScreen(navBack: () -> Unit) {
                                     animation.intValue++
                                 }
                             }
-                        })
+                        }
+                    )
                 }
 
                 Spacer(modifier = Modifier.size(24.dp))
@@ -243,6 +303,7 @@ fun AutomataScreen(navBack: () -> Unit) {
             }
         }
 
+        // Export dialog
         key(exportFileWindow) {
             if (exportFileWindow) {
                 ExportWindow(automata) {
@@ -250,12 +311,34 @@ fun AutomataScreen(navBack: () -> Unit) {
                 }
             }
         }
+
+        // 🔵 DFA/NFA výsledok – dialóg
+        if (showDeterminismDialog) {
+            DefaultDialogWindow(
+                title = "Determinismus automatu",
+                onDismiss = { showDeterminismDialog = false },
+                onConfirm = { showDeterminismDialog = false }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.4f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = determinismText,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
 /**
- *
- * Shows additional info for related screen state  (ex.: for simulating it shows derivation tree and shows interface for multipling testing)
+ * Bottom part – zobrazuje derivation tree / editing bottom UI podľa stavu
  */
 @Composable
 private fun BottomScreenPart(
@@ -287,12 +370,16 @@ private fun ExportWindow(machine: Machine, finished: () -> Unit = {}) {
 
     val context = LocalContext.current
 
-    DefaultDialogWindow(title = "export machine as .jff", onDismiss = finished, onConfirm = {
-        FileStorage.saveJffToDownloads(
-            context, jFFMachine, filename
-        )
-        finished()
-    }) {
+    DefaultDialogWindow(
+        title = "export machine as .jff",
+        onDismiss = finished,
+        onConfirm = {
+            FileStorage.saveJffToDownloads(
+                context, jFFMachine, filename
+            )
+            finished()
+        }
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxHeight(0.6f)
@@ -301,7 +388,8 @@ private fun ExportWindow(machine: Machine, finished: () -> Unit = {}) {
             verticalArrangement = Arrangement.Top
         ) {
             Spacer(modifier = Modifier.size(40.dp))
-            DefaultTextField(modifier = Modifier.fillMaxWidth(0.7f),
+            DefaultTextField(
+                modifier = Modifier.fillMaxWidth(0.7f),
                 hint = "file name",
                 value = filename,
                 requirementText = "file name: without ' ', '%', '.'",
@@ -310,10 +398,12 @@ private fun ExportWindow(machine: Machine, finished: () -> Unit = {}) {
                 },
                 isRequirementsComplete = {
                     filename.let { !(it.contains(' ') || it.contains('%') || it.contains('.')) }
-                })
+                }
+            )
             Spacer(modifier = Modifier.size(40.dp))
             ImmutableTextField(
-                text = "File will be saved to downloads", modifier = Modifier.fillMaxWidth(0.85f)
+                text = "File will be saved to downloads",
+                modifier = Modifier.fillMaxWidth(0.85f)
             )
         }
     }
