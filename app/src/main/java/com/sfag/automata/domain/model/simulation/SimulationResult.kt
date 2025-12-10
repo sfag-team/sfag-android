@@ -26,4 +26,23 @@ sealed class SimulationResult {
         val radius: Float,
         val onComplete: () -> Unit
     ) : SimulationResult()
+
+    /**
+     * Multiple transitions found (NFA) - all animations should play simultaneously.
+     * @param transitions list of transition data for parallel animation
+     * @param onAllComplete callback to execute after all animations complete
+     */
+    data class MultipleTransitions(
+        val transitions: List<TransitionData>,
+        val onAllComplete: () -> Unit
+    ) : SimulationResult()
 }
+
+/**
+ * Data for a single transition animation in NFA simulation.
+ */
+data class TransitionData(
+    val startPosition: Offset,
+    val endPosition: Offset,
+    val radius: Float
+)

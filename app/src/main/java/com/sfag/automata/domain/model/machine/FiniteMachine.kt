@@ -1,12 +1,12 @@
 package com.sfag.automata.domain.model.machine
 
 import com.sfag.automata.domain.model.simulation.SimulationResult
+import com.sfag.automata.domain.model.simulation.TransitionData
 import com.sfag.automata.domain.model.state.State
 import com.sfag.automata.domain.model.transition.Transition
 import com.sfag.automata.domain.model.tree.TreeNode
 import com.sfag.shared.util.XmlUtils.escapeXml
 import com.sfag.shared.util.XmlUtils.formatFloat
-
 
 class FiniteMachine(
     name: String = "Untitled", version: Int = 1, states: MutableList<State> = mutableListOf(),
@@ -16,77 +16,135 @@ class FiniteMachine(
     machineType = MachineType.Finite,
     states, transitions, savedInputs = savedInputs
 ) {
-    override var currentState: Int? = null
+    // Track multiple current states for NFA simulation
+    val currentStates: MutableSet<Int> = mutableSetOf()
 
+    // currentState now derives from currentStates for compatibility
+    override var currentState: Int?
+        get() = currentStates.firstOrNull()
+        set(value) {
+            currentStates.clear()
+            value?.let { currentStates.add(it) }
+        }
+
+    /**
+     * Calculate next simulation step - shows all paths (JFLAP behavior).
+     * Works for both DFA and NFA.
+     */
     override fun calculateNextStep(): SimulationResult {
-        if (currentState == null) currentState = states.firstOrNull { it.initial }?.index
-        val currentStateIndex = currentState
-            ?: return SimulationResult.Ended(null)
-
-        val startState = getStateByIndex(currentStateIndex)
-
-        val possibleTransitions = getListOfAppropriateTransitions(startState)
-        if (possibleTransitions.isEmpty()) {
-            return SimulationResult.Ended(startState.finite)
+        // Initialize current states if empty
+        if (currentStates.isEmpty()) {
+            val initialState = states.firstOrNull { it.initial }
+            if (initialState != null) {
+                currentStates.add(initialState.index)
+                initialState.isCurrent = true
+            }
         }
 
-        var validTransition: Transition? = possibleTransitions.firstOrNull { transition ->
-            val nextInput = input.removePrefix(transition.name)
-            val nextState = getStateByIndex(transition.endState)
-
-            val previousCurrent = currentState ?: return@firstOrNull false
-            states.forEach { it.isCurrent = false }
-            nextState.isCurrent = true
-            currentState = nextState.index
-
-            val result = canReachFinalState(StringBuilder(nextInput), false)
-
-            nextState.isCurrent = false
-            getStateByIndexOrNull(previousCurrent)?.isCurrent = true
-            currentState = previousCurrent
-
-            result
+        if (currentStates.isEmpty()) {
+            return SimulationResult.Ended(null)
         }
 
-        if (validTransition == null) {
-            validTransition = possibleTransitions.first()
+        return calculateAllPathsStep()
+    }
+
+    /**
+     * Process all transitions from all current states.
+     * Groups transitions by input length to handle different-length transitions correctly.
+     */
+    private fun calculateAllPathsStep(): SimulationResult {
+        // Collect all possible transitions from all current states
+        val allTransitions = mutableListOf<Pair<State, Transition>>()
+        for (stateIndex in currentStates) {
+            val state = getStateByIndex(stateIndex)
+            val possibleTransitions = getListOfAppropriateTransitions(state)
+            for (transition in possibleTransitions) {
+                allTransitions.add(state to transition)
+            }
         }
 
-        val endState = getStateByIndex(validTransition.endState)
-        val newInputValue = input.removePrefix(validTransition.name).toString()
-        input.clear()
-        input.append(newInputValue)
-
-        val consumed = validTransition.name.length
-        if (consumed > 0 && imuInput.isNotEmpty()) {
-            imuInput.delete(0, minOf(consumed, imuInput.length))
+        // No transitions available - check if any current state is accepting
+        if (allTransitions.isEmpty()) {
+            val anyAccepting = currentStates.any { stateIndex ->
+                getStateByIndex(stateIndex).finite && input.isEmpty()
+            }
+            return SimulationResult.Ended(anyAccepting)
         }
+
+        // Group transitions by input length - only process shortest ones this step
+        // (longer transitions will be processed in subsequent steps)
+        val minInputLength = allTransitions.minOf { it.second.name.length }
+        val transitionsToProcess = allTransitions.filter { it.second.name.length == minInputLength }
+
+        // Build transition data for animation
+        val transitionDataList = transitionsToProcess.map { (startState, transition) ->
+            val endState = getStateByIndex(transition.endState)
+            TransitionData(
+                startPosition = startState.position,
+                endPosition = endState.position,
+                radius = startState.radius
+            )
+        }
+
+        // Calculate next states (all reachable states from processed transitions)
+        val nextStates = transitionsToProcess.map { it.second.endState }.toSet()
+
+        // Consume input based on the transitions being processed
+        consumeInput(minInputLength)
         currentTreePosition++
 
-        return SimulationResult.Transition(
-            startPosition = startState.position,
-            endPosition = endState.position,
-            radius = startState.radius,
-            onComplete = {
-                startState.isCurrent = false
-                endState.isCurrent = true
-                currentState = endState.index
+        return SimulationResult.MultipleTransitions(
+            transitions = transitionDataList,
+            onAllComplete = {
+                // Clear old current states
+                for (stateIndex in currentStates) {
+                    getStateByIndexOrNull(stateIndex)?.isCurrent = false
+                }
+                currentStates.clear()
+
+                // Set new current states
+                for (stateIndex in nextStates) {
+                    currentStates.add(stateIndex)
+                    getStateByIndexOrNull(stateIndex)?.isCurrent = true
+                }
             }
         )
     }
 
+    private fun consumeInput(length: Int) {
+        if (length > 0) {
+            val newInputValue = input.drop(length).toString()
+            input.clear()
+            input.append(newInputValue)
+            if (imuInput.isNotEmpty()) {
+                imuInput.delete(0, minOf(length, imuInput.length))
+            }
+        }
+    }
+
     /**
      * Checks if input was fully consumed and machine is in accepting state.
+     * Returns true if ANY current state is accepting.
      */
     fun isAccepted(): Boolean? {
-        val currentIdx = currentState ?: return null
-        val state = getStateByIndexOrNull(currentIdx) ?: return null
-        return if (input.isEmpty() && state.finite) true else null
+        if (currentStates.isEmpty()) return null
+        val anyAccepting = currentStates.any { stateIndex ->
+            getStateByIndexOrNull(stateIndex)?.finite == true
+        }
+        return if (input.isEmpty() && anyAccepting) true else null
+    }
+
+    override fun resetMachineState() {
+        // Clear isCurrent flag on all states
+        for (stateIndex in currentStates) {
+            getStateByIndexOrNull(stateIndex)?.isCurrent = false
+        }
+        currentStates.clear()
     }
 
     override fun addNewState(state: State) {
-        if (state.initial && currentState == null) {
-            currentState = state.index
+        if (state.initial && currentStates.isEmpty()) {
+            currentStates.add(state.index)
             state.isCurrent = true
         }
         states.add(state)

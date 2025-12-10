@@ -49,6 +49,7 @@ import com.sfag.automata.ui.component.edit.EditingInput
 import com.sfag.automata.ui.component.edit.EditingMachine
 import com.sfag.automata.ui.component.edit.EditingMachineBottom
 import com.sfag.automata.ui.component.simulation.AnimationOfTransition
+import com.sfag.automata.ui.component.simulation.MultipleAnimationsOfTransition
 import com.sfag.automata.ui.component.simulation.SimulateMachine
 import com.sfag.automata.ui.component.visualization.DerivationTree
 import com.sfag.automata.ui.component.visualization.MathFormatView
@@ -184,6 +185,7 @@ fun AutomataScreen(navBack: () -> Unit) {
                         }
                         showDeterminismDialog = true
                     }
+
                 }
 
                 // Canvas / main automaton area
@@ -214,18 +216,27 @@ fun AutomataScreen(navBack: () -> Unit) {
                                             isLockedAnimation = true
                                             recompose.intValue++
                                             currentScreenState.value = AutomataScreenStates.SIMULATING
-                                            when (result.accepted) {
-                                                true -> Toast.makeText(
-                                                    context,
-                                                    "Your machine finished successfully",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                                false -> Toast.makeText(
-                                                    context,
-                                                    "Your machine failed",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                                null -> { /* incomplete - no toast */ }
+                                            val message = when (result.accepted) {
+                                                true -> {
+                                                    val acceptingStates = automata.states
+                                                        .filter { it.isCurrent && it.finite }
+                                                        .joinToString(", ") { it.name }
+                                                    "Accepted! In accepting state(s): $acceptingStates"
+                                                }
+                                                false -> {
+                                                    val currentStatesStr = automata.states
+                                                        .filter { it.isCurrent }
+                                                        .joinToString(", ") { it.name }
+                                                    if (automata.input.isEmpty()) {
+                                                        "Rejected. Stopped in non-accepting state(s): $currentStatesStr"
+                                                    } else {
+                                                        "Rejected. No valid transitions. Remaining input: ${automata.input}"
+                                                    }
+                                                }
+                                                null -> null
+                                            }
+                                            message?.let {
+                                                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
                                             }
                                         }
                                         is SimulationResult.Transition -> {
@@ -235,6 +246,18 @@ fun AutomataScreen(navBack: () -> Unit) {
                                                 radius = result.radius,
                                                 onAnimationEnd = {
                                                     result.onComplete()
+                                                    isLockedAnimation = true
+                                                    recompose.intValue++
+                                                    currentScreenState.value = AutomataScreenStates.SIMULATING
+                                                }
+                                            )
+                                        }
+                                        is SimulationResult.MultipleTransitions -> {
+                                            // NFA: animate all transitions in parallel
+                                            automata.MultipleAnimationsOfTransition(
+                                                transitions = result.transitions,
+                                                onAllAnimationsEnd = {
+                                                    result.onAllComplete()
                                                     isLockedAnimation = true
                                                     recompose.intValue++
                                                     currentScreenState.value = AutomataScreenStates.SIMULATING
