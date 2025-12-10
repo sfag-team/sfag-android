@@ -23,9 +23,9 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.sfag.grammar.core.rule.GrammarRule
-import com.sfag.grammar.core.type.GrammarType
-import com.sfag.grammar.core.viewmodel.GrammarViewModel
+import com.sfag.grammar.domain.model.rule.GrammarRule
+import com.sfag.grammar.domain.model.type.GrammarType
+import com.sfag.grammar.presentation.viewmodel.GrammarViewModel
 
 
 @Composable

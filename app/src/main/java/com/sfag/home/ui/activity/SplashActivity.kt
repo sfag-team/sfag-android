@@ -9,10 +9,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import com.sfag.automata.theme.Theme
+import com.sfag.shared.theme.AppTheme
 import com.sfag.shared.ui.activity.SetDefaultSettings
 import com.sfag.home.ui.screen.SplashScreen
-import com.sfag.shared.navigation.Destinations
+import com.sfag.home.navigation.Destinations
 import dagger.hilt.android.AndroidEntryPoint
 
 
@@ -25,7 +25,7 @@ class SplashActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            Theme {
+            AppTheme {
                 SetDefaultSettings()
                 rememberNavController().apply {
                     NavHost(

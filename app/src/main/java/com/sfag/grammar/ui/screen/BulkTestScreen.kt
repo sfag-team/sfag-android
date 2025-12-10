@@ -29,12 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.sfag.grammar.core.parser.parse
-import com.sfag.grammar.core.rule.GrammarRule
-import com.sfag.grammar.core.type.GrammarType
-import com.sfag.grammar.core.viewmodel.GrammarViewModel
-import com.sfag.grammar.core.viewmodel.InputsViewModel
-import com.sfag.grammar.theme.light_blue
+import com.sfag.grammar.domain.usecase.parser.parse
+import com.sfag.grammar.domain.model.rule.GrammarRule
+import com.sfag.grammar.domain.model.type.GrammarType
+import com.sfag.grammar.presentation.viewmodel.GrammarViewModel
+import com.sfag.grammar.presentation.viewmodel.InputsViewModel
+import com.sfag.shared.theme.light_blue
 
 
 @Composable
