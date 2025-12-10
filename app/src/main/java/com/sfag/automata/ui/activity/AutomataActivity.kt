@@ -11,17 +11,17 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import com.sfag.automata.core.machine.FiniteMachine
-import com.sfag.automata.core.machine.Machine
-import com.sfag.automata.core.machine.MachineType
-import com.sfag.automata.core.machine.PushDownMachine
-import com.sfag.automata.core.transition.PushDownTransition
-import com.sfag.automata.core.viewmodel.CurrentMachine
-import com.sfag.automata.theme.Theme
+import com.sfag.automata.domain.model.machine.FiniteMachine
+import com.sfag.automata.domain.model.machine.Machine
+import com.sfag.automata.domain.model.machine.MachineType
+import com.sfag.automata.domain.model.machine.PushDownMachine
+import com.sfag.automata.domain.model.transition.PushDownTransition
+import com.sfag.automata.presentation.viewmodel.CurrentMachine
+import com.sfag.shared.theme.AppTheme
 import com.sfag.automata.navigation.AutomataDestinations
 import com.sfag.automata.ui.screen.AutomataListScreen
 import com.sfag.automata.ui.screen.AutomataScreen
-import com.sfag.shared.data.local.FileStorage
+import com.sfag.automata.data.FileStorage
 import com.sfag.shared.ui.activity.SetDefaultSettings
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -59,7 +59,7 @@ class AutomataActivity : ComponentActivity() {
 
         setContent {
 
-            Theme {
+            AppTheme {
                 SetDefaultSettings()
                 rememberNavController().apply {
                     Column(

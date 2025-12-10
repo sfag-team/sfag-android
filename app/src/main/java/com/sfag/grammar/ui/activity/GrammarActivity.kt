@@ -29,13 +29,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
-import com.sfag.grammar.core.viewmodel.GrammarViewModel
-import com.sfag.grammar.core.viewmodel.InputsViewModel
-import com.sfag.grammar.icons.FileOpen
-import com.sfag.grammar.icons.FileSave as FileSaveIcon
-import com.sfag.grammar.theme.GrammarTheme
-import com.sfag.grammar.ui.common.FilePicker
-import com.sfag.grammar.ui.common.FileSave
+import com.sfag.grammar.presentation.viewmodel.GrammarViewModel
+import com.sfag.grammar.presentation.viewmodel.InputsViewModel
+import com.sfag.shared.icon.FileOpen
+import com.sfag.shared.icon.FileSave as FileSaveIcon
+import com.sfag.shared.theme.AppTheme
+import com.sfag.grammar.ui.component.common.FilePicker
+import com.sfag.grammar.ui.component.common.FileSave
 import com.sfag.grammar.navigation.DestinationConstants
 import com.sfag.grammar.ui.screen.BulkTestScreen
 import com.sfag.grammar.ui.screen.GrammarScreen
@@ -48,7 +48,7 @@ class GrammarActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val assetPath = intent?.getStringExtra("example uri")
         setContent {
-            GrammarTheme {
+            AppTheme {
                 // Create NavController for navigation
                 val navController = rememberNavController()
                 val grammarViewModel: GrammarViewModel = viewModel()
@@ -129,7 +129,7 @@ fun TopNavigationBar(navController: NavHostController, grammarViewModel: Grammar
                 IconButton(onClick = {
                     val intent = Intent().setClassName(
                         context,
-                        "com.sfag.menu.presentation.activities.MainActivity"
+                        "com.sfag.home.ui.activity.HomeActivity"
                     ).apply {
                         flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
                     }
