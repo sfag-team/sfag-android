@@ -22,4 +22,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "AutoGram"
 include(":app")
-include(":theme")

@@ -36,21 +36,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.sfag.automata.core.machine.FiniteMachine
-import com.sfag.automata.core.machine.Machine
-import com.sfag.automata.core.machine.MachineType
-import com.sfag.automata.core.machine.PushDownMachine
-import com.sfag.automata.core.machine.isDeterministicFinite
-import com.sfag.automata.core.transition.PushDownTransition
-import com.sfag.automata.core.viewmodel.AutomataViewModel
-import com.sfag.automata.core.viewmodel.CurrentMachine
-import com.sfag.automata.theme.perlamutr_white
-import com.sfag.automata.ui.common.DefaultDialogWindow
-import com.sfag.automata.ui.common.DefaultTextField
-import com.sfag.automata.ui.common.ImmutableTextField
-import com.sfag.automata.ui.common.ItemSpecificationIcon
-import com.sfag.shared.data.local.FileStorage
-import com.sfag.shared.ui.common.DefaultButton
+import com.sfag.automata.domain.model.machine.FiniteMachine
+import com.sfag.automata.domain.model.machine.Machine
+import com.sfag.automata.domain.model.machine.MachineType
+import com.sfag.automata.domain.model.machine.PushDownMachine
+import com.sfag.automata.domain.model.machine.TuringMachine
+import com.sfag.automata.domain.usecase.validation.isDeterministicFinite
+import com.sfag.automata.domain.model.transition.PushDownTransition
+import com.sfag.automata.domain.model.transition.TuringTransition
+import com.sfag.automata.presentation.viewmodel.AutomataViewModel
+import com.sfag.automata.presentation.viewmodel.CurrentMachine
+import com.sfag.shared.theme.perlamutr_white
+import com.sfag.automata.ui.component.common.DefaultDialogWindow
+import com.sfag.automata.ui.component.common.DefaultTextField
+import com.sfag.automata.ui.component.common.ItemSpecificationIcon
+import com.sfag.automata.data.FileStorage
+import com.sfag.shared.ui.component.DefaultButton
+import com.sfag.shared.ui.component.ImmutableTextField
 
 
 @Composable
@@ -78,14 +80,25 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
 
             content?.let { jffXml ->
                 val (states, transitions) = FileStorage.parseJff(jffXml)
-                val machineType: MachineType =
-                    if (jffXml.split("<type>")[1].split("</type>")[0] == MachineType.Finite.tag
-                    ) MachineType.Finite else MachineType.Pushdown
-                val machine = if (machineType == MachineType.Finite) FiniteMachine(
-                    name = "imported finite",
-                    states = states.toMutableList(),
-                    transitions = transitions.toMutableList()
-                ) else PushDownMachine(name = "imported pushdown", states =states.toMutableList(), transitions =transitions.filterIsInstance<PushDownTransition>().toMutableList() )
+                val typeTag = jffXml.split("<type>")[1].split("</type>")[0].trim().lowercase()
+                val machineType: MachineType = MachineType.fromTag(typeTag)
+                val machine = when (machineType) {
+                    MachineType.Finite -> FiniteMachine(
+                        name = "imported finite",
+                        states = states.toMutableList(),
+                        transitions = transitions.toMutableList()
+                    )
+                    MachineType.Pushdown -> PushDownMachine(
+                        name = "imported pushdown",
+                        states = states.toMutableList(),
+                        transitions = transitions.filterIsInstance<PushDownTransition>().toMutableList()
+                    )
+                    MachineType.Turing -> TuringMachine(
+                        name = "imported turing",
+                        states = states.toMutableList(),
+                        transitions = transitions.filterIsInstance<TuringTransition>().toMutableList()
+                    )
+                }
                 viewModel.saveMachine(machine = machine)
                 CurrentMachine.machine = machine
                 navToAutomata()
@@ -127,13 +140,14 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
                 .padding(start = 16.dp)
         ) {
             items(viewModel.getAllMachinesName()) { item ->
-                val machine = viewModel.getMachineByName(item)!!
+                val machine = viewModel.getMachineByName(item) ?: return@items
 
                 val detLabel = when (machine.machineType) {
                     MachineType.Finite ->
                         if (machine.isDeterministicFinite()) "DFA" else "NFA"
-                    MachineType.Pushdown ->
-                        "PDA" // alebo neskôr DPDA/NDPDA
+                    MachineType.Pushdown -> "PDA"
+                    MachineType.Turing ->
+                        "TM"
                 }
                 Spacer(modifier = Modifier.size(12.dp))
                 Row(
@@ -148,7 +162,8 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
                         )
                         .background(MaterialTheme.colorScheme.primary)
                         .clickable {
-                        CurrentMachine.machine = viewModel.getMachineByName(item)!!
+                        val selectedMachine = viewModel.getMachineByName(item) ?: return@clickable
+                        CurrentMachine.machine = selectedMachine
                         navToAutomata()
                     },
                     verticalAlignment = CenterVertically
@@ -169,7 +184,7 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
             horizontalArrangement = Arrangement.Center
         ) {
             Icon(
-                painter = painterResource(id = com.sfag.theme.R.drawable.add_icon),
+                painter = painterResource(id = com.sfag.R.drawable.add_icon),
                 contentDescription = "",
                 modifier = Modifier
                     .clickable { createNewMachine = true }
@@ -213,14 +228,19 @@ private fun NewMachineWindow(finished: (Machine?) -> Unit) {
             finished(null)
         },
         onConfirm = {
-            if (name.isNotEmpty() && type != null) {
-                when (type!!) {
+            val selectedType = type
+            if (name.isNotEmpty() && selectedType != null) {
+                when (selectedType) {
                     MachineType.Finite -> {
                         finished(FiniteMachine(name = name))
                     }
 
                     MachineType.Pushdown -> {
                         finished(PushDownMachine(name = name))
+                    }
+
+                    MachineType.Turing -> {
+                        finished(TuringMachine(name = name))
                     }
                 }
             }
@@ -236,7 +256,7 @@ private fun NewMachineWindow(finished: (Machine?) -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             ItemSpecificationIcon(
-                icon = com.sfag.theme.R.drawable.pd_automata_icon,
+                icon = com.sfag.R.drawable.pd_automata_icon,
                 text = "Push Down",
                 isActive = type?.equals(MachineType.Pushdown) ?: false
             ) {
@@ -244,7 +264,7 @@ private fun NewMachineWindow(finished: (Machine?) -> Unit) {
             }
 
             ItemSpecificationIcon(
-                icon = com.sfag.theme.R.drawable.finite_automata_icon,
+                icon = com.sfag.R.drawable.finite_automata_icon,
                 text = "Finite",
                 isActive = type?.equals(MachineType.Finite) ?: false
             ) {

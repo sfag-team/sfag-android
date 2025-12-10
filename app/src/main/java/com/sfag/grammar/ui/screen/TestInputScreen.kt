@@ -75,16 +75,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.graphics.withSave
-import com.sfag.grammar.core.parser.Step
-import com.sfag.grammar.core.parser.parse
-import com.sfag.grammar.core.rule.GrammarRule
-import com.sfag.grammar.core.type.GrammarType
-import com.sfag.grammar.core.viewmodel.GrammarViewModel
-import com.sfag.grammar.icons.ChevronLeft
-import com.sfag.grammar.icons.ChevronRight
-import com.sfag.grammar.icons.KeyboardDoubleArrowRight
-import com.sfag.grammar.icons.NetworkNode
-import com.sfag.grammar.theme.light_blue
+import com.sfag.grammar.domain.usecase.parser.Step
+import com.sfag.grammar.domain.usecase.parser.parse
+import com.sfag.grammar.domain.model.rule.GrammarRule
+import com.sfag.grammar.domain.model.type.GrammarType
+import com.sfag.grammar.presentation.viewmodel.GrammarViewModel
+import com.sfag.shared.icon.ChevronLeft
+import com.sfag.shared.icon.ChevronRight
+import com.sfag.shared.icon.KeyboardDoubleArrowRight
+import com.sfag.shared.icon.NetworkNode
+import com.sfag.shared.theme.light_blue
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
@@ -177,7 +177,7 @@ fun TestInputScreen(grammarViewModel: GrammarViewModel, preInput: String) {
             result.let {
                 if (showTree) {
                     var steps by remember { mutableIntStateOf(0) }
-                    if(it != null){
+                    if(it != null && tree != null){
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -185,13 +185,13 @@ fun TestInputScreen(grammarViewModel: GrammarViewModel, preInput: String) {
                                 .zIndex(1f) // Ensure it's on top
 
                         ) {
-                            DAGCanvas(tree!!, scale, offsetX, offsetY, steps, type, canvasSize)
+                            DAGCanvas(tree, scale, offsetX, offsetY, steps, type, canvasSize)
                             if(steps == 0){
                                 coroutineScope.launch {
                                     focusNodeAnimated(tree, steps, offsetX, offsetY, scale.floatValue, canvasSize.value.width, canvasSize.value.height)
                                 }
                             }
-                            if (steps == 1+result?.size!!) {
+                            if (steps == 1 + it.size) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
@@ -237,12 +237,12 @@ fun TestInputScreen(grammarViewModel: GrammarViewModel, preInput: String) {
                             }
                             IconButton(
                                 onClick = {
-                                    if (steps < result?.size!!) {
+                                    if (steps < it.size) {
                                         coroutineScope.launch {
                                             steps++
                                             focusNodeAnimated(tree, steps, offsetX, offsetY, scale.floatValue, canvasSize.value.width, canvasSize.value.height)
                                         }
-                                    }else if(steps == result?.size!!){
+                                    }else if(steps == it.size){
                                         steps++
                                     }
                                 },
@@ -362,7 +362,7 @@ fun TestInputScreen(grammarViewModel: GrammarViewModel, preInput: String) {
                     DisplayRule(
                         rule = rule,
                         grammarViewModel = grammarViewModel,
-                        grammarViewModel.isGrammarFinished.value!!
+                        grammarViewModel.isGrammarFinished.value == true
                     ) { Unit }
                 }
             }

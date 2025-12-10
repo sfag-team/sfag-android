@@ -37,30 +37,38 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.sfag.automata.core.machine.Machine
-import com.sfag.automata.core.machine.MachineType
-import com.sfag.automata.core.machine.isDeterministicFinite
-import com.sfag.automata.core.viewmodel.AutomataViewModel
-import com.sfag.automata.core.viewmodel.CurrentMachine
-import com.sfag.automata.theme.light_blue
-import com.sfag.automata.ui.common.DefaultDialogWindow
-import com.sfag.automata.ui.common.DefaultTextField
-import com.sfag.automata.ui.common.ImmutableTextField
-import com.sfag.automata.ui.edit.EditingInput
-import com.sfag.automata.ui.edit.EditingMachine
-import com.sfag.automata.ui.edit.EditingMachineBottom
-import com.sfag.automata.ui.simulation.SimulateMachine
-import com.sfag.automata.ui.visualization.DerivationTree
-import com.sfag.automata.util.enum.AutomataScreenStates
+import com.sfag.automata.domain.model.machine.Machine
+import com.sfag.automata.domain.model.machine.MachineType
+import com.sfag.automata.domain.usecase.validation.isDeterministicFinite
+import com.sfag.automata.presentation.viewmodel.AutomataViewModel
+import com.sfag.automata.presentation.viewmodel.CurrentMachine
+import com.sfag.shared.theme.light_blue
+import com.sfag.automata.ui.component.common.DefaultDialogWindow
+import com.sfag.automata.ui.component.common.DefaultTextField
+import com.sfag.automata.ui.component.edit.EditingInput
+import com.sfag.automata.ui.component.edit.EditingMachine
+import com.sfag.automata.ui.component.edit.EditingMachineBottom
+import com.sfag.automata.ui.component.simulation.AnimationOfTransition
+import com.sfag.automata.ui.component.simulation.SimulateMachine
+import com.sfag.automata.ui.component.visualization.DerivationTree
+import com.sfag.automata.ui.component.visualization.MathFormatView
+import com.sfag.automata.domain.model.simulation.SimulationResult
+import com.sfag.automata.presentation.model.AutomataScreenStates
 import com.sfag.R
-import com.sfag.shared.data.local.FileStorage
-import com.sfag.shared.ui.common.DefaultButton
+import com.sfag.automata.data.FileStorage
+import com.sfag.shared.ui.component.DefaultButton
+import com.sfag.shared.ui.component.ImmutableTextField
 
 @Composable
 fun AutomataScreen(navBack: () -> Unit) {
     val viewModel: AutomataViewModel = hiltViewModel()
+    val currentMachine = CurrentMachine.machine
+    if (currentMachine == null) {
+        navBack()
+        return
+    }
     val automata by remember {
-        mutableStateOf(CurrentMachine.machine!!)
+        mutableStateOf(currentMachine)
     }
 
     val recompose = remember {
@@ -80,7 +88,7 @@ fun AutomataScreen(navBack: () -> Unit) {
 
     val context = LocalContext.current
 
-    // stav pre DFA/NFA dialóg
+    // State for DFA/NFA dialog
     var showDeterminismDialog by remember { mutableStateOf(false) }
     var determinismText by remember { mutableStateOf("") }
 
@@ -92,7 +100,7 @@ fun AutomataScreen(navBack: () -> Unit) {
             }
 
             AutomataScreenStates.SIMULATION_RUN -> {
-                // ignoruj back počas animácie
+                // Ignore back during animation
             }
 
             AutomataScreenStates.EDITING_INPUT -> {
@@ -120,14 +128,14 @@ fun AutomataScreen(navBack: () -> Unit) {
             item {
                 Spacer(modifier = Modifier.height(30.dp))
 
-                // Horný panel s tlačidlami
+                // Top panel with buttons
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .height(80.dp)
                         .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp) // namiesto Spacerov
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     val buttonModifier = Modifier
                         .weight(1f)
@@ -166,17 +174,19 @@ fun AutomataScreen(navBack: () -> Unit) {
                         determinismText = when (automata.machineType) {
                             MachineType.Finite ->
                                 if (automata.isDeterministicFinite())
-                                    "Automat je deterministický (DFA)."
+                                    "The automaton is deterministic (DFA)."
                                 else
-                                    "Automat je nedeterministický (NFA)."
+                                    "The automaton is nondeterministic (NFA)."
                             MachineType.Pushdown ->
-                                "Tento automat je zásobníkový (PDA). DFA/NFA kontrola sa naň nevzťahuje."
+                                "This is a pushdown automaton (PDA). DFA/NFA check does not apply."
+                            MachineType.Turing ->
+                                "This is a Turing machine (TM). DFA/NFA check does not apply."
                         }
                         showDeterminismDialog = true
                     }
                 }
 
-                // Canvas / hlavná plocha automatu
+                // Canvas / main automaton area
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -199,22 +209,37 @@ fun AutomataScreen(navBack: () -> Unit) {
                         AutomataScreenStates.SIMULATION_RUN -> {
                             key(animation.intValue) {
                                 if (!isLockedAnimation) {
-                                    automata.calculateTransition { state ->
-                                        isLockedAnimation = true
-                                        recompose.intValue++
-                                        currentScreenState.value = AutomataScreenStates.SIMULATING
-                                        if (state != null && state) {
-                                            Toast.makeText(
-                                                context,
-                                                "Your machine finished successfully",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        } else if (state != null) {
-                                            Toast.makeText(
-                                                context,
-                                                "Your machine failed",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                    when (val result = automata.calculateNextStep()) {
+                                        is SimulationResult.Ended -> {
+                                            isLockedAnimation = true
+                                            recompose.intValue++
+                                            currentScreenState.value = AutomataScreenStates.SIMULATING
+                                            when (result.accepted) {
+                                                true -> Toast.makeText(
+                                                    context,
+                                                    "Your machine finished successfully",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                false -> Toast.makeText(
+                                                    context,
+                                                    "Your machine failed",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                null -> { /* incomplete - no toast */ }
+                                            }
+                                        }
+                                        is SimulationResult.Transition -> {
+                                            automata.AnimationOfTransition(
+                                                start = result.startPosition,
+                                                end = result.endPosition,
+                                                radius = result.radius,
+                                                onAnimationEnd = {
+                                                    result.onComplete()
+                                                    isLockedAnimation = true
+                                                    recompose.intValue++
+                                                    currentScreenState.value = AutomataScreenStates.SIMULATING
+                                                }
+                                            )
                                         }
                                     }
                                 }
@@ -312,10 +337,10 @@ fun AutomataScreen(navBack: () -> Unit) {
             }
         }
 
-        // 🔵 DFA/NFA výsledok – dialóg
+        // DFA/NFA result dialog
         if (showDeterminismDialog) {
             DefaultDialogWindow(
-                title = "Determinismus automatu",
+                title = "Automaton Determinism",
                 onDismiss = { showDeterminismDialog = false },
                 onConfirm = { showDeterminismDialog = false }
             ) {
@@ -338,7 +363,7 @@ fun AutomataScreen(navBack: () -> Unit) {
 }
 
 /**
- * Bottom part – zobrazuje derivation tree / editing bottom UI podľa stavu
+ * Bottom part - displays derivation tree or editing bottom UI based on state
  */
 @Composable
 private fun BottomScreenPart(
@@ -350,7 +375,7 @@ private fun BottomScreenPart(
         AutomataScreenStates.SIMULATING -> {
             automata.DerivationTree()
             Spacer(modifier = Modifier.size(32.dp))
-            automata.MathFormat()
+            MathFormatView(automata.getMathFormatData())
         }
 
         AutomataScreenStates.EDITING_MACHINE -> {

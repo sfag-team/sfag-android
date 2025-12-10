@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.sfag.R
-import com.sfag.shared.ui.common.DefaultButton
+import com.sfag.shared.ui.component.DefaultButton
 
 
 @Composable

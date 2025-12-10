@@ -13,13 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import com.sfag.automata.theme.Theme
+import com.sfag.shared.theme.AppTheme
 import com.sfag.automata.ui.activity.AutomataActivity
 import com.sfag.grammar.ui.activity.GrammarActivity
 import com.sfag.home.ui.screen.AboutScreen
 import com.sfag.home.ui.screen.ExamplesScreen
 import com.sfag.home.ui.screen.HomeScreen
-import com.sfag.shared.navigation.Destinations
+import com.sfag.home.navigation.Destinations
 import com.sfag.shared.ui.activity.SetDefaultSettings
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -31,7 +31,7 @@ class HomeActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            Theme {
+            AppTheme {
                 SetDefaultSettings()
 
                 rememberNavController().apply {
