@@ -160,7 +160,10 @@ fun Machine.EditingInput(finishedEditing: () -> Unit) {
                 }
             }
             Spacer(modifier = Modifier.size(16.dp))
-            DefaultButton(text = "Confirm", modifier = Modifier.width(130.dp), onClick = finishedEditing)
+            DefaultButton(text = "Confirm", modifier = Modifier.width(130.dp), onClick = {
+                setInitialStateAsCurrent()
+                finishedEditing()
+            })
         }
     }
 

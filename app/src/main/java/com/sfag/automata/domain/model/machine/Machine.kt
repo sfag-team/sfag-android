@@ -1,8 +1,8 @@
 package com.sfag.automata.domain.model.machine
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PathMeasure
+import java.util.Locale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.asAndroidPath
@@ -241,18 +241,11 @@ abstract class Machine(
     fun getStateByIndexOrNull(index: Int): State? = states.firstOrNull { it.index == index }
 
 
-    @SuppressLint("DefaultLocale")
     fun getDpOffsetWithPxOffset(pxPosition: Offset): Offset? {
         val currentDensity = density ?: return null
         return Offset(
-            String.format(
-                "%.2f",
-                (pxPosition.x) / currentDensity.density
-            ).replace(',', '.').toFloat(),
-            String.format(
-                "%.2f",
-                (pxPosition.y) / currentDensity.density
-            ).replace(',', '.').toFloat()
+            String.format(Locale.US, "%.2f", (pxPosition.x) / currentDensity.density).toFloat(),
+            String.format(Locale.US, "%.2f", (pxPosition.y) / currentDensity.density).toFloat()
         )
     }
 
