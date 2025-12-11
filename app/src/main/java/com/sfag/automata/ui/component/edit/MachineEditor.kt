@@ -201,6 +201,7 @@ fun Machine.EditingMachine( increaseRecomposeValue :() -> Unit) {
         if (addStateWindowFocused) AddStateWindow(clickOffset, chosedStateForEditing) {
             addStateWindowFocused = false
             chosedStateForEditing = null
+            recomposition++
             increaseRecomposeValue()
         }
         val transitionStart = choosedStateForTransitionStart
@@ -219,6 +220,7 @@ fun Machine.EditingMachine( increaseRecomposeValue :() -> Unit) {
                 choosedTransitionName = null
                 push = null
                 pop = null
+                recomposition++
                 increaseRecomposeValue()
             }
         }

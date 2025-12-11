@@ -1,5 +1,7 @@
 package com.sfag.shared.util
 
+import java.util.Locale
+
 /**
  * Utility functions for XML serialization used in JFF export.
  */
@@ -16,6 +18,7 @@ object XmlUtils {
 
     /**
      * Formats a float value with 2 decimal places for consistent XML output.
+     * Uses Locale.US to ensure dot as decimal separator (required for XML/JFF format).
      */
-    fun formatFloat(value: Float): String = "%.2f".format(value)
+    fun formatFloat(value: Float): String = "%.2f".format(Locale.US, value)
 }

@@ -135,11 +135,17 @@ class FiniteMachine(
     }
 
     override fun resetMachineState() {
-        // Clear isCurrent flag on all states
-        for (stateIndex in currentStates) {
-            getStateByIndexOrNull(stateIndex)?.isCurrent = false
+        // For NFA: clear isCurrent flag on all non-initial states
+        // (setInitialStateAsCurrent only clears one state via currentState getter)
+        val initialStateIndex = states.firstOrNull { it.initial }?.index
+        for (state in states) {
+            if (state.index != initialStateIndex) {
+                state.isCurrent = false
+            }
         }
+        // Reset currentStates to only contain initial state
         currentStates.clear()
+        initialStateIndex?.let { currentStates.add(it) }
     }
 
     override fun addNewState(state: State) {

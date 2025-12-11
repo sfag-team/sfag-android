@@ -171,12 +171,12 @@ class PushDownMachine(
                     return@forEach
                 }
 
-                val currentChar = imuInput.getOrNull(path.inputIndex)
+                val remainingInput = imuInput.substring(path.inputIndex)
                 val currentStack = path.symbolStack.toMutableList()
 
                 val possibleTransitions = transitions
                     .filter { it.startState == path.currentState?.index }
-                    .filter { it.name.isEmpty() || it.name.firstOrNull() == currentChar }
+                    .filter { it.name.isEmpty() || remainingInput.startsWith(it.name) }
 
                 if (possibleTransitions.isEmpty()) {
                     allPaths.add(path.history + path.currentState?.name to path.symbolStack)
@@ -202,7 +202,7 @@ class PushDownMachine(
                         }
                     }
 
-                    val newInputIndex = if (transition.name.isEmpty()) path.inputIndex else path.inputIndex + 1
+                    val newInputIndex = path.inputIndex + transition.name.length
 
                     nextPaths.add(
                         Path(
@@ -332,13 +332,11 @@ class PushDownMachine(
                     return true
                 }
 
-                val currentChar = input.getOrNull(path.inputIndex)
+                val remainingInput = input.substring(path.inputIndex)
 
                 val possibleTransitions = transitions.filter {
                     it.startState == path.currentState.index &&
-                            (
-                                    it.name.isEmpty() || (currentChar != null && it.name.firstOrNull() == currentChar)
-                                    )
+                            (it.name.isEmpty() || remainingInput.startsWith(it.name))
                 }
 
                 for (transition in possibleTransitions) {
@@ -359,7 +357,7 @@ class PushDownMachine(
                         }
                     }
 
-                    val newIndex = if (transition.name.isEmpty()) path.inputIndex else path.inputIndex + 1
+                    val newIndex = path.inputIndex + transition.name.length
 
                     nextPaths.add(
                         Path(
@@ -399,11 +397,11 @@ class PushDownMachine(
                     return true
                 }
 
-                val currentChar = input.getOrNull(path.inputIndex)
+                val remainingInput = input.substring(path.inputIndex)
 
                 val possibleTransitions = transitions.filter {
                     it.startState == path.currentState.index &&
-                            (it.name.isEmpty() || it.name.firstOrNull() == currentChar)
+                            (it.name.isEmpty() || remainingInput.startsWith(it.name))
                 }
 
                 for (transition in possibleTransitions) {
@@ -423,7 +421,7 @@ class PushDownMachine(
                         }
                     }
 
-                    val newIndex = if (transition.name.isEmpty()) path.inputIndex else path.inputIndex + 1
+                    val newIndex = path.inputIndex + transition.name.length
 
                     nextPaths.add(Path(nextState, newIndex, newStack))
                 }
