@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import com.sfag.grammar.domain.model.rule.GrammarRule
 import com.sfag.shared.util.JffFileUtils
+import com.sfag.shared.util.Symbols
 
 
 /**
@@ -37,8 +38,7 @@ internal object GrammarFileStorage {
                 productionElement.appendChild(leftElement)
 
                 val rightElement = doc.createElement("right")
-                // Treat epsilon as an empty <right/> tag
-                if (rule.right == "ε") {
+                if (rule.right == Symbols.EPSILON) {
                     productionElement.appendChild(rightElement)
                 } else {
                     rightElement.appendChild(doc.createTextNode(rule.right))

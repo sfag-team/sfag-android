@@ -5,6 +5,7 @@ import com.sfag.automata.domain.model.simulation.TransitionData
 import com.sfag.automata.domain.model.state.State
 import com.sfag.automata.domain.model.transition.Transition
 import com.sfag.automata.domain.model.tree.TreeNode
+import com.sfag.shared.util.Symbols
 import com.sfag.shared.util.XmlUtils.escapeXml
 import com.sfag.shared.util.XmlUtils.formatFloat
 
@@ -264,14 +265,14 @@ class FiniteMachine(
         val transitionDescriptions = transitions.map { t ->
             val fromState = states.find { it.index == t.startState }?.name ?: "?"
             val toState = states.find { it.index == t.endState }?.name ?: "?"
-            val readSymbol = t.name.ifEmpty { "ε" }
-            "δ($fromState, $readSymbol) = $toState"
+            val readSymbol = t.name.ifEmpty { Symbols.EPSILON }
+            "${Symbols.DELTA}($fromState, $readSymbol) = $toState"
         }
 
         return MachineFormatData(
             stateNames = states.map { it.name },
             inputAlphabet = transitions.mapNotNull { it.name.firstOrNull() }.toSet(),
-            initialStateName = states.firstOrNull { it.initial }?.name ?: "q₀",
+            initialStateName = states.firstOrNull { it.initial }?.name ?: "q0",
             finalStateNames = states.filter { it.finite }.map { it.name },
             transitionDescriptions = transitionDescriptions,
             machineType = machineType

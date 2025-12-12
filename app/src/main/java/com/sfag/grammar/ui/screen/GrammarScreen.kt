@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.sfag.grammar.domain.model.rule.GrammarRule
 import com.sfag.grammar.domain.model.type.GrammarType
 import com.sfag.grammar.presentation.viewmodel.GrammarViewModel
+import com.sfag.shared.util.Symbols
 
 
 @Composable
@@ -243,7 +244,7 @@ fun DisplayRule(rule: GrammarRule, grammarViewModel: GrammarViewModel, finnishGr
             modifier = Modifier.weight(1f)
         )
         Spacer(modifier = Modifier.width(4.dp))
-        Text("→", fontSize = 30.sp, modifier = Modifier.align(Alignment.CenterVertically))
+        Text("->", fontSize = 30.sp, modifier = Modifier.align(Alignment.CenterVertically))
         Spacer(modifier = Modifier.width(4.dp))
         OutlinedTextField(
             value = rule.right,
@@ -297,7 +298,7 @@ fun AddRule(
                 }
         )
         Spacer(modifier = Modifier.width(4.dp))
-        Text("→", fontSize = 30.sp, modifier = Modifier.align(Alignment.CenterVertically))
+        Text("->", fontSize = 30.sp, modifier = Modifier.align(Alignment.CenterVertically))
         Spacer(modifier = Modifier.width(4.dp))
         OutlinedTextField(
             value = rightText,
@@ -335,26 +336,26 @@ fun AddRule(
                 onClick = {
                     when (focusedField) {
                         "left" -> onLeftChange(
-                            TextFieldValue(leftText.text + "ε", TextRange(leftText.text.length + 1))
+                            TextFieldValue(leftText.text + Symbols.EPSILON, TextRange(leftText.text.length + 1))
                         )
                         "right" -> onRightChange(
-                            TextFieldValue(rightText.text + "ε", TextRange(rightText.text.length + 1))
+                            TextFieldValue(rightText.text + Symbols.EPSILON, TextRange(rightText.text.length + 1))
                         )
                     }
                 },
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 contentPadding = PaddingValues(0.dp),
                 shape = RoundedCornerShape(2.dp)
-            ) { Text("ε", fontSize = 15.sp) }
+            ) { Text(Symbols.EPSILON, fontSize = 15.sp) }
         }
 
         Spacer(modifier = Modifier.width(4.dp))
         FilledIconButton(
             onClick = {
-                val validChars = leftText.text.all { it.isLetterOrDigit() || it == '|' || it == 'ε' } &&
-                        rightText.text.all { it.isLetterOrDigit() || it == '|' || it == 'ε' }
+                val validChars = leftText.text.all { it.isLetterOrDigit() || it == '|' || it == Symbols.EPSILON_CHAR } &&
+                        rightText.text.all { it.isLetterOrDigit() || it == '|' || it == Symbols.EPSILON_CHAR }
                 if (!validChars) {
-                    Toast.makeText(context, "Only letters, digits, ε or | are allowed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Only letters, digits, ${Symbols.EPSILON} or | are allowed", Toast.LENGTH_SHORT).show()
                 } else if (!leftText.text.any { it.isUpperCase() }) {
                     Toast.makeText(context, "Non-terminal symbol missing on the left side", Toast.LENGTH_SHORT).show()
                 } else {

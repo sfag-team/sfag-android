@@ -92,7 +92,7 @@ fun AboutScreen(navBack: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text("FEI STU Bratislava", style = MaterialTheme.typography.labelMedium)
-        Text("AutoGram simulator v2.0 ©2025", style = MaterialTheme.typography.labelSmall)
+        Text("AutoGram simulator v2.1 ©2025", style = MaterialTheme.typography.labelSmall)
         Row(modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center) {

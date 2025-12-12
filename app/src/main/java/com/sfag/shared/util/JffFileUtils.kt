@@ -114,13 +114,13 @@ object JffFileUtils {
     }
 
     /**
-     * Normalizes epsilon symbols to empty string.
-     * JFLAP uses various representations: empty string, "ε", "λ", etc.
+     * Normalizes epsilon (ε) symbols to empty string.
+     * JFLAP uses various representations: empty string, ε, λ, "eps", "epsilon"
      */
     fun normalizeEpsilon(value: String): String {
         val trimmed = value.trim()
         return when (trimmed.lowercase()) {
-            "", "ε", "\u03B5", "λ", "\u03BB", "eps", "epsilon" -> ""
+            "", Symbols.EPSILON, Symbols.LAMBDA, "eps", "epsilon" -> ""
             else -> trimmed
         }
     }

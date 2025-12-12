@@ -1,5 +1,7 @@
 package com.sfag.automata.domain.model
 
+import com.sfag.shared.util.Symbols
+
 /**
  * Represents the current state of a simulation.
  * This is separate from the Machine definition - Machine is immutable,
@@ -83,7 +85,7 @@ data class TuringSimulationState(
     override val step: Int = 0,
     val tape: MutableList<Char>,
     val headPosition: Int,
-    val blankSymbol: Char = '_'
+    val blankSymbol: Char = Symbols.BLANK
 ) : SimulationState() {
     override fun copy(
         currentStateId: Int?,
