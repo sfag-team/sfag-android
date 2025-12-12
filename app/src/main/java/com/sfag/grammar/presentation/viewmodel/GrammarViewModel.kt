@@ -10,6 +10,7 @@ import com.sfag.grammar.domain.model.type.GrammarType
 import com.sfag.grammar.domain.usecase.validation.isContextFree
 import com.sfag.grammar.domain.usecase.validation.isContextSensitive
 import com.sfag.grammar.domain.usecase.validation.isRegular
+import com.sfag.shared.util.Symbols
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.charset.Charset
@@ -103,7 +104,7 @@ class GrammarViewModel : ViewModel() {
                 }
             }
             for(symbol in rule.right){
-                if(symbol == '|' || symbol == 'ε'){
+                if(symbol == '|' || symbol == Symbols.EPSILON_CHAR){ // skip | and ε
                     continue
                 }else if (!symbol.isDigit() && symbol.isUpperCase()) {
                     nonTerminalsSet.add(symbol)
@@ -162,9 +163,7 @@ class GrammarViewModel : ViewModel() {
 
                         if (leftNode != null && rightNode != null) {
                             val left = leftNode.textContent
-                            val right = rightNode.textContent.ifBlank {
-                                "ε" // Replace empty productions with epsilon
-                            }
+                            val right = rightNode.textContent.ifBlank { Symbols.EPSILON } // ε for empty
 
                             addRule(left, right)
                         } else {
@@ -191,10 +190,9 @@ class GrammarViewModel : ViewModel() {
             append("\t<!--The list of productions.-->\n")
 
             for (rule in rules) {
-                // If the right side is ε (empty string), write an empty <right/> tag
                 append("\t<production>\n")
                 append("\t\t<left>${rule.left}</left>\n")
-                if (rule.right == "ε") {
+                if (rule.right == Symbols.EPSILON) { // ε - empty <right/>
                     append("\t\t<right/>\n")
                 } else {
                     append("\t\t<right>${rule.right}</right>\n")
@@ -224,7 +222,7 @@ class GrammarViewModel : ViewModel() {
                 val element = nodeList.item(i) as Element
                 val left = element.getElementsByTagName("left").item(0).textContent
                 val rightNode = element.getElementsByTagName("right").item(0)
-                val right = if (rightNode == null || rightNode.textContent.isBlank()) "ε" else rightNode.textContent
+                val right = if (rightNode == null || rightNode.textContent.isBlank()) Symbols.EPSILON else rightNode.textContent // ε for empty
 
                 addRule(left, right)
             }

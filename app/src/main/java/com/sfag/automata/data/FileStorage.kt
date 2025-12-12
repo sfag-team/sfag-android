@@ -12,6 +12,7 @@ import com.sfag.automata.domain.model.transition.TuringTransition
 import com.sfag.shared.util.JffFileUtils
 import com.sfag.shared.util.JffFileUtils.getChildText
 import com.sfag.shared.util.JffFileUtils.hasChild
+import com.sfag.shared.util.Symbols
 import org.w3c.dom.Element
 import org.w3c.dom.Node
 
@@ -138,7 +139,7 @@ object FileStorage {
             }
             isTuring -> {
                 val writeText = element.getChildText("write")?.trim()
-                val write = if (writeText.isNullOrEmpty()) '_' else writeText.first()
+                val write = if (writeText.isNullOrEmpty()) Symbols.BLANK else writeText.first()
                 val move = element.getChildText("move")?.trim() ?: "R"
 
                 TuringTransition(

@@ -80,6 +80,7 @@ import com.sfag.grammar.domain.usecase.parser.parse
 import com.sfag.grammar.domain.model.rule.GrammarRule
 import com.sfag.grammar.domain.model.type.GrammarType
 import com.sfag.grammar.presentation.viewmodel.GrammarViewModel
+import com.sfag.shared.util.Symbols
 import com.sfag.shared.icon.ChevronLeft
 import com.sfag.shared.icon.ChevronRight
 import com.sfag.shared.icon.KeyboardDoubleArrowRight
@@ -382,9 +383,9 @@ fun LinearDerivation(steps: List<Step>) {
         contentAlignment = Alignment.Center
 
     ) {
-        Text(
-            text = "S ⇒ " + steps.joinToString(" ⇒ ") {
-                if (it.stateString == "ε") "ε" else it.stateString.replace("ε", "")
+        Text( // ε handling in derivation
+            text = "S => " + steps.joinToString(" => ") {
+                if (it.stateString == Symbols.EPSILON) Symbols.EPSILON else it.stateString.replace(Symbols.EPSILON, "")
             }
         )
     }
@@ -446,23 +447,23 @@ fun StateTable(steps: List<Step>) {
 
                     val diffIndex = findDifferenceIndex(state.appliedRule, state.previous, state.stateString)
 
-                    val right = if(state.appliedRule.right == "ε"){
+                    val right = if(state.appliedRule.right == Symbols.EPSILON){ // ε
                         ""
                     }else{
-                        state.appliedRule.right.replace("ε", "")
+                        state.appliedRule.right.replace(Symbols.EPSILON, "")
                     }
 
                     // Build annotated string for displaying with different colors
                     val annotatedString = buildAnnotatedString {
                         // Unchanged part
-                        append(state.previous.replace("ε", "").take(diffIndex))
+                        append(state.previous.replace(Symbols.EPSILON, "").take(diffIndex))
 
                         // Changed part with different color
                         withStyle(style = SpanStyle(color = Color(0xFF2779C2))) {
                             append(right)
                         }
                         // The rest of the baseString
-                        append(state.previous.replace("ε", "").drop(diffIndex + state.appliedRule.left.length))
+                        append(state.previous.replace(Symbols.EPSILON, "").drop(diffIndex + state.appliedRule.left.length))
                     }
 
                     Text(
