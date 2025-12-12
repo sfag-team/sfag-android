@@ -7,6 +7,7 @@ import com.sfag.automata.domain.model.TuringSimulationState
 import com.sfag.automata.domain.model.transition.TapeDirection
 import com.sfag.automata.domain.model.transition.Transition
 import com.sfag.automata.domain.model.transition.TuringTransition
+import com.sfag.shared.util.Symbols
 
 /**
  * Simulation engine for Turing Machines.
@@ -19,7 +20,7 @@ class TuringSimulator : SimulationEngine {
 
     override fun initialize(machine: Machine, input: String): SimulationState {
         val turingMachine = machine as? TuringMachine
-        val blankSymbol = turingMachine?.blankSymbol ?: '_'
+        val blankSymbol = turingMachine?.blankSymbol ?: Symbols.BLANK
         val initialState = machine.states.firstOrNull { it.initial }
 
         // Create tape with padding on both sides

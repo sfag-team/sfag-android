@@ -5,6 +5,7 @@ import com.sfag.automata.domain.model.state.State
 import com.sfag.automata.domain.model.transition.PushDownTransition
 import com.sfag.automata.domain.model.transition.Transition
 import com.sfag.automata.domain.model.tree.TreeNode
+import com.sfag.shared.util.Symbols
 import com.sfag.shared.util.XmlUtils.escapeXml
 import com.sfag.shared.util.XmlUtils.formatFloat
 import com.sfag.automata.presentation.model.AcceptanceCriteria
@@ -276,10 +277,10 @@ class PushDownMachine(
         val transitionDescriptions = pdaTransitions.map { t ->
             val fromState = states.find { it.index == t.startState }?.name ?: "?"
             val toState = states.find { it.index == t.endState }?.name ?: "?"
-            val readSymbol = t.name.ifEmpty { "ε" }
-            val popSymbol = t.pop.ifEmpty { "ε" }
-            val pushSymbol = t.push.ifEmpty { "ε" }
-            "δ($fromState, $readSymbol, $popSymbol) = ($toState, $pushSymbol)"
+            val readSymbol = t.name.ifEmpty { Symbols.EPSILON }
+            val popSymbol = t.pop.ifEmpty { Symbols.EPSILON }
+            val pushSymbol = t.push.ifEmpty { Symbols.EPSILON }
+            "${Symbols.DELTA}($fromState, $readSymbol, $popSymbol) = ($toState, $pushSymbol)"
         }
 
         val stackAlphabetSet = pdaTransitions
@@ -290,7 +291,7 @@ class PushDownMachine(
         return MachineFormatData(
             stateNames = states.map { it.name },
             inputAlphabet = transitions.mapNotNull { it.name.firstOrNull() }.toSet(),
-            initialStateName = states.firstOrNull { it.initial }?.name ?: "q₀",
+            initialStateName = states.firstOrNull { it.initial }?.name ?: "q0",
             finalStateNames = states.filter { it.finite }.map { it.name },
             transitionDescriptions = transitionDescriptions,
             machineType = machineType,

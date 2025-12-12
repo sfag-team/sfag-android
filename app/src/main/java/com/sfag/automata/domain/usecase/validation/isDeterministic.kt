@@ -2,6 +2,7 @@ package com.sfag.automata.domain.usecase.validation
 
 import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.machine.MachineType
+import com.sfag.shared.util.Symbols
 
 /**
  * Checks whether the given finite automaton is deterministic (DFA).
@@ -51,6 +52,6 @@ private fun isEpsilonLabel(label: String): Boolean {
     return normalized.isEmpty() ||
             normalized == "eps" ||
             normalized == "epsilon" ||
-            normalized == "\u03B5" || // Greek lowercase epsilon
-            normalized == "\u03BB"    // Greek lowercase lambda (sometimes used for epsilon)
+            normalized == Symbols.EPSILON ||
+            normalized == Symbols.LAMBDA
 }

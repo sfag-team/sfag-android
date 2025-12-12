@@ -6,6 +6,7 @@ import com.sfag.automata.domain.model.transition.TapeDirection
 import com.sfag.automata.domain.model.transition.Transition
 import com.sfag.automata.domain.model.transition.TuringTransition
 import com.sfag.automata.domain.model.tree.TreeNode
+import com.sfag.shared.util.Symbols
 import com.sfag.shared.util.XmlUtils.escapeXml
 import com.sfag.shared.util.XmlUtils.formatFloat
 
@@ -18,7 +19,7 @@ import com.sfag.shared.util.XmlUtils.formatFloat
  * - An input alphabet Σ ⊆ Γ
  * - A transition function δ: Q × Γ → Q × Γ × {L, R, S}
  * - An initial state q0
- * - A blank symbol (default '_')
+ * - A blank symbol (default 'B')
  * - A set of accepting/final states F
  */
 @Suppress("UNCHECKED_CAST")
@@ -28,7 +29,7 @@ class TuringMachine(
     states: MutableList<State> = mutableListOf(),
     transitions: MutableList<TuringTransition> = mutableListOf(),
     savedInputs: MutableList<StringBuilder> = mutableListOf(),
-    val blankSymbol: Char = '_'
+    val blankSymbol: Char = Symbols.BLANK
 ) : Machine(
     name, version,
     machineType = MachineType.Turing,
@@ -171,8 +172,8 @@ class TuringMachine(
         val transitionDescriptions = turingTransitions.map { t ->
             val fromState = states.find { it.index == t.startState }?.name ?: "?"
             val toState = states.find { it.index == t.endState }?.name ?: "?"
-            val readSymbol = t.name.ifEmpty { "ε" }
-            "δ($fromState, $readSymbol) = ($toState, ${t.writeSymbol}, ${t.direction})"
+            val readSymbol = t.name.ifEmpty { Symbols.EPSILON }
+            "${Symbols.DELTA}($fromState, $readSymbol) = ($toState, ${t.writeSymbol}, ${t.direction})"
         }
 
         val tapeAlphabetSet = turingTransitions
@@ -184,7 +185,7 @@ class TuringMachine(
         return MachineFormatData(
             stateNames = states.map { it.name },
             inputAlphabet = transitions.mapNotNull { it.name.firstOrNull() }.toSet(),
-            initialStateName = states.firstOrNull { it.initial }?.name ?: "q₀",
+            initialStateName = states.firstOrNull { it.initial }?.name ?: "q0",
             finalStateNames = states.filter { it.finite }.map { it.name },
             transitionDescriptions = transitionDescriptions,
             machineType = machineType,

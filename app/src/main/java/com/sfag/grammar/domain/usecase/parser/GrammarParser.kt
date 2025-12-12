@@ -2,6 +2,7 @@ package com.sfag.grammar.domain.usecase.parser
 
 import com.sfag.grammar.domain.model.rule.GrammarRule
 import com.sfag.grammar.domain.model.type.GrammarType
+import com.sfag.shared.util.Symbols
 import kotlin.collections.ArrayDeque
 import kotlin.math.exp
 
@@ -31,11 +32,11 @@ fun parse(input: String, rules: List<GrammarRule>, terminals: Set<Char>, type: G
             steps++
             for (rule in rules) {
                 val newState = currentState.replaceFirst(rule.left, rule.right)
-                if (newState.replace("ε", "") == input) {
+                if (newState.replace(Symbols.EPSILON, "") == input) {
                     stateHistory[newState] = State(currentState, rule)
                     return reconstructDerivation(newState, stateHistory)
                 }
-                if (!rules.any { newState.replace("ε", "").contains(it.left) }) {
+                if (!rules.any { newState.replace(Symbols.EPSILON, "").contains(it.left) }) {
                     continue
                 }
                 if (!stateHistory.containsKey(newState)) {
@@ -52,16 +53,16 @@ fun parse(input: String, rules: List<GrammarRule>, terminals: Set<Char>, type: G
             for (rule in rules) {
                 val newState = currentState.replaceFirst(rule.left, rule.right)
 
-                if (newState.replace("ε", "") == input) {
+                if (newState.replace(Symbols.EPSILON, "") == input) {
                     if(newState != currentState)
                         stateHistory[newState] = State(currentState, rule)
                     return reconstructDerivation(newState, stateHistory)
                 }
 
-                if (!rules.any { newState.replace("ε", "").contains(it.left) }) continue
+                if (!rules.any { newState.replace(Symbols.EPSILON, "").contains(it.left) }) continue
 
                 if (!stateHistory.containsKey(newState)) {
-                    val terminalPart = extractLargestTerminalSubstring(newState.replace("ε", ""))
+                    val terminalPart = extractLargestTerminalSubstring(newState.replace(Symbols.EPSILON, ""))
                     if (!input.contains(terminalPart)) continue
                     states.add(newState)
                     stateHistory[newState] = State(currentState, rule)

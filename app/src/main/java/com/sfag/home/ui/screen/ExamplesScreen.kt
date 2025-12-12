@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sfag.shared.ui.component.DefaultButton
 import com.sfag.shared.ui.component.ImmutableTextField
+import com.sfag.shared.util.SuperscriptUtils
 
 
 @Composable
@@ -99,7 +100,7 @@ private fun ExamplesColumn(items: List<Pair<String, ExampleDescription>>, onItem
                 horizontalAlignment = Alignment.CenterHorizontally,
 
                 ) {
-                Text(text = description.name, fontSize = 21.sp, modifier = Modifier.padding(start = 6.dp, end = 6.dp))
+                Text(text = SuperscriptUtils.toDisplayString(description.name), fontSize = 21.sp, modifier = Modifier.padding(start = 6.dp, end = 6.dp))
                 Spacer(modifier = Modifier.size(6.dp))
                 Text(text = description.description, fontSize = 21.sp, modifier = Modifier.padding(start = 6.dp, end = 6.dp))
             }
@@ -109,30 +110,30 @@ private fun ExamplesColumn(items: List<Pair<String, ExampleDescription>>, onItem
 
 internal object ExampleSources {
     val automataExamples = listOf(
-        "automata/a-n.jff" to ExampleDescription("aⁿ", "deterministic finite automaton"),
+        "automata/a-n.jff" to ExampleDescription("a^n", "deterministic finite automaton"),
         "automata/3k-1.jff" to ExampleDescription("3k +1", "deterministic finite automaton"),
         "automata/ends-dfa.jff" to ExampleDescription("Ends 01 or 10", "deterministic finite automaton"),
         "automata/ends-nfa.jff" to ExampleDescription("Ends 01 or 10", "nondeterministic finite automaton"),
-        "automata/an-bn-pda.jff" to ExampleDescription("aⁿbⁿ", "deterministic pushdown automaton"),
+        "automata/an-bn-pda.jff" to ExampleDescription("a^n b^n", "deterministic pushdown automaton"),
         "automata/wcw-r.jff" to ExampleDescription("wcwR", "deterministic pushdown automaton"),
         "automata/ww-r.jff" to ExampleDescription("wwR", "nondeterministic pushdown automaton")
     )
 
     val gramatikaExamples = listOf(
         "grammar/g-reg.jff" to ExampleDescription(
-            "aⁿ",
+            "a^n",
             "Regular Grammar"
         ),
         "grammar/g-cf.jff" to ExampleDescription(
-            "aⁿbⁿ",
+            "a^n b^n",
             "Context-Free Grammar"
         ),
         "grammar/ab_norm.jff" to ExampleDescription(
-            "Normalized aⁿbⁿ",
+            "Normalized a^n b^n",
             "Context-Free Grammar"
         ),
         "grammar/g-cs.jff" to ExampleDescription(
-            "aⁿbⁿcⁿ",
+            "a^n b^n c^n",
             "Context-Sensitive Grammar"
         ),
         "grammar/gram-3kplus1-a.jff" to ExampleDescription(

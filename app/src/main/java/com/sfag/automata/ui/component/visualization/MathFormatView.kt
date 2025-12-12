@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sfag.automata.domain.model.machine.MachineFormatData
 import com.sfag.automata.domain.model.machine.MachineType
+import com.sfag.shared.util.Symbols
 
 /**
  * Renders the formal mathematical definition of an automaton.
@@ -22,11 +23,10 @@ fun MathFormatView(data: MachineFormatData) {
     Column(
         modifier = Modifier.padding(16.dp)
     ) {
-        // Header line with machine tuple notation
         val headerText = when (data.machineType) {
-            MachineType.Finite -> "M = (Q, Σ, δ, ${data.initialStateName}, F)"
-            MachineType.Pushdown -> "M = (Q, Σ, Γ, δ, ${data.initialStateName}, ${data.initialStackSymbol ?: 'Z'}, F)"
-            MachineType.Turing -> "M = (Q, Γ, δ, ${data.initialStateName}, ${data.blankSymbol ?: '_'}, F)"
+            MachineType.Finite -> "M = (Q, ${Symbols.SIGMA}, ${Symbols.DELTA}, ${data.initialStateName}, F)"
+            MachineType.Pushdown -> "M = (Q, ${Symbols.SIGMA}, ${Symbols.GAMMA}, ${Symbols.DELTA}, ${data.initialStateName}, ${data.initialStackSymbol ?: 'Z'}, F)"
+            MachineType.Turing -> "M = (Q, ${Symbols.GAMMA}, ${Symbols.DELTA}, ${data.initialStateName}, ${data.blankSymbol ?: Symbols.BLANK}, F)"
         }
         Text(headerText, fontSize = 18.sp)
 
@@ -35,22 +35,20 @@ fun MathFormatView(data: MachineFormatData) {
         // State set
         Text("Q = { ${data.stateNames.joinToString(", ")} }")
 
-        // Input alphabet
-        Text("Σ = { ${data.inputAlphabet.joinToString(", ")} }")
+        Text("${Symbols.SIGMA} = { ${data.inputAlphabet.joinToString(", ")} }")
 
-        // Machine-type specific alphabets
         when (data.machineType) {
             MachineType.Pushdown -> {
                 data.stackAlphabet?.let { alphabet ->
-                    Text("Γ = { ${alphabet.joinToString(", ")} }")
+                    Text("${Symbols.GAMMA} = { ${alphabet.joinToString(", ")} }")
                 }
                 Text("Z = '${data.initialStackSymbol ?: 'Z'}'")
             }
             MachineType.Turing -> {
                 data.tapeAlphabet?.let { alphabet ->
-                    Text("Γ = { ${alphabet.joinToString(", ")} }")
+                    Text("${Symbols.GAMMA} = { ${alphabet.joinToString(", ")} }")
                 }
-                Text("⊔ = '${data.blankSymbol ?: '_'}'")
+                Text("${Symbols.BLANK} = '${data.blankSymbol ?: Symbols.BLANK}'")
             }
             MachineType.Finite -> { /* No additional alphabets */ }
         }
@@ -60,8 +58,7 @@ fun MathFormatView(data: MachineFormatData) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Transition function
-        Text("δ:", fontWeight = FontWeight.Bold)
+        Text("${Symbols.DELTA}:", fontWeight = FontWeight.Bold)
         Text(
             text = data.transitionDescriptions.joinToString("\n"),
             fontFamily = FontFamily.Monospace
