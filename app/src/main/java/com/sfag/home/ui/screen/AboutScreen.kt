@@ -82,12 +82,18 @@ fun AboutScreen(navBack: () -> Unit) {
         Text("Peter Chovanec (2025)", style = MaterialTheme.typography.bodyMedium)
         Text("Vadim Rohach (2025)", style = MaterialTheme.typography.bodyMedium)
         Spacer(modifier = Modifier.height(8.dp))
+        Text("Jakub Taňkoš (2025)", style = MaterialTheme.typography.bodyMedium)
+        Text("Juraj Lopušek (2025)", style = MaterialTheme.typography.bodyMedium)
+        Text("Martin Lukačka (2025)", style = MaterialTheme.typography.bodyMedium)
+        Text("Samuel Strečko (2025)", style = MaterialTheme.typography.bodyMedium)
+        Text("Slavomír Tung Le Minh (2025)", style = MaterialTheme.typography.bodyMedium)
+        Spacer(modifier = Modifier.height(8.dp))
         Text("Vedúca: doc. Mgr. Daniela Chudá, PhD.", style = MaterialTheme.typography.bodyMedium)
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text("FEI STU Bratislava", style = MaterialTheme.typography.labelMedium)
-        Text("AutoGram simulator v1.3 ©2025", style = MaterialTheme.typography.labelSmall)
+        Text("AutoGram simulator v2.0 ©2025", style = MaterialTheme.typography.labelSmall)
         Row(modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center) {
