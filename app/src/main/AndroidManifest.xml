@@ -2,42 +2,35 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.INTERNET" />
-
     <application
-        android:name=".FormalAutoSimApplication"
+        android:name="com.sfag.AutoGramApplication"
         android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:screenOrientation="portrait"
         android:supportsRtl="true"
-        android:theme="@style/Theme.FormalAutoSim"
-        tools:targetApi="31">
+        android:theme="@style/Theme.AutoGram"
+        tools:targetApi="36">
         <activity
-            android:name=".presentation.activities.SplashActivity"
+            android:name="com.sfag.home.ui.activity.SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.FormalAutoSim">
+            android:theme="@style/Theme.AutoGram">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
-            android:name=".presentation.activities.MainActivity"
+            android:name="com.sfag.home.ui.activity.HomeActivity"
             android:exported="false" />
 
         <activity
-            android:name=".presentation.activities.AutomataActivity"
+            android:name="com.sfag.automata.ui.activity.AutomataActivity"
             android:exported="false" />
 
         <activity
-            android:name="com.example.gramatika.GrammarActivity"
+            android:name="com.sfag.grammar.ui.activity.GrammarActivity"
             android:exported="false"
             tools:ignore="AppLinkUrlError">
             <intent-filter>
@@ -60,7 +53,7 @@
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
+                android:resource="@xml/filepaths" />
         </provider>
     </application>
 
