@@ -13,7 +13,7 @@
         android:theme="@style/Theme.AutoGram"
         tools:targetApi="36">
         <activity
-            android:name="com.sfag.home.ui.activity.SplashActivity"
+            android:name="com.sfag.home.presentation.activity.SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.AutoGram">
             <intent-filter>
@@ -22,15 +22,15 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.sfag.home.ui.activity.HomeActivity"
+            android:name="com.sfag.home.presentation.activity.HomeActivity"
             android:exported="false" />
 
         <activity
-            android:name="com.sfag.automata.ui.activity.AutomataActivity"
+            android:name="com.sfag.automata.presentation.activity.AutomataActivity"
             android:exported="false" />
 
         <activity
-            android:name="com.sfag.grammar.ui.activity.GrammarActivity"
+            android:name="com.sfag.grammar.presentation.activity.GrammarActivity"
             android:exported="false"
             tools:ignore="AppLinkUrlError">
             <intent-filter>

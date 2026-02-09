@@ -1,0 +1,50 @@
+package com.sfag.home.presentation.activity
+
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.rememberNavController
+import com.sfag.shared.presentation.theme.AppTheme
+import com.sfag.shared.presentation.activity.SetDefaultSettings
+import com.sfag.home.presentation.screen.SplashScreen
+import com.sfag.home.presentation.navigation.Destinations
+import dagger.hilt.android.AndroidEntryPoint
+
+
+@SuppressLint("CustomSplashScreen")
+@AndroidEntryPoint
+class SplashActivity : ComponentActivity() {
+    private var intentToMainActivity: Intent? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContent {
+            AppTheme {
+                SetDefaultSettings()
+                rememberNavController().apply {
+                    NavHost(
+                        navController = this,
+                        startDestination = Destinations.SPLASH.route
+                    ) {
+                        composable(Destinations.SPLASH.route) {
+                            SplashScreen(lifecycleScope, navigateToMainActivity = ::navigateToMainActivity, navigateToNextScreen = ::navigateToMainActivity)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun navigateToMainActivity() {
+        if (intentToMainActivity == null) intentToMainActivity =
+            Intent(this, HomeActivity::class.java)
+        startActivity(intentToMainActivity)
+        finish()
+    }
+}
