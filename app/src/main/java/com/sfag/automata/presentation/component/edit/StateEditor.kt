@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.geometry.Offset
@@ -38,13 +39,17 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.state.State
-import com.sfag.automata.presentation.model.EditMachineStates
+import com.sfag.automata.domain.model.machine.EditMachineStates
 import com.sfag.R
+import com.sfag.automata.presentation.component.SIM_INNER_NODE_RADIUS
+import com.sfag.automata.presentation.component.SIM_INNER_NODE_OUTLINE_WIDTH
+import com.sfag.automata.presentation.component.SIM_NODE_RADIUS
+import com.sfag.automata.presentation.component.SIM_NODE_OUTLINE_WIDTH
+import com.sfag.automata.presentation.component.SIM_NODE_TEXT_SIZE
 import com.sfag.automata.presentation.component.widget.DefaultDialogWindow
 import com.sfag.automata.presentation.component.widget.DefaultTextField
 import com.sfag.automata.presentation.component.widget.ItemSpecificationIcon
 import kotlin.math.roundToInt
-
 
 /**
  * private compose function States
@@ -65,10 +70,12 @@ internal fun Machine.States(
 ) {
 
     val currentCircleColor = MaterialTheme.colorScheme.primaryContainer
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     states.forEach { state ->
         Box(
             modifier = Modifier
-                .size(state.radius.dp)
+                .size(SIM_NODE_RADIUS.dp)
                 .offset(state.position.x.dp, state.position.y.dp)
         ) {
             Canvas(modifier = Modifier
@@ -101,22 +108,22 @@ internal fun Machine.States(
             ) {
                 drawCircle(
                     color = borderColor,
-                    radius = state.radius + 1,
-                    style = Stroke(width = 10f)
+                    radius = SIM_NODE_RADIUS + 1,
+                    style = Stroke(width = SIM_NODE_OUTLINE_WIDTH)
                 )
                 drawCircle(
-                    color = if (state.isCurrent) currentCircleColor else Color.White,
-                    radius = if (state.isCurrent) state.radius - 1 else state.radius
+                    color = if (state.isCurrent) currentCircleColor else surfaceColor,
+                    radius = if (state.isCurrent) SIM_NODE_RADIUS - 1 else SIM_NODE_RADIUS
                 )
                 if (state.finite) {
                     drawCircle(
                         color = borderColor,
-                        radius = state.radius - 10,
-                        style = Stroke(width = 5f)
+                        radius = SIM_INNER_NODE_RADIUS,
+                        style = Stroke(width = SIM_INNER_NODE_OUTLINE_WIDTH)
                     )
                     drawCircle(
-                        color = if (state.isCurrent) currentCircleColor else Color.White,
-                        radius = if (state.isCurrent) state.radius - 12 else state.radius - 11
+                        color = if (state.isCurrent) currentCircleColor else surfaceColor,
+                        radius = if (state.isCurrent) SIM_INNER_NODE_RADIUS - 2 else SIM_INNER_NODE_RADIUS - 1
                     )
                 }
                 if (state.initial) {
@@ -139,7 +146,7 @@ internal fun Machine.States(
 
                     drawPath(
                         path = arrowPath,
-                        color = Color.Black,
+                        color = onSurfaceColor,
                         style = Stroke(width = 5f)
                     )
                 }
@@ -151,7 +158,7 @@ internal fun Machine.States(
                     .then(dragModifier)
                     .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) },
                 style = TextStyle(color = MaterialTheme.colorScheme.tertiary),
-                fontSize = 20.sp
+                fontSize = SIM_NODE_TEXT_SIZE.sp
             )
         }
     }
@@ -167,7 +174,7 @@ internal fun Machine.States(
  */
 @Composable
 internal fun Machine.AddStateWindow(clickOffset: Offset, chosedState: State?, finished: () -> Unit) {
-
+    val context = LocalContext.current
     var name by remember {
         mutableStateOf(chosedState?.name ?: "")
     }
@@ -222,7 +229,7 @@ internal fun Machine.AddStateWindow(clickOffset: Offset, chosedState: State?, fi
                 text = "initial",
                 isActive = initial
             ) {
-                if (chosedState != null || checkMachineForExistingInitialState()) initial =
+                if (chosedState != null || checkMachineForExistingInitialState(context)) initial =
                     !initial
             }
 
@@ -231,7 +238,7 @@ internal fun Machine.AddStateWindow(clickOffset: Offset, chosedState: State?, fi
                 text = "finite",
                 isActive = finite
             ) {
-                if (chosedState != null || checkMachineForExistingFiniteState()) finite =
+                if (chosedState != null || checkMachineForExistingFiniteState(context)) finite =
                     !finite
             }
             Spacer(modifier = Modifier.weight(1f))
@@ -263,7 +270,7 @@ internal fun Machine.AddStateWindow(clickOffset: Offset, chosedState: State?, fi
     }
 }
 
-private fun Machine.checkMachineForExistingFiniteState(): Boolean {
+private fun Machine.checkMachineForExistingFiniteState(context: android.content.Context): Boolean {
     return if (states.any { it.finite }) {
         Toast.makeText(context, "Your machine already has finite state", Toast.LENGTH_SHORT)
             .show()
@@ -271,7 +278,7 @@ private fun Machine.checkMachineForExistingFiniteState(): Boolean {
     } else true
 }
 
-private fun Machine.checkMachineForExistingInitialState(): Boolean {
+private fun Machine.checkMachineForExistingInitialState(context: android.content.Context): Boolean {
     return if (states.any { it.initial }) {
         Toast.makeText(
             context,

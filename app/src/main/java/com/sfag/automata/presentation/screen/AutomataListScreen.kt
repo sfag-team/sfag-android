@@ -41,19 +41,17 @@ import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.machine.MachineType
 import com.sfag.automata.domain.model.machine.PushDownMachine
 import com.sfag.automata.domain.model.machine.TuringMachine
-import com.sfag.automata.domain.usecase.validation.isDeterministicFinite
+import com.sfag.automata.domain.usecase.isDeterministicFinite
 import com.sfag.automata.domain.model.transition.PushDownTransition
 import com.sfag.automata.domain.model.transition.TuringTransition
 import com.sfag.automata.presentation.viewmodel.AutomataViewModel
 import com.sfag.automata.presentation.viewmodel.CurrentMachine
-import com.sfag.shared.presentation.theme.perlamutr_white
 import com.sfag.automata.presentation.component.widget.DefaultDialogWindow
 import com.sfag.automata.presentation.component.widget.DefaultTextField
 import com.sfag.automata.presentation.component.widget.ItemSpecificationIcon
-import com.sfag.automata.data.FileStorage
+import com.sfag.automata.data.JffParser
 import com.sfag.shared.presentation.component.DefaultButton
 import com.sfag.shared.presentation.component.ImmutableTextField
-
 
 @Composable
 fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navToAutomata: () -> Unit) {
@@ -79,7 +77,7 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
             inputStream?.close()
 
             content?.let { jffXml ->
-                val (states, transitions) = FileStorage.parseJff(jffXml)
+                val (states, transitions) = JffParser.parseJff(jffXml)
                 val typeTag = jffXml.split("<type>")[1].split("</type>")[0].trim().lowercase()
                 val machineType: MachineType = MachineType.fromTag(typeTag)
                 val machine = when (machineType) {
@@ -113,7 +111,7 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
     }
 
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Spacer(Modifier.size(30.dp))
+        Spacer(Modifier.size(8.dp))
         Row (modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             DefaultButton(text = "Back", modifier = Modifier.fillMaxWidth(0.25f)) {
                 navBack()
@@ -123,7 +121,7 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
                 text = "Nice to meet you!",
                 modifier = Modifier
                     .fillMaxWidth(0.65f)
-                    .background(perlamutr_white)
+                    .background(MaterialTheme.colorScheme.surface)
                     .clip(MaterialTheme.shapes.medium),
                 fontSize = 28.sp
             )
@@ -136,7 +134,7 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
                 .fillMaxHeight(0.85f)
                 .clip(MaterialTheme.shapes.large)
                 .border(4.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
-                .background(perlamutr_white)
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(start = 16.dp)
         ) {
             items(viewModel.getAllMachinesName()) { item ->
@@ -171,7 +169,7 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
                     Spacer(modifier = Modifier.size(24.dp))
                     ImmutableTextField(
                         text = "$item ($detLabel)",
-                        textColor = perlamutr_white
+                        textColor = MaterialTheme.colorScheme.onPrimary
                     )
                 }
                 Spacer(modifier = Modifier.size(8.dp))
@@ -192,7 +190,7 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
             )
             Spacer(modifier = Modifier.size(24.dp))
             DefaultButton(text = "Import") {
-                filePickerLauncher.launch(arrayOf("text/*", "application/xml"))
+                filePickerLauncher.launch(arrayOf("application/octet-stream", "text/xml"))
             }
         }
 

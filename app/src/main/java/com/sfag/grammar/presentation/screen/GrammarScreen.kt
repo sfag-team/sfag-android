@@ -17,17 +17,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.sfag.grammar.domain.model.rule.GrammarRule
-import com.sfag.grammar.domain.model.type.GrammarType
+import com.sfag.grammar.domain.model.GrammarRule
+import com.sfag.grammar.domain.model.GrammarType
 import com.sfag.grammar.presentation.viewmodel.GrammarViewModel
 import com.sfag.shared.util.Symbols
-
 
 @Composable
 fun GrammarScreen(grammarViewModel: GrammarViewModel) {
@@ -54,7 +52,7 @@ fun GrammarScreen(grammarViewModel: GrammarViewModel) {
     ) {
         Text(
             text = "Rules P:",
-            fontSize = with(LocalDensity.current) { 15.dp.toSp() },
+            fontSize = 15.sp,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
         )
@@ -127,7 +125,7 @@ fun GrammarScreen(grammarViewModel: GrammarViewModel) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(290.dp)
+                .height(300.dp)
                 .background(MaterialTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center
         ) {
@@ -142,8 +140,6 @@ fun GrammarInfo(
     terminals: Set<Char>,
     type: GrammarType?
 ) {
-    val density = LocalDensity.current
-
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -153,7 +149,7 @@ fun GrammarInfo(
             Text(
                 text = "G = (N, T, P, S)",
                 color = MaterialTheme.colorScheme.secondary,
-                fontSize = with(density) { 25.dp.toSp() },
+                fontSize = 25.sp,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
         }
@@ -161,7 +157,7 @@ fun GrammarInfo(
             Text(
                 text = "Start symbol",
                 color = MaterialTheme.colorScheme.secondary,
-                fontSize = with(density) { 15.dp.toSp() },
+                fontSize = 15.sp,
                 modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
             )
         }
@@ -169,14 +165,14 @@ fun GrammarInfo(
             Text(
                 text = "S",
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontSize = with(density) { 25.dp.toSp() },
+                fontSize = 25.sp,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
         }
         item {
             Text(
                 text = "Non-terminals",
-                fontSize = with(density) { 15.dp.toSp() },
+                fontSize = 15.sp,
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
             )
@@ -187,14 +183,14 @@ fun GrammarInfo(
                     "N = ${nonterminals.joinToString(", ", "{", "}")}"
                 } else "N = {}",
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontSize = with(density) { 25.dp.toSp() },
+                fontSize = 25.sp,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
         }
         item {
             Text(
                 text = "Terminals",
-                fontSize = with(density) { 15.dp.toSp() },
+                fontSize = 15.sp,
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
             )
@@ -205,7 +201,7 @@ fun GrammarInfo(
                     "T = ${terminals.joinToString(", ", "{", "}")}"
                 } else "T = {}",
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontSize = with(density) { 25.dp.toSp() },
+                fontSize = 25.sp,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
         }
@@ -213,7 +209,7 @@ fun GrammarInfo(
             Text(
                 text = "Type",
                 color = MaterialTheme.colorScheme.secondary,
-                fontSize = with(density) { 15.dp.toSp() },
+                fontSize = 15.sp,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
         }
@@ -221,7 +217,7 @@ fun GrammarInfo(
             Text(
                 text = type.toString(),
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontSize = with(density) { 25.dp.toSp() },
+                fontSize = 25.sp,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
         }

@@ -2,7 +2,6 @@ package com.sfag.automata.domain.model.state
 
 import androidx.compose.ui.geometry.Offset
 
-
 class State(
     var finite: Boolean,
     var initial: Boolean,
@@ -11,8 +10,6 @@ class State(
     var isCurrent: Boolean = false,
     var position: Offset= Offset(0f, 0f)
 ) {
-    var radius:Float = 40f
-
     fun setX(x: Float){
         position = Offset(x, position.y)
     }

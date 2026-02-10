@@ -1,4 +1,4 @@
-package com.sfag.grammar.domain.model.type
+package com.sfag.grammar.domain.model
 
 enum class GrammarType(val priority: Int, private val displayName: String) {
     REGULAR(0, "Regular Grammar"),

@@ -4,10 +4,11 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.composable
@@ -19,10 +20,9 @@ import com.sfag.grammar.presentation.activity.GrammarActivity
 import com.sfag.home.presentation.screen.AboutScreen
 import com.sfag.home.presentation.screen.ExamplesScreen
 import com.sfag.home.presentation.screen.HomeScreen
-import com.sfag.home.presentation.navigation.Destinations
-import com.sfag.shared.presentation.activity.SetDefaultSettings
+import com.sfag.home.presentation.navigation.HomeDestinations
+import com.sfag.shared.presentation.activity.configureScreenOrientation
 import dagger.hilt.android.AndroidEntryPoint
-
 
 @AndroidEntryPoint
 class HomeActivity : ComponentActivity() {
@@ -30,38 +30,43 @@ class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        configureScreenOrientation()
+
         setContent {
             AppTheme {
-                SetDefaultSettings()
 
                 rememberNavController().apply {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background)
-                    ) {
-                        NavHost(
-                            navController = this@apply,
-                            startDestination = Destinations.MAIN.route,
-                            modifier = Modifier.weight(9f),
-                            contentAlignment = Alignment.Center
+                    Scaffold(
+                        containerColor = MaterialTheme.colorScheme.background
+                    ) { innerPadding ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)
                         ) {
-                            composable(route = Destinations.MAIN.route) {
-                                HomeScreen(navToGrammar = {navToGrammarActivity(null)}, navToAutomata = {navToAutomataActivity(null)}, navToExamplesScreen = {
-                                    navigate(Destinations.EXAMPLES.route)}, navToAbout = {navigate(Destinations.ABOUT.route)})
-                            }
-                            composable(route = Destinations.EXAMPLES.route){
-                                ExamplesScreen(navBack = {
-                                    navigate(Destinations.MAIN.route)
-                                },
-                                    navToGrammar = { grammarUri ->
-                                        navToGrammarActivity(grammarUri)
-                                    }, navToAutomata = { automataUri ->
-                                        navToAutomataActivity(automataUri)
-                                    })
-                            }
-                            composable(route = Destinations.ABOUT.route) {
-                                AboutScreen(navBack = {navigate(Destinations.MAIN.route)})
+                            NavHost(
+                                navController = this@apply,
+                                startDestination = HomeDestinations.MAIN.route,
+                                modifier = Modifier.weight(9f),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                composable(route = HomeDestinations.MAIN.route) {
+                                    HomeScreen(navToGrammar = {navToGrammarActivity(null)}, navToAutomata = {navToAutomataActivity(null)}, navToExamplesScreen = {
+                                        navigate(HomeDestinations.EXAMPLES.route)}, navToAbout = {navigate(HomeDestinations.ABOUT.route)})
+                                }
+                                composable(route = HomeDestinations.EXAMPLES.route){
+                                    ExamplesScreen(navBack = {
+                                        navigate(HomeDestinations.MAIN.route)
+                                    },
+                                        navToGrammar = { grammarUri ->
+                                            navToGrammarActivity(grammarUri)
+                                        }, navToAutomata = { automataUri ->
+                                            navToAutomataActivity(automataUri)
+                                        })
+                                }
+                                composable(route = HomeDestinations.ABOUT.route) {
+                                    AboutScreen(navBack = {navigate(HomeDestinations.MAIN.route)})
+                                }
                             }
                         }
                     }

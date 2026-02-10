@@ -1,6 +1,8 @@
 package com.sfag.automata.presentation.screen
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -39,10 +41,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.machine.MachineType
-import com.sfag.automata.domain.usecase.validation.isDeterministicFinite
+import com.sfag.automata.domain.usecase.isDeterministicFinite
 import com.sfag.automata.presentation.viewmodel.AutomataViewModel
 import com.sfag.automata.presentation.viewmodel.CurrentMachine
-import com.sfag.shared.presentation.theme.light_blue
 import com.sfag.automata.presentation.component.widget.DefaultDialogWindow
 import com.sfag.automata.presentation.component.widget.DefaultTextField
 import com.sfag.automata.presentation.component.edit.EditingInput
@@ -56,9 +57,8 @@ import com.sfag.automata.presentation.component.visualization.MathFormatView
 import com.sfag.automata.domain.model.simulation.SimulationResult
 import com.sfag.automata.presentation.model.AutomataScreenStates
 import com.sfag.R
-import com.sfag.automata.data.FileStorage
+import com.sfag.automata.data.JffParser
 import com.sfag.shared.presentation.component.DefaultButton
-import com.sfag.shared.presentation.component.ImmutableTextField
 
 @Composable
 fun AutomataScreen(navBack: () -> Unit) {
@@ -127,8 +127,6 @@ fun AutomataScreen(navBack: () -> Unit) {
                 .padding(horizontal = 16.dp)
         ) {
             item {
-                Spacer(modifier = Modifier.height(30.dp))
-
                 // Top panel with buttons
                 Row(
                     Modifier
@@ -161,7 +159,7 @@ fun AutomataScreen(navBack: () -> Unit) {
                         text = "Share",
                         modifier = buttonModifier
                     ) {
-                        FileStorage.shareJffFile(
+                        JffParser.shareJffFile(
                             context = context,
                             jffContent = automata.exportToJFF(),
                             filename = automata.name
@@ -299,7 +297,7 @@ fun AutomataScreen(navBack: () -> Unit) {
                             MaterialTheme.colorScheme.tertiary,
                             MaterialTheme.shapes.large
                         )
-                        .background(light_blue),
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
                 ) {
@@ -395,10 +393,13 @@ private fun BottomScreenPart(
     bottomRecompose: MutableIntState
 ) {
     when (currentScreenState.value) {
-        AutomataScreenStates.SIMULATING -> {
-            automata.DerivationTree()
-            Spacer(modifier = Modifier.size(32.dp))
-            MathFormatView(automata.getMathFormatData())
+        AutomataScreenStates.SIMULATING,
+        AutomataScreenStates.SIMULATION_RUN -> {
+            automata.DerivationTree(recomposeKey = bottomRecompose.intValue)
+            if (currentScreenState.value == AutomataScreenStates.SIMULATING) {
+                Spacer(modifier = Modifier.size(32.dp))
+                MathFormatView(automata.getMathFormatData())
+            }
         }
 
         AutomataScreenStates.EDITING_MACHINE -> {
@@ -418,14 +419,22 @@ private fun ExportWindow(machine: Machine, finished: () -> Unit = {}) {
 
     val context = LocalContext.current
 
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        uri?.let {
+            context.contentResolver.openOutputStream(it)?.use { stream ->
+                stream.write(jFFMachine.toByteArray(Charsets.UTF_8))
+            }
+        }
+        finished()
+    }
+
     DefaultDialogWindow(
         title = "export machine as .jff",
         onDismiss = finished,
         onConfirm = {
-            FileStorage.saveJffToDownloads(
-                context, jFFMachine, filename
-            )
-            finished()
+            launcher.launch("$filename.jff")
         }
     ) {
         Column(
@@ -447,11 +456,6 @@ private fun ExportWindow(machine: Machine, finished: () -> Unit = {}) {
                 isRequirementsComplete = {
                     filename.let { !(it.contains(' ') || it.contains('%') || it.contains('.')) }
                 }
-            )
-            Spacer(modifier = Modifier.size(40.dp))
-            ImmutableTextField(
-                text = "File will be saved to downloads",
-                modifier = Modifier.fillMaxWidth(0.85f)
             )
         }
     }

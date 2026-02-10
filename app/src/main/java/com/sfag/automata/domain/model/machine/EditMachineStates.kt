@@ -1,4 +1,4 @@
-package com.sfag.automata.presentation.model
+package com.sfag.automata.domain.model.machine
 
 enum class EditMachineStates {
     ADD_STATES,

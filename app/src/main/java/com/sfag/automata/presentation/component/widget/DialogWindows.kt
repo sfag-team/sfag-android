@@ -21,9 +21,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.sfag.shared.presentation.theme.medium_gray
 import com.sfag.shared.presentation.component.DefaultButton
 
+private const val SCRIM_ALPHA = 0.31f
 
 @Composable
 fun DefaultDialogWindow(
@@ -38,7 +38,7 @@ fun DefaultDialogWindow(
     Box(
         Modifier
             .fillMaxSize()
-            .background(medium_gray)){
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = SCRIM_ALPHA))){
         Box(
             modifier = modifier
                 .fillMaxSize(),

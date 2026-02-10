@@ -2,10 +2,9 @@ package com.sfag.grammar.data
 
 import android.content.Context
 import android.net.Uri
-import com.sfag.grammar.domain.model.rule.GrammarRule
+import com.sfag.grammar.domain.model.GrammarRule
 import com.sfag.shared.util.JffFileUtils
 import com.sfag.shared.util.Symbols
-
 
 /**
  * Grammar-specific JFF file operations.

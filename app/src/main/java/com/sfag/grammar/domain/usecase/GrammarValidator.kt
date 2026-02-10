@@ -1,6 +1,6 @@
-package com.sfag.grammar.domain.usecase.validation
+package com.sfag.grammar.domain.usecase
 
-import com.sfag.grammar.domain.model.rule.GrammarRule
+import com.sfag.grammar.domain.model.GrammarRule
 import com.sfag.shared.util.Symbols
 
 fun isRegular(rule: GrammarRule): Boolean {

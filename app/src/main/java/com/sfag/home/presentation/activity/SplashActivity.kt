@@ -10,11 +10,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.sfag.shared.presentation.theme.AppTheme
-import com.sfag.shared.presentation.activity.SetDefaultSettings
+import com.sfag.shared.presentation.activity.configureScreenOrientation
 import com.sfag.home.presentation.screen.SplashScreen
-import com.sfag.home.presentation.navigation.Destinations
+import com.sfag.home.presentation.navigation.HomeDestinations
 import dagger.hilt.android.AndroidEntryPoint
-
 
 @SuppressLint("CustomSplashScreen")
 @AndroidEntryPoint
@@ -24,16 +23,17 @@ class SplashActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        configureScreenOrientation()
+
         setContent {
             AppTheme {
-                SetDefaultSettings()
                 rememberNavController().apply {
                     NavHost(
                         navController = this,
-                        startDestination = Destinations.SPLASH.route
+                        startDestination = HomeDestinations.SPLASH.route
                     ) {
-                        composable(Destinations.SPLASH.route) {
-                            SplashScreen(lifecycleScope, navigateToMainActivity = ::navigateToMainActivity, navigateToNextScreen = ::navigateToMainActivity)
+                        composable(HomeDestinations.SPLASH.route) {
+                            SplashScreen(lifecycleScope, navigateToMainActivity = ::navigateToMainActivity)
                         }
                     }
                 }

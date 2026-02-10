@@ -17,5 +17,4 @@ object Symbols {
 
     // Arrows
     const val ARROW = "->"            // production rule arrow
-    const val DERIVES = "=>"          // derivation arrow
 }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -18,9 +19,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sfag.shared.presentation.theme.defaultTextInputColor
-import com.sfag.shared.presentation.theme.blue_one
-import com.sfag.shared.presentation.theme.error_red
-
 
 @Composable
 fun DefaultTextField(
@@ -44,7 +42,7 @@ fun DefaultTextField(
             isFocused = state.isFocused
         },
         label = { Text(hint) },
-        textStyle = TextStyle(color = blue_one, fontSize = 20.sp),
+        textStyle = TextStyle(color = MaterialTheme.colorScheme.primary, fontSize = 20.sp),
         shape = RoundedCornerShape(8.dp),
         colors = TextFieldDefaults.defaultTextInputColor(),
         isError = isError
@@ -54,7 +52,7 @@ fun DefaultTextField(
         Text(
             text = requirementText,
             fontSize = 12.sp,
-            color = error_red,
+            color = MaterialTheme.colorScheme.error,
             modifier = Modifier
                 .height(31.dp)
                 .offset(y = (-4).dp)

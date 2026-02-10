@@ -5,7 +5,7 @@ import com.sfag.automata.domain.model.state.State
 import com.sfag.automata.domain.model.transition.TapeDirection
 import com.sfag.automata.domain.model.transition.Transition
 import com.sfag.automata.domain.model.transition.TuringTransition
-import com.sfag.automata.domain.model.tree.TreeNode
+import com.sfag.automata.domain.model.NODE_RADIUS
 import com.sfag.shared.util.Symbols
 import com.sfag.shared.util.XmlUtils.escapeXml
 import com.sfag.shared.util.XmlUtils.formatFloat
@@ -42,28 +42,19 @@ class TuringMachine(
     val tape: MutableList<Char> = mutableListOf()
     var headPosition: Int = 0
 
-    fun initializeTape(input: String) {
-        tape.clear()
-        tape.addAll(input.toList())
-        if (tape.isEmpty()) {
-            tape.add(blankSymbol)
-        }
-        headPosition = 0
-    }
-
-    fun readSymbol(): Char {
+    private fun readSymbol(): Char {
         expandTapeIfNeeded()
         return tape.getOrNull(headPosition) ?: blankSymbol
     }
 
-    fun writeSymbol(symbol: Char) {
+    private fun writeSymbol(symbol: Char) {
         expandTapeIfNeeded()
         if (headPosition >= 0 && headPosition < tape.size) {
             tape[headPosition] = symbol
         }
     }
 
-    fun moveHead(direction: TapeDirection) {
+    private fun moveHead(direction: TapeDirection) {
         when (direction) {
             TapeDirection.LEFT -> {
                 headPosition--
@@ -89,8 +80,6 @@ class TuringMachine(
             headPosition++
         }
     }
-
-    fun getTapeString(): String = tape.joinToString("")
 
     override fun calculateNextStep(): SimulationResult {
         if (currentState == null) currentState = states.firstOrNull { it.initial }?.index
@@ -122,12 +111,11 @@ class TuringMachine(
         moveHead(transition.direction)
 
         val endState = getStateByIndex(transition.endState)
-        currentTreePosition++
 
         return SimulationResult.Transition(
             startPosition = startState.position,
             endPosition = endState.position,
-            radius = startState.radius,
+            radius = NODE_RADIUS,
             onComplete = {
                 startState.isCurrent = false
                 endState.isCurrent = true
@@ -160,10 +148,8 @@ class TuringMachine(
         headPosition = 0
     }
 
-    override fun getDerivationTreeElements(): List<List<TreeNode>> {
-        // Turing machines don't typically use derivation trees
-        // Return empty for now
-        return emptyList()
+    override fun expandDerivationTree() {
+        // Turing machines: no derivation tree
     }
 
     override fun getMathFormatData(): MachineFormatData {

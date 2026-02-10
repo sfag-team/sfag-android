@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
@@ -19,7 +18,6 @@ import androidx.compose.ui.unit.IntOffset
 import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.simulation.TransitionData
 import kotlin.math.roundToInt
-
 
 /**
  * Animates a value based on the current state of a transition.
@@ -58,6 +56,7 @@ fun Machine.AnimationOfTransition(
 
     if (isCanvasVisible.value) {
         val circleColor = MaterialTheme.colorScheme.primary
+        val innerColor = MaterialTheme.colorScheme.surface
         val radiusBigCircle = radius / 2
         val radiusSmallCircle = radiusBigCircle - 5
         val path = getTransitionByPath(startState = start, endState = end) {}
@@ -74,7 +73,7 @@ fun Machine.AnimationOfTransition(
                 )
                 drawCircle(color = circleColor, radius = radiusBigCircle, center = currentPosition)
                 drawCircle(
-                    color = Color.White,
+                    color = innerColor,
                     radius = radiusSmallCircle,
                     center = currentPosition
                 )
@@ -113,6 +112,7 @@ fun Machine.MultipleAnimationsOfTransition(
 
     if (isCanvasVisible.value) {
         val circleColor = MaterialTheme.colorScheme.primary
+        val innerColor = MaterialTheme.colorScheme.surface
 
         Canvas(modifier = Modifier
             .fillMaxSize()
@@ -139,7 +139,7 @@ fun Machine.MultipleAnimationsOfTransition(
                         center = currentPosition
                     )
                     drawCircle(
-                        color = Color.White,
+                        color = innerColor,
                         radius = radiusSmallCircle,
                         center = currentPosition
                     )

@@ -15,8 +15,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.TextUnit
-import com.sfag.shared.presentation.theme.blue_one
-
 
 @Composable
 fun ImmutableTextField(
@@ -34,7 +32,7 @@ fun ImmutableTextField(
     ) {
         Text(
             text = text,
-            style = TextStyle(color = blue_one, fontSize = fontSize),
+            style = TextStyle(fontSize = fontSize),
             textAlign = TextAlign.Center,
             color = textColor,
         )

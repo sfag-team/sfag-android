@@ -33,7 +33,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.sfag.R
 
-
 @Composable
 fun DropDownSelector(
     items: List<Any>,
@@ -67,7 +66,7 @@ fun DropDownSelector(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            items.forEachIndexed { index, item ->
+            items.forEach { item ->
                 DropdownMenuItem(
                     text = { Text(text = item.toString()) },
                     onClick = {

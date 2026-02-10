@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import com.sfag.R
 import com.sfag.shared.presentation.component.DefaultButton
 
-
 @Composable
 fun AboutScreen(navBack: () -> Unit) {
     val scrollState = rememberScrollState()
@@ -110,7 +109,7 @@ fun AboutScreen(navBack: () -> Unit) {
 }
 
 @Composable
-fun FeatureList(items: List<String>) {
+private fun FeatureList(items: List<String>) {
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
         items.forEach {
             Text("• $it", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 4.dp))

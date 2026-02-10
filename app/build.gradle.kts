@@ -20,7 +20,7 @@ android {
 
     defaultConfig {
         applicationId = "com.sfag"
-        minSdk = 29
+        minSdk = 30
         targetSdk = 36
 
         // Major * 1000 + Minor
@@ -28,9 +28,6 @@ android {
         versionName = "2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables {
-            useSupportLibrary = true
-        }
     }
 
     buildTypes {

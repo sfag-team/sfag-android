@@ -26,7 +26,6 @@ import com.sfag.shared.presentation.component.DefaultButton
 import com.sfag.shared.presentation.component.ImmutableTextField
 import com.sfag.shared.util.SuperscriptUtils
 
-
 @Composable
 fun ExamplesScreen(
     navBack: () -> Unit,
@@ -108,7 +107,7 @@ private fun ExamplesColumn(items: List<Pair<String, ExampleDescription>>, onItem
     }
 }
 
-internal object ExampleSources {
+private object ExampleSources {
     val automataExamples = listOf(
         "automata/a-n.jff" to ExampleDescription("a^n", "deterministic finite automaton"),
         "automata/3k-1.jff" to ExampleDescription("3k +1", "deterministic finite automaton"),
@@ -151,4 +150,4 @@ internal object ExampleSources {
     )
 }
 
-data class ExampleDescription(val name: String, val description: String)
+private data class ExampleDescription(val name: String, val description: String)

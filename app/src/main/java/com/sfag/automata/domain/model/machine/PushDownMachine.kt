@@ -4,12 +4,10 @@ import com.sfag.automata.domain.model.simulation.SimulationResult
 import com.sfag.automata.domain.model.state.State
 import com.sfag.automata.domain.model.transition.PushDownTransition
 import com.sfag.automata.domain.model.transition.Transition
-import com.sfag.automata.domain.model.tree.TreeNode
+import com.sfag.automata.domain.model.NODE_RADIUS
 import com.sfag.shared.util.Symbols
 import com.sfag.shared.util.XmlUtils.escapeXml
 import com.sfag.shared.util.XmlUtils.formatFloat
-import com.sfag.automata.presentation.model.AcceptanceCriteria
-
 
 @Suppress("UNCHECKED_CAST")
 class PushDownMachine(
@@ -106,12 +104,10 @@ class PushDownMachine(
         if (consumed > 0 && imuInput.isNotEmpty()) {
             imuInput.delete(0, minOf(consumed, imuInput.length))
         }
-        currentTreePosition++
-
         return SimulationResult.Transition(
             startPosition = startState.position,
             endPosition = endState.position,
-            radius = startState.radius,
+            radius = NODE_RADIUS,
             onComplete = {
                 startState.isCurrent = false
                 endState.isCurrent = true
@@ -147,128 +143,8 @@ class PushDownMachine(
         symbolStack.add('Z')
     }
 
-    override fun getDerivationTreeElements(): List<List<TreeNode>> {
-        val allPaths = mutableListOf<Pair<List<String?>, List<Char>>>()
-
-        data class Path(
-            val history: List<String?>,
-            val currentState: State?,
-            val inputIndex: Int,
-            val symbolStack: List<Char>,
-            val alive: Boolean
-        )
-
-        val startStates = states.filter { it.initial }
-        var paths = startStates.map {
-            Path(listOf(null), it, 0, listOf('Z'), true)
-        }.toMutableList()
-
-        while (paths.any { it.alive }) {
-            val nextPaths = mutableListOf<Path>()
-
-            paths.forEach { path ->
-                if (!path.alive) {
-                    nextPaths.add(path.copy(history = path.history + null, currentState = null, alive = false))
-                    return@forEach
-                }
-
-                val remainingInput = imuInput.substring(path.inputIndex)
-                val currentStack = path.symbolStack.toMutableList()
-
-                val possibleTransitions = transitions
-                    .filter { it.startState == path.currentState?.index }
-                    .filter { it.name.isEmpty() || remainingInput.startsWith(it.name) }
-
-                if (possibleTransitions.isEmpty()) {
-                    allPaths.add(path.history + path.currentState?.name to path.symbolStack)
-                    nextPaths.add(path.copy(history = path.history + null, currentState = null, alive = false))
-                    return@forEach
-                }
-
-                for (transition in possibleTransitions) {
-                    val nextState = states.first { it.index == transition.endState }
-                    val newStack = currentStack.toMutableList()
-
-                    if (transition is PushDownTransition) {
-                        if (transition.pop.isNotEmpty()) {
-                            val expectedTop = transition.pop.first()
-                            if (newStack.isEmpty() || newStack.last() != expectedTop) continue
-                            newStack.removeAt(newStack.lastIndex)
-                        }
-
-                        if (transition.push.isNotEmpty()) {
-                            transition.push.reversed().forEach { symbol ->
-                                newStack.add(symbol)
-                            }
-                        }
-                    }
-
-                    val newInputIndex = path.inputIndex + transition.name.length
-
-                    nextPaths.add(
-                        Path(
-                            history = path.history + path.currentState?.name,
-                            currentState = nextState,
-                            inputIndex = newInputIndex,
-                            symbolStack = newStack,
-                            alive = true
-                        )
-                    )
-                }
-            }
-
-            paths = nextPaths
-        }
-
-        val acceptedPaths = allPaths.filter { (path, stack) ->
-            val last = path.lastOrNull()
-            when (acceptanceCriteria) {
-                AcceptanceCriteria.BY_FINITE_STATE ->
-                    last != null && states.any { it.name == last && it.finite }
-
-                AcceptanceCriteria.BY_INITIAL_STACK ->
-                    stack == listOf('Z')
-            }
-        }.map { it.first }
-
-        val maxDepth = allPaths.maxOfOrNull { it.first.size } ?: 0
-        val normalizedPaths = allPaths.map { (path, _) ->
-            buildList {
-                addAll(path)
-                while (size < maxDepth) add(null)
-            }
-        }
-
-        val tree = mutableListOf<List<TreeNode>>()
-
-        for (level in 1 until maxDepth) {
-            val nodeMap = mutableMapOf<String?, MutableList<Int>>()
-
-            normalizedPaths.forEachIndexed { index, path ->
-                val stateName = path[level]
-                nodeMap.computeIfAbsent(stateName) { mutableListOf() }.add(index)
-            }
-
-            val levelNodes = nodeMap.map { (stateName, indices) ->
-                val weight = indices.size.toFloat()
-                val isAccepted = indices.any { acceptedPaths.contains(normalizedPaths[it]) }
-
-                val isCurrent = stateName != null &&
-                        states.firstOrNull { it.name == stateName }?.isCurrent == true &&
-                        currentTreePosition == level
-
-                TreeNode(
-                    stateName = stateName,
-                    weight = weight,
-                    isAccepted = isAccepted,
-                    isCurrent = isCurrent
-                )
-            }
-
-            tree.add(levelNodes)
-        }
-
-        return tree
+    override fun expandDerivationTree() {
+        // PDA: no incremental derivation tree
     }
 
     override fun getMathFormatData(): MachineFormatData {

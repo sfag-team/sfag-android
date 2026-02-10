@@ -25,10 +25,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.res.painterResource
@@ -46,7 +46,6 @@ import com.sfag.automata.presentation.component.widget.DefaultDialogWindow
 import com.sfag.automata.presentation.component.widget.DefaultTextField
 import com.sfag.automata.presentation.component.widget.DropDownSelector
 import kotlin.math.roundToInt
-
 
 /**
  * private compose function Transitions
@@ -89,7 +88,6 @@ internal fun Machine.Transitions(
                     }
                 }
             )
-            .onGloballyPositioned { globalCanvasPosition = it }
             .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
     ) {
         grouped.forEach { (_, indexedTransitions) ->
@@ -152,6 +150,7 @@ internal fun Machine.CreateTransitionWindow(
     pop: String?,
     onFinished: () -> Unit
 ) {
+    val context = LocalContext.current
     var name by remember {
         mutableStateOf(nameParam ?: "")
     }
@@ -318,7 +317,7 @@ internal fun Machine.CreateTransitionWindow(
 
                     }
                     Icon(
-                        painter = painterResource(id = com.sfag.R.drawable.question),
+                        painter = painterResource(id = R.drawable.question),
                         contentDescription = "",
                         modifier = Modifier
                             .fillMaxHeight(0.3f)
@@ -365,7 +364,7 @@ internal fun Machine.CreateTransitionWindow(
                         pushVal.length <= 1
                     }
                     Icon(
-                        painter = painterResource(id = com.sfag.R.drawable.question),
+                        painter = painterResource(id = R.drawable.question),
                         contentDescription = "",
                         modifier = Modifier
                             .fillMaxHeight(0.25f)

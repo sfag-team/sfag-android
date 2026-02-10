@@ -20,7 +20,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.PaddingValues
-import com.sfag.shared.presentation.theme.unable_views
+import com.sfag.shared.presentation.theme.customColorScheme
 
 @Composable
 fun DefaultButton(
@@ -42,7 +42,7 @@ fun DefaultButton(
         contentColor = MaterialTheme.colorScheme.onPrimary
     )
     val disabledColors = ButtonDefaults.buttonColors(
-        containerColor = unable_views,
+        containerColor = MaterialTheme.customColorScheme.disabledContainer,
         contentColor = MaterialTheme.colorScheme.onPrimary
     )
 
@@ -65,7 +65,7 @@ fun DefaultButton(
                 color = if (conditionToEnable)
                     MaterialTheme.colorScheme.secondary
                 else
-                    unable_views
+                    MaterialTheme.customColorScheme.disabledContainer
             )
             .shadow(
                 3.dp,

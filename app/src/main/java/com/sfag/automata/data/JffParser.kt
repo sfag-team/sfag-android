@@ -29,12 +29,8 @@ data class JffParseResult(
  * Automata-specific JFF file operations.
  * Uses shared JffFileUtils for common operations.
  */
-object FileStorage {
-    private const val TAG = "FileStorage"
-
-    fun saveJffToDownloads(context: Context, jffContent: String, filename: String) {
-        JffFileUtils.saveToDownloads(context, jffContent, filename)
-    }
+object JffParser {
+    private const val TAG = "JffParser"
 
     fun shareJffFile(context: Context, jffContent: String, filename: String) {
         JffFileUtils.shareFile(context, jffContent, filename, "Share automata with your friends")
@@ -93,6 +89,8 @@ object FileStorage {
         }
 
         val name = element.getAttribute("name").ifEmpty { "q$id" }
+        // TODO: JFLAP uses pixel coordinates, our app uses dp - imported positions appear
+        //  too spread out on high-density screens. Convert px→dp on import (divide by density).
         val x = element.getChildText("x")?.toFloatOrNull() ?: 0f
         val y = element.getChildText("y")?.toFloatOrNull() ?: 0f
         val isInitial = element.hasChild("initial")

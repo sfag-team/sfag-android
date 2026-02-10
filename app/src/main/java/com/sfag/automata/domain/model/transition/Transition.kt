@@ -4,7 +4,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Dp
 import kotlin.math.*
 import com.sfag.automata.domain.model.state.State
-
+import com.sfag.automata.domain.model.NODE_RADIUS
 
 open class Transition(open var name: String = "a", open var startState: Int, open var endState: Int) {
 
@@ -18,8 +18,7 @@ open class Transition(open var name: String = "a", open var startState: Int, ope
         val startCenter = start.position
         val endCenter = end.position
 
-        val startRadius = start.radius
-        val endRadius = end.radius
+        val radius = NODE_RADIUS
 
         val dx = endCenter.x - startCenter.x
         val dy = endCenter.y - startCenter.y
@@ -30,8 +29,8 @@ open class Transition(open var name: String = "a", open var startState: Int, ope
         val dirX = dx / length
         val dirY = dy / length
 
-        val startPoint = Offset(startCenter.x + dirX * startRadius, startCenter.y + dirY * startRadius)
-        val endPoint = Offset(endCenter.x - dirX * endRadius, endCenter.y - dirY * endRadius)
+        val startPoint = Offset(startCenter.x + dirX * radius, startCenter.y + dirY * radius)
+        val endPoint = Offset(endCenter.x - dirX * radius, endCenter.y - dirY * radius)
 
         val hitBoxWidth = 20f
 

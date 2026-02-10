@@ -1,4 +1,4 @@
-package com.sfag.automata.domain.usecase.validation
+package com.sfag.automata.domain.usecase
 
 import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.machine.MachineType

@@ -1,13 +1,11 @@
-package com.sfag.grammar.domain.usecase.parser
+package com.sfag.grammar.domain.usecase
 
-import com.sfag.grammar.domain.model.rule.GrammarRule
-import com.sfag.grammar.domain.model.type.GrammarType
+import com.sfag.grammar.domain.model.GrammarRule
+import com.sfag.grammar.domain.model.GrammarType
 import com.sfag.shared.util.Symbols
-import kotlin.collections.ArrayDeque
 import kotlin.math.exp
 
-
-data class State(val stateString: String, val appliedRule: GrammarRule)
+private data class State(val stateString: String, val appliedRule: GrammarRule)
 fun parse(input: String, rules: List<GrammarRule>, terminals: Set<Char>, type: GrammarType): List<Step>? {
     if (input != "" && input.any { it !in terminals }) {
         return null
@@ -76,7 +74,7 @@ fun parse(input: String, rules: List<GrammarRule>, terminals: Set<Char>, type: G
 
 data class Step(val previous: String, val stateString: String, val appliedRule: GrammarRule)
 
-fun reconstructDerivation(finalState: String, stateHistory: Map<String, State>): List<Step> {
+private fun reconstructDerivation(finalState: String, stateHistory: Map<String, State>): List<Step> {
     val derivationSteps = mutableListOf<Step>()
     var currentState = finalState
 
@@ -89,7 +87,7 @@ fun reconstructDerivation(finalState: String, stateHistory: Map<String, State>):
     return derivationSteps.reversed()  // Correct order
 }
 
-fun extractLargestTerminalSubstring(state: String): String {
+private fun extractLargestTerminalSubstring(state: String): String {
     var maxSubstring = ""
     var currentSubstring = ""
 
