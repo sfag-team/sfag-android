@@ -3,22 +3,21 @@ package com.sfag.shared.presentation.theme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 
 @Composable
 fun TextFieldDefaults.defaultTextInputColor() = colors(
-    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
     cursorColor = MaterialTheme.colorScheme.primary,
-    focusedLabelColor = MaterialTheme.colorScheme.secondary,
-    unfocusedLabelColor = MaterialTheme.colorScheme.primary,
-    unfocusedIndicatorColor = MaterialTheme.colorScheme.primary,
-    focusedContainerColor = Color.White,
-    unfocusedContainerColor = Color.White,
-    unfocusedTextColor = MaterialTheme.colorScheme.secondary,
-    focusedTextColor = MaterialTheme.colorScheme.primary,
-    errorIndicatorColor = MaterialTheme.colorScheme.error,
-    errorTextColor = MaterialTheme.colorScheme.secondary,
-    errorLabelColor = MaterialTheme.colorScheme.secondary,
+    errorContainerColor = MaterialTheme.colorScheme.surface,
     errorCursorColor = MaterialTheme.colorScheme.secondary,
-    errorContainerColor = Color.White
+    errorIndicatorColor = MaterialTheme.colorScheme.error,
+    errorLabelColor = MaterialTheme.colorScheme.secondary,
+    errorTextColor = MaterialTheme.colorScheme.secondary,
+    focusedContainerColor = MaterialTheme.colorScheme.surface,
+    focusedIndicatorColor = MaterialTheme.colorScheme.secondary,
+    focusedLabelColor = MaterialTheme.colorScheme.secondary,
+    focusedTextColor = MaterialTheme.colorScheme.primary,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+    unfocusedIndicatorColor = MaterialTheme.colorScheme.primary,
+    unfocusedLabelColor = MaterialTheme.colorScheme.primary,
+    unfocusedTextColor = MaterialTheme.colorScheme.secondary,
 )

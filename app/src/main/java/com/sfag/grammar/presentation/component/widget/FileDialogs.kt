@@ -10,12 +10,11 @@ import androidx.navigation.NavController
 import com.sfag.grammar.presentation.viewmodel.GrammarViewModel
 import com.sfag.grammar.data.GrammarFileStorage
 
-
 @Composable
 fun FilePicker(grammarViewModel: GrammarViewModel, navController: NavController) {
     val context = LocalContext.current
     val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let {
             grammarViewModel.loadFromXmlUri(context, it)
@@ -24,7 +23,7 @@ fun FilePicker(grammarViewModel: GrammarViewModel, navController: NavController)
     }
 
     LaunchedEffect(Unit) {
-        filePickerLauncher.launch("*/*")
+        filePickerLauncher.launch(arrayOf("application/octet-stream", "text/xml"))
     }
 }
 
@@ -32,7 +31,7 @@ fun FilePicker(grammarViewModel: GrammarViewModel, navController: NavController)
 fun FileSave(grammarViewModel: GrammarViewModel, navController: NavController) {
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/xml")
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream")
     ) { uri: Uri? ->
         uri?.let {
             GrammarFileStorage.saveToJff(grammarViewModel.getIndividualRules(), context, it)

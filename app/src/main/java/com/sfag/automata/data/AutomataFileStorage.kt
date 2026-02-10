@@ -11,8 +11,6 @@ import com.sfag.automata.domain.model.transition.TuringTransition
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
-import com.sfag.automata.data.FileStorage
-
 
 /**
  * File-based storage for automata machines using .jff files
@@ -61,7 +59,7 @@ internal class AutomataFileStorage @Inject constructor(
         }
 
         val jffContent = file.readText()
-        val parseResult = FileStorage.parseJffWithType(jffContent)
+        val parseResult = JffParser.parseJffWithType(jffContent)
 
         return when (parseResult.machineType) {
             MachineType.Finite -> FiniteMachine(
@@ -87,16 +85,6 @@ internal class AutomataFileStorage @Inject constructor(
             )
         }
     }
-
-    /**
-     * Delete a machine file
-     */
-    fun deleteMachine(name: String): Boolean {
-        val filename = "${sanitizeFilename(name)}.jff"
-        val file = File(storageDir, filename)
-        return file.delete()
-    }
-
     /**
      * Sanitize filename to remove invalid characters
      */

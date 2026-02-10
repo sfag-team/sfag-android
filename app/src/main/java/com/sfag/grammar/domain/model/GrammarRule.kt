@@ -1,4 +1,4 @@
-package com.sfag.grammar.domain.model.rule
+package com.sfag.grammar.domain.model
 
 import com.sfag.shared.util.Symbols
 

@@ -4,7 +4,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
-
 class InputsViewModel : ViewModel() {
     private val _inputs = MutableLiveData<List<String>>(emptyList())
     val inputs: LiveData<List<String>> get() = _inputs

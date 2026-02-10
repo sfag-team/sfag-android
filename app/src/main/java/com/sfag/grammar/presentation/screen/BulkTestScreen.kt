@@ -29,13 +29,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.sfag.grammar.domain.usecase.parser.parse
-import com.sfag.grammar.domain.model.rule.GrammarRule
-import com.sfag.grammar.domain.model.type.GrammarType
+import com.sfag.grammar.domain.usecase.parse
+import com.sfag.grammar.domain.model.GrammarRule
+import com.sfag.grammar.domain.model.GrammarType
 import com.sfag.grammar.presentation.viewmodel.GrammarViewModel
 import com.sfag.grammar.presentation.viewmodel.InputsViewModel
-import com.sfag.shared.presentation.theme.light_blue
-
 
 @Composable
 fun BulkTestScreen(navController: NavController, grammarViewModel: GrammarViewModel, inputsViewModel: InputsViewModel) {
@@ -99,8 +97,8 @@ fun TableRow(text: String, onTextChange: (String) -> Unit, rules: List<GrammarRu
             onValueChange = onTextChange,
             modifier = Modifier.weight(1f),
             colors = TextFieldDefaults.colors(
-                unfocusedContainerColor = light_blue,
-                focusedContainerColor = light_blue
+                unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                focusedContainerColor = MaterialTheme.colorScheme.primaryContainer
             )
             )
 

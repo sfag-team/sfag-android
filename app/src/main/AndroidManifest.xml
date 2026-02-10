@@ -8,44 +8,40 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:screenOrientation="portrait"
         android:supportsRtl="true"
         android:theme="@style/Theme.AutoGram"
         tools:targetApi="36">
+
+        <property
+            android:name="android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY"
+            android:value="true" />
+
         <activity
             android:name="com.sfag.home.presentation.activity.SplashActivity"
             android:exported="true"
+            android:screenOrientation="fullUser"
             android:theme="@style/Theme.AutoGram">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name="com.sfag.home.presentation.activity.HomeActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="fullUser" />
 
         <activity
             android:name="com.sfag.automata.presentation.activity.AutomataActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="fullUser" />
 
         <activity
             android:name="com.sfag.grammar.presentation.activity.GrammarActivity"
             android:exported="false"
-            tools:ignore="AppLinkUrlError">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
+            android:screenOrientation="fullUser" />
 
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.OPENABLE" />
-
-                <data android:scheme="file" />
-                <data android:scheme="content" />
-                <data android:host="*" />
-                <data android:pathPattern=".*\\.jff" />
-                <data android:mimeType="application/xml" />
-            </intent-filter>
-        </activity>
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -55,6 +51,7 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/filepaths" />
         </provider>
+
     </application>
 
 </manifest>

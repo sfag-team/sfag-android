@@ -18,12 +18,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-
 @Composable
 fun SplashScreen(
     scope: CoroutineScope,
-    navigateToMainActivity: () -> Unit,
-    navigateToNextScreen: () -> Unit
+    navigateToMainActivity: () -> Unit
 ) {
     LaunchedEffect(true) {
         scope.launch(Dispatchers.IO) {
@@ -39,6 +37,4 @@ fun SplashScreen(
             contentDescription = ""
         )
     }
-
-
 }

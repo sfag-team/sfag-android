@@ -8,8 +8,12 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -20,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -36,16 +39,16 @@ import com.sfag.shared.presentation.icon.FileSave as FileSaveIcon
 import com.sfag.shared.presentation.theme.AppTheme
 import com.sfag.grammar.presentation.component.widget.FilePicker
 import com.sfag.grammar.presentation.component.widget.FileSave
-import com.sfag.grammar.presentation.navigation.DestinationConstants
+import com.sfag.grammar.presentation.navigation.GrammarDestinations
 import com.sfag.grammar.presentation.screen.BulkTestScreen
 import com.sfag.grammar.presentation.screen.GrammarScreen
 import com.sfag.grammar.presentation.screen.TestInputScreen
-
+import com.sfag.shared.presentation.activity.configureScreenOrientation
 
 class GrammarActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        configureScreenOrientation()
         val assetPath = intent?.getStringExtra("example uri")
         setContent {
             AppTheme {
@@ -153,22 +156,27 @@ fun TopNavigationBar(navController: NavHostController, grammarViewModel: Grammar
             }}
         },
         actions = {
-            DestinationConstants.DestinationItems.forEach { navItem ->
+            data class NavAction(val dest: GrammarDestinations, val icon: ImageVector, val label: String)
+            val navActions = listOf(
+                NavAction(GrammarDestinations.GRAMMAR, Icons.Default.Build, "Grammar"),
+                NavAction(GrammarDestinations.TEST, Icons.Default.PlayArrow, "Test"),
+                NavAction(GrammarDestinations.BULK_TEST, Icons.AutoMirrored.Filled.List, "Bulk Test")
+            )
+            navActions.forEach { navItem ->
                 IconButton(
                     onClick = {
-                        if (currentRoute != navItem.route && grammarViewModel.isGrammarFinished.value == true) {
-                            navController.navigate(navItem.route)
+                        if (currentRoute != navItem.dest.route && grammarViewModel.isGrammarFinished.value == true) {
+                            navController.navigate(navItem.dest.route)
                         }
                     }
                 ) {
                     Icon(
                         imageVector = navItem.icon,
                         contentDescription = navItem.label,
-                        tint = if (currentRoute?.startsWith(navItem.route) == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
+                        tint = if (currentRoute?.startsWith(navItem.dest.route) == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
                     )
                 }
             }
-
         }
 
     )

@@ -3,10 +3,11 @@ package com.sfag.automata.presentation.activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
@@ -21,10 +22,9 @@ import com.sfag.shared.presentation.theme.AppTheme
 import com.sfag.automata.presentation.navigation.AutomataDestinations
 import com.sfag.automata.presentation.screen.AutomataListScreen
 import com.sfag.automata.presentation.screen.AutomataScreen
-import com.sfag.automata.data.FileStorage
-import com.sfag.shared.presentation.activity.SetDefaultSettings
+import com.sfag.automata.data.JffParser
+import com.sfag.shared.presentation.activity.configureScreenOrientation
 import dagger.hilt.android.AndroidEntryPoint
-
 
 @AndroidEntryPoint
 class AutomataActivity : ComponentActivity() {
@@ -40,7 +40,7 @@ class AutomataActivity : ComponentActivity() {
             inputStream.close()
 
             content.let { jffXml ->
-                val (states, transitions) = FileStorage.parseJff(jffXml)
+                val (states, transitions) = JffParser.parseJff(jffXml)
                 val machineType: MachineType =
                     if (jffXml.split("<type>")[1].split("</type>")[0] == MachineType.Finite.tag
                     ) MachineType.Finite else MachineType.Pushdown
@@ -57,31 +57,36 @@ class AutomataActivity : ComponentActivity() {
             }
         }
 
+        configureScreenOrientation()
+
         setContent {
 
             AppTheme {
-                SetDefaultSettings()
                 rememberNavController().apply {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background)
-                    ) {
-                        NavHost(
-                            navController = this@apply,
-                            startDestination = AutomataDestinations.AUTOMATA_LIST.route,
-                            modifier = Modifier.weight(9f)
+                    Scaffold(
+                        containerColor = MaterialTheme.colorScheme.background
+                    ) { innerPadding ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)
                         ) {
-                            composable(route = AutomataDestinations.AUTOMATA.route) {
-                                AutomataScreen {
-                                    navigate(AutomataDestinations.AUTOMATA_LIST.route)
+                            NavHost(
+                                navController = this@apply,
+                                startDestination = AutomataDestinations.AUTOMATA_LIST.route,
+                                modifier = Modifier.weight(9f)
+                            ) {
+                                composable(route = AutomataDestinations.AUTOMATA.route) {
+                                    AutomataScreen {
+                                        navigate(AutomataDestinations.AUTOMATA_LIST.route)
+                                    }
                                 }
-                            }
-                            composable(route = AutomataDestinations.AUTOMATA_LIST.route) {
-                                AutomataListScreen(exampleMachine, navBack = {
-                                    finish()
-                                }) {
-                                    navigate(AutomataDestinations.AUTOMATA.route)
+                                composable(route = AutomataDestinations.AUTOMATA_LIST.route) {
+                                    AutomataListScreen(exampleMachine, navBack = {
+                                        finish()
+                                    }) {
+                                        navigate(AutomataDestinations.AUTOMATA.route)
+                                    }
                                 }
                             }
                         }

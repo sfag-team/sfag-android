@@ -5,10 +5,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,7 +18,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.sfag.R
 import com.sfag.shared.presentation.component.DefaultButton
-
 
 @Composable
 fun HomeScreen(
@@ -32,7 +32,7 @@ fun HomeScreen(
             .background(MaterialTheme.colorScheme.background),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.size(32.dp))
+        Spacer(modifier = Modifier.size(8.dp))
         Image(
             painter = painterResource(id = R.drawable.splash),
             modifier = Modifier.size(300.dp),
@@ -42,24 +42,25 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .height(400.dp)
-                .width(280.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 40.dp)
                 .border(3.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.size(16.dp))
-            DefaultButton(text = "navigate to Automata simulator", modifier = Modifier.width(250.dp), height = 60) {
+            DefaultButton(text = "Navigate to Automata simulator", modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp), height = 60) {
                 navToAutomata()
             }
             Spacer(modifier = Modifier.height(40.dp))
-            DefaultButton(text = "navigate to Grammar simulator", modifier = Modifier.width(250.dp), height = 60) {
+            DefaultButton(text = "Navigate to Grammar simulator", modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp), height = 60) {
                 navToGrammar()
             }
             Spacer(modifier = Modifier.height(40.dp))
-            DefaultButton(text = "Examples", modifier = Modifier.width(250.dp)) {
+            DefaultButton(text = "Examples", modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp)) {
                 navToExamplesScreen()
             }
             Spacer(modifier = Modifier.height(40.dp))
-            DefaultButton(text = "About", modifier = Modifier.width(250.dp)) {
+            DefaultButton(text = "About", modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp)) {
                 navToAbout()
             }
             Spacer(modifier = Modifier.size(16.dp))

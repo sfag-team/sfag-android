@@ -32,13 +32,12 @@ import androidx.compose.ui.unit.sp
 import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.machine.MachineType
 import com.sfag.automata.domain.model.machine.PushDownMachine
-import com.sfag.automata.presentation.model.AcceptanceCriteria
+import com.sfag.automata.domain.model.machine.AcceptanceCriteria
 import com.sfag.R
 import com.sfag.automata.presentation.component.widget.DefaultTextField
 import com.sfag.automata.presentation.component.widget.DropDownSelector
 import com.sfag.shared.presentation.component.DefaultButton
 import com.sfag.shared.presentation.component.ImmutableTextField
-
 
 /**
  * Screen for editing input bar content
@@ -139,15 +138,15 @@ fun Machine.EditingInput(finishedEditing: () -> Unit) {
                                 id =
                                 if(machineType == MachineType.Finite || ((this@EditingInput as PushDownMachine).acceptanceCriteria == AcceptanceCriteria.BY_FINITE_STATE)){
                                     if (canReachFinalState(input, true)) {
-                                        com.sfag.R.drawable.check
+                                        R.drawable.check
                                     } else {
-                                        com.sfag.R.drawable.cross
+                                        R.drawable.cross
                                     }
                                 } else {
                                     if (canReachInitialStackPDA(input, true, listOf('Z'))) {
-                                        com.sfag.R.drawable.check
+                                        R.drawable.check
                                     } else {
-                                        com.sfag.R.drawable.cross
+                                        R.drawable.cross
                                     }
                                 }
 

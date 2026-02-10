@@ -75,20 +75,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.graphics.withSave
-import com.sfag.grammar.domain.usecase.parser.Step
-import com.sfag.grammar.domain.usecase.parser.parse
-import com.sfag.grammar.domain.model.rule.GrammarRule
-import com.sfag.grammar.domain.model.type.GrammarType
+import com.sfag.grammar.domain.usecase.Step
+import com.sfag.grammar.domain.usecase.parse
+import com.sfag.grammar.domain.model.GrammarRule
+import com.sfag.grammar.domain.model.GrammarType
 import com.sfag.grammar.presentation.viewmodel.GrammarViewModel
+import com.sfag.shared.presentation.theme.customColorScheme
 import com.sfag.shared.util.Symbols
 import com.sfag.shared.presentation.icon.ChevronLeft
 import com.sfag.shared.presentation.icon.ChevronRight
 import com.sfag.shared.presentation.icon.KeyboardDoubleArrowRight
 import com.sfag.shared.presentation.icon.NetworkNode
-import com.sfag.shared.presentation.theme.light_blue
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
@@ -152,8 +151,8 @@ fun TestInputScreen(grammarViewModel: GrammarViewModel, preInput: String) {
                 modifier = Modifier.weight(1f).padding(top = 4.dp),
                 singleLine = true,
                 colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = light_blue,
-                    focusedContainerColor = light_blue
+                    unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    focusedContainerColor = MaterialTheme.colorScheme.primaryContainer
                 )
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -182,7 +181,7 @@ fun TestInputScreen(grammarViewModel: GrammarViewModel, preInput: String) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.5f)) // Semi-transparent background
+                                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f))
                                 .zIndex(1f) // Ensure it's on top
 
                         ) {
@@ -206,12 +205,12 @@ fun TestInputScreen(grammarViewModel: GrammarViewModel, preInput: String) {
                                         Text(
                                             text = "Derivation completed",
                                             style = MaterialTheme.typography.headlineSmall,
-                                            color = Color.White,
+                                            color = MaterialTheme.colorScheme.surface,
                                             textAlign = TextAlign.Center
                                         )
                                         Text(text = input,
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color = Color.Yellow,
+                                            color = MaterialTheme.customColorScheme.derivationCompleted,
                                             textAlign = TextAlign.Center
                                         )
                                     }
@@ -288,9 +287,9 @@ fun TestInputScreen(grammarViewModel: GrammarViewModel, preInput: String) {
                         },
                             modifier = Modifier
                                 .weight(1f)
-                                .background(color = Color(0xFF38F292)),
+                                .background(color = MaterialTheme.customColorScheme.acceptedBackground),
                             textAlign = TextAlign.Center,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }else{
                         Text(text =  buildAnnotatedString{
@@ -301,7 +300,7 @@ fun TestInputScreen(grammarViewModel: GrammarViewModel, preInput: String) {
                         },
                             modifier = Modifier
                                 .weight(1f)
-                                .background(color = Color(0xFFDB5C65)),
+                                .background(color = MaterialTheme.customColorScheme.rejectedBackground),
                             textAlign = TextAlign.Center
                         )
 
@@ -459,7 +458,7 @@ fun StateTable(steps: List<Step>) {
                         append(state.previous.replace(Symbols.EPSILON, "").take(diffIndex))
 
                         // Changed part with different color
-                        withStyle(style = SpanStyle(color = Color(0xFF2779C2))) {
+                        withStyle(style = SpanStyle(color = MaterialTheme.customColorScheme.derivationHighlight)) {
                             append(right)
                         }
                         // The rest of the baseString
@@ -489,7 +488,7 @@ fun findDifferenceIndex(rule: GrammarRule, previous: String, current: String): I
     val left = rule.left
     for (i in previous.indices) {
         if (i + left.length <= previous.length && previous.substring(i, i + left.length) == left) {
-            val candidate = previous.substring(0, i) + rule.right + previous.substring(i + left.length)
+            val candidate = previous.take(i) + rule.right + previous.substring(i + left.length)
             if (candidate == current) {
                 return i
             }
@@ -671,6 +670,7 @@ fun DAGCanvas
     canvasSize: MutableState<Size>
 )
 {
+    val customColorScheme = MaterialTheme.customColorScheme
     var allNodes = mutableSetOf<DAGNode>()
 
     collect(root, allNodes, step)
@@ -717,19 +717,41 @@ fun DAGCanvas
             withSave {
                 translate(offsetX.value, offsetY.value) // Apply panning
                 scale(scale.value, scale.value) // Apply zoom
-                drawDAG(allNodes, 40f, textMeasurer, step, pathEffect)
+                drawDAG(
+                    allNodes, 40f, textMeasurer, step, pathEffect,
+                    nonTerminalColor = customColorScheme.dagNonTerminalNode,
+                    terminalColor = customColorScheme.dagTerminalNode,
+                    animationHighlightColor = customColorScheme.dagAnimationHighlight,
+                    groupingRectColor = customColorScheme.dagGroupingRect,
+                    edgeColor = customColorScheme.dagEdge,
+                    nodeTextColor = customColorScheme.dagNodeText,
+                    leafHighlightColor = customColorScheme.dagLeafHighlight,
+                )
             }
         }
     }
 
 }
 
-fun DrawScope.drawDAG(nodes: Collection<DAGNode>, size: Float, textMeasurer: TextMeasurer, step: Int, highlightEffect: PathEffect? = null) {
+fun DrawScope.drawDAG(
+    nodes: Collection<DAGNode>,
+    size: Float,
+    textMeasurer: TextMeasurer,
+    step: Int,
+    highlightEffect: PathEffect? = null,
+    nonTerminalColor: Color,
+    terminalColor: Color,
+    animationHighlightColor: Color,
+    groupingRectColor: Color,
+    edgeColor: Color,
+    nodeTextColor: Color,
+    leafHighlightColor: Color,
+) {
     // Final step
     val leafColor = if(step == nodes.maxOf { it.step }+1){
-        Color.Yellow
+        leafHighlightColor
     }else{
-        Color.White
+        nodeTextColor
     }
     // Set y-coord
     nodes.forEach { node ->
@@ -749,9 +771,9 @@ fun DrawScope.drawDAG(nodes: Collection<DAGNode>, size: Float, textMeasurer: Tex
                 }
                 if(child.parents.size > 1){
                     val x = child.parents.map { it.x }.average().toFloat()
-                    drawEdgeToChild(x, node.y, child)
+                    drawEdgeToChild(x, node.y, child, edgeColor)
                 }else{
-                    drawEdgeToChild(node.x, node.y, child)
+                    drawEdgeToChild(node.x, node.y, child, edgeColor)
                 }
             }
         }
@@ -759,7 +781,7 @@ fun DrawScope.drawDAG(nodes: Collection<DAGNode>, size: Float, textMeasurer: Tex
         // Grouping of parents
         if(node.children.isNotEmpty() && node.children.first().parents.size > 1 && step >= node.children.first().step && node.children.first().parents.first() == node){
             drawRoundRect(
-                color = Color(0xff7bc2ed),
+                color = groupingRectColor,
                 topLeft = Offset(node.x-15-size, node.y-15-size),
                 size = Size(node.children.first().parents.last().x+size+15 - (node.x-15-size), node.y+size+15 - (node.y-15-size)),
                 cornerRadius = CornerRadius(size, size)
@@ -768,22 +790,22 @@ fun DrawScope.drawDAG(nodes: Collection<DAGNode>, size: Float, textMeasurer: Tex
 
         // Node color - terminal/non-terminal
         val color = if (!node.label.isDigit() && node.label.isUpperCase()) {
-            Color(0xff77e681)
+            nonTerminalColor
         } else {
-            Color(0xff0479c2)
+            terminalColor
         }
 
         // Animation
         if(node.children.isNotEmpty() && node.children.first().step == step) {
             drawCircle(
-                Color(0xfff5823b),
+                animationHighlightColor,
                 center = Offset(node.x, node.y),
                 radius = size,
                 style = Stroke(width = 15f, pathEffect = highlightEffect)
             )
         }else if(node.step == step){
             drawCircle(
-                Color.White,
+                nodeTextColor,
                 center = Offset(node.x, node.y),
                 radius = size,
                 style = Stroke(width = 15f, pathEffect = highlightEffect)
@@ -801,7 +823,7 @@ fun DrawScope.drawDAG(nodes: Collection<DAGNode>, size: Float, textMeasurer: Tex
             text = node.label.toString(),
             style = TextStyle(
                 fontSize = 20.sp,
-                color = if(node.children.isEmpty()){ leafColor }else{Color.White},
+                color = if(node.children.isEmpty()){ leafColor }else{ nodeTextColor },
                 textAlign = TextAlign.Center
             )
         )
@@ -856,7 +878,7 @@ fun DrawScope.drawEdgeToChild(
     parentX: Float,
     parentY: Float,
     child: DAGNode,
-    color: Color = Color.White,
+    color: Color,
     strokeWidth: Float = 5f
 ) {
     if (child.depth.isEmpty()) return

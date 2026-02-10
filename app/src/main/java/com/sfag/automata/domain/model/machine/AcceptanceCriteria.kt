@@ -1,4 +1,4 @@
-package com.sfag.automata.presentation.model
+package com.sfag.automata.domain.model.machine
 
 enum class AcceptanceCriteria(val text: String) {
     BY_FINITE_STATE("the finite state"),

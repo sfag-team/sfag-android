@@ -4,37 +4,36 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
-import com.sfag.R
-
-val AppTypography = Typography()
 
 @Composable
 fun AppTheme(content: @Composable () -> Unit) {
-    val lightScheme = lightColorScheme(
-        primary = colorResource(R.color.blue_one),
-        secondary = colorResource(R.color.blue_two),
-        tertiary = colorResource(R.color.blue_three),
-        background = colorResource(R.color.light_gray),
-        surface = colorResource(R.color.perlamutr_white),
-        primaryContainer = colorResource(R.color.light_blue),
-        errorContainer = colorResource(R.color.error_red_light),
-        secondaryContainer = colorResource(R.color.darker_light_blue),
-        onPrimary = Color.White,
-        onSecondary = Color.White,
-        onTertiary = Color.White,
-        surfaceContainer = colorResource(R.color.light_blue),
-        surfaceContainerHigh = colorResource(R.color.light_blue),
-        surfaceContainerLow = colorResource(R.color.light_blue),
-        onBackground = colorResource(R.color.on_background),
-        onSurface = colorResource(R.color.on_surface),
-        error = colorResource(R.color.error_red),
+    val lightColorScheme = lightColorScheme(
+        primary = Color(0xFF6C8176),
+        onPrimary = Color(0xFFFFFFFF),
+        primaryContainer = Color(0xFFB1E6D1),
+        secondary = Color(0xFF2E3D3D),
+        onSecondary = Color(0xFFFFFFFF),
+        secondaryContainer = Color(0xFF7FC7A7),
+        tertiary = Color(0xFF052836),
+        onTertiary = Color(0xFFFFFFFF),
+        background = Color(0xFFEDFFF5),
+        onBackground = Color(0xFF1C1B1F),
+        surface = Color(0xFFF4FFFF),
+        onSurface = Color(0xFF1C1B1F),
+        error = Color(0xFF8C230F),
+        errorContainer = Color(0xFFEC5C49),
+        surfaceContainer = Color(0xFFB1E6D1),
+        surfaceContainerHigh = Color(0xFFB1E6D1),
+        surfaceContainerLow = Color(0xFFB1E6D1),
     )
 
-    MaterialTheme(
-        colorScheme = lightScheme,
-        typography = AppTypography,
-        content = content
-    )
+    CompositionLocalProvider(LocalCustomColorScheme provides lightCustomColorScheme) {
+        MaterialTheme(
+            colorScheme = lightColorScheme,
+            typography = Typography(),
+            content = content
+        )
+    }
 }

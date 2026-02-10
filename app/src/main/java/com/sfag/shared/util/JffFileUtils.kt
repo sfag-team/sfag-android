@@ -1,11 +1,8 @@
 package com.sfag.shared.util
 
-import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Environment
-import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import java.io.File
 import java.io.OutputStream
@@ -24,27 +21,6 @@ import org.w3c.dom.Element
 object JffFileUtils {
 
     /**
-     * Saves JFF content to Downloads folder.
-     */
-    fun saveToDownloads(context: Context, jffContent: String, filename: String) {
-        val filenameWithExtension = "$filename.jff"
-        val resolver = context.contentResolver
-        val contentValues = ContentValues().apply {
-            put(MediaStore.Downloads.DISPLAY_NAME, filenameWithExtension)
-            put(MediaStore.Downloads.MIME_TYPE, "text/xml")
-            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-        }
-
-        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
-        if (uri != null) {
-            resolver.openOutputStream(uri)?.use { outputStream ->
-                outputStream.write(jffContent.toByteArray(Charsets.UTF_8))
-                outputStream.flush()
-            }
-        }
-    }
-
-    /**
      * Shares JFF file via Android share sheet.
      */
     fun shareFile(context: Context, jffContent: String, filename: String, shareMessage: String = "Share file") {
@@ -58,7 +34,7 @@ object JffFileUtils {
         )
 
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/xml"
+            type = "application/octet-stream"
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }

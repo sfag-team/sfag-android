@@ -5,19 +5,16 @@ import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.sfag.grammar.domain.model.rule.GrammarRule
-import com.sfag.grammar.domain.model.type.GrammarType
-import com.sfag.grammar.domain.usecase.validation.isContextFree
-import com.sfag.grammar.domain.usecase.validation.isContextSensitive
-import com.sfag.grammar.domain.usecase.validation.isRegular
+import com.sfag.grammar.domain.model.GrammarRule
+import com.sfag.grammar.domain.model.GrammarType
+import com.sfag.grammar.domain.usecase.isContextFree
+import com.sfag.grammar.domain.usecase.isContextSensitive
+import com.sfag.grammar.domain.usecase.isRegular
 import com.sfag.shared.util.Symbols
 import java.io.InputStream
-import java.io.OutputStream
-import java.nio.charset.Charset
 import javax.xml.parsers.DocumentBuilderFactory
 import org.w3c.dom.Document
 import org.w3c.dom.Element
-
 
 class GrammarViewModel : ViewModel() {
     // LiveData to hold the list of grammar rules
@@ -179,34 +176,6 @@ class GrammarViewModel : ViewModel() {
         }
     }
 
-
-    fun saveToJff(outputStream: OutputStream) {
-        val rules = _rules.value ?: return
-
-        val xmlContent = buildString {
-            append("""<?xml version="1.0" encoding="UTF-8" standalone="no"?>""")
-            append("\n<structure>\n")
-            append("\t<type>grammar</type>\n")
-            append("\t<!--The list of productions.-->\n")
-
-            for (rule in rules) {
-                append("\t<production>\n")
-                append("\t\t<left>${rule.left}</left>\n")
-                if (rule.right == Symbols.EPSILON) { // ε - empty <right/>
-                    append("\t\t<right/>\n")
-                } else {
-                    append("\t\t<right>${rule.right}</right>\n")
-                }
-                append("\t</production>\n")
-            }
-
-            append("</structure>\n")
-        }
-
-        outputStream.use { stream ->
-            stream.write(xmlContent.toByteArray(Charset.forName("UTF-8")))
-        }
-    }
 
     fun loadFromXmlStream(inputStream: InputStream) {
         try {

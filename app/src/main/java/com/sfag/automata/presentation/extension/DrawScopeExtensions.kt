@@ -5,7 +5,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
-
+import com.sfag.automata.presentation.component.SIM_EDGE_LINE_WIDTH
 
 /**
  * draws arrow
@@ -20,7 +20,7 @@ fun DrawScope.drawArrow(
     val arrowPath = arrow.first ?: return
     val arrowHead = arrow.second ?: return
     drawPath(arrowPath, color = color, style = Stroke(
-        width = 3f,
+        width = SIM_EDGE_LINE_WIDTH,
         cap = StrokeCap.Round
     ))
     drawPath(arrowHead, color)

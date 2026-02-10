@@ -1,26 +1,23 @@
 package com.sfag.automata.domain.model.machine
 
-import android.content.Context
 import android.graphics.PathMeasure
 import java.util.Locale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.sfag.automata.domain.model.simulation.SimulationResult
 import com.sfag.automata.domain.model.state.State
 import com.sfag.automata.domain.model.transition.PushDownTransition
 import com.sfag.automata.domain.model.transition.Transition
-import com.sfag.automata.domain.model.tree.TreeNode
+import com.sfag.automata.domain.model.tree.DerivationTree
 import com.sfag.shared.util.XmlUtils
-import com.sfag.automata.presentation.model.EditMachineStates
+import com.sfag.automata.domain.model.NODE_RADIUS
 import kotlin.math.atan
 import kotlin.math.cos
 import kotlin.math.sin
-
 
 abstract class Machine(
     val name: String,
@@ -35,20 +32,17 @@ abstract class Machine(
     var fullInputSnapshot: String = ""
 
     var density: Density? = null
-    var context: Context? = null
-    var globalCanvasPosition: LayoutCoordinates? = null
 
     /**
-     * Clears context references to prevent memory leaks.
+     * Clears density reference to prevent memory leaks.
      * Call when navigating away from the screen.
      */
-    fun clearContextReferences() {
+    fun clearDensity() {
         density = null
-        context = null
-        globalCanvasPosition = null
     }
     var input = StringBuilder()
-    var currentTreePosition = 1
+    val derivationTree = DerivationTree()
+    var scaleGraph = 1f
 
     var offsetXGraph = 0f
     var offsetYGraph = 0f
@@ -95,7 +89,7 @@ abstract class Machine(
         if (states.isEmpty()) return null to null
         val currentDensity = density ?: return null to null
 
-        val radius = states.first().radius
+        val radius = NODE_RADIUS
         val startPosition =
             if (transition == null) startState!! else getStateByIndex(transition.startState).position
         val endPosition =
@@ -115,7 +109,7 @@ abstract class Machine(
                     endPoint.second - 0.628f * radius + 18f
                 )
             setControlPoint(Offset(startPoint.first, startPoint.second - 2.8f * radius))
-            return Path().apply {
+            Path().apply {
                 addOval(
                     Rect(
                         center = Offset(
@@ -151,7 +145,7 @@ abstract class Machine(
             val cosTheta = cos(angleRadians)
             val sinTheta = sin(angleRadians)
 
-            return Path().apply {
+            Path().apply {
                 moveTo(startOffset.x, startOffset.y)
                 quadraticTo(controlPoint.x, controlPoint.y, endOffset.x, endOffset.y)
             } to getArrowHeadPath(
@@ -253,11 +247,11 @@ abstract class Machine(
         currentState?.let { stateIndex ->
             getStateByIndexOrNull(stateIndex)?.isCurrent = false
         }
-        val initialState = states.firstOrNull { it.initial }
-        if (initialState != null) {
+        derivationTree.clear()
+        states.firstOrNull { it.initial }?.let { initialState ->
             initialState.isCurrent = true
             currentState = initialState.index
-            currentTreePosition = 1
+            derivationTree.initialize(initialState.name)
         }
         // Use polymorphism - each machine type handles its own reset
         resetMachineState()
@@ -341,7 +335,7 @@ abstract class Machine(
     }
 
 
-    abstract fun getDerivationTreeElements(): List<List<TreeNode>>
+    abstract fun expandDerivationTree()
 
     /**
      * Returns the formal mathematical definition data for this machine.

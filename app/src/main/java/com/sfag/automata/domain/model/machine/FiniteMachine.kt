@@ -4,7 +4,8 @@ import com.sfag.automata.domain.model.simulation.SimulationResult
 import com.sfag.automata.domain.model.simulation.TransitionData
 import com.sfag.automata.domain.model.state.State
 import com.sfag.automata.domain.model.transition.Transition
-import com.sfag.automata.domain.model.tree.TreeNode
+import com.sfag.automata.domain.model.tree.Branch
+import com.sfag.automata.domain.model.NODE_RADIUS
 import com.sfag.shared.util.Symbols
 import com.sfag.shared.util.XmlUtils.escapeXml
 import com.sfag.shared.util.XmlUtils.formatFloat
@@ -69,6 +70,14 @@ class FiniteMachine(
             val anyAccepting = currentStates.any { stateIndex ->
                 getStateByIndex(stateIndex).finite && input.isEmpty()
             }
+            // Mark derivation tree: accepted paths green, rest rejected
+            if (anyAccepting) {
+                val acceptedIds = derivationTree.getActiveNodes()
+                    .filter { node -> states.any { it.name == node.stateName && it.finite } }
+                    .map { it.id }.toSet()
+                derivationTree.markAcceptedPaths(acceptedIds)
+            }
+            derivationTree.markRemainingAsRejected()
             return SimulationResult.Ended(anyAccepting)
         }
 
@@ -83,16 +92,18 @@ class FiniteMachine(
             TransitionData(
                 startPosition = startState.position,
                 endPosition = endState.position,
-                radius = startState.radius
+                radius = NODE_RADIUS
             )
         }
 
         // Calculate next states (all reachable states from processed transitions)
         val nextStates = transitionsToProcess.map { it.second.endState }.toSet()
 
+        // Expand derivation tree before consuming input
+        expandDerivationTree()
+
         // Consume input based on the transitions being processed
         consumeInput(minInputLength)
-        currentTreePosition++
 
         return SimulationResult.MultipleTransitions(
             transitions = transitionDataList,
@@ -157,108 +168,32 @@ class FiniteMachine(
         states.add(state)
     }
 
-    /**
-     * Creates list of map that represents tree
-     * Each map it's a level of the tree, Key - name of transition, Float - number of leaves under this state
-     *
-     */
-    override fun getDerivationTreeElements(): List<List<TreeNode>> {
-        val allPaths = mutableListOf<List<String?>>()
+    override fun expandDerivationTree() {
+        val active = derivationTree.getActiveNodes()
+        if (active.isEmpty()) return
 
-        data class Path(
-            val history: List<String?>,
-            val currentState: State?,
-            val inputIndex: Int,
-            val alive: Boolean
-        )
-
-        val startStates = states.filter { it.initial }
-        var paths = startStates.map {
-            Path(listOf(null), it, 0, true)
-        }.toMutableList()
-
-        while (paths.any { it.alive }) {
-            val nextPaths = mutableListOf<Path>()
-
-            paths.forEach { path ->
-                if (!path.alive) {
-                    nextPaths.add(Path(path.history + null, null, path.inputIndex, false))
-                    return@forEach
-                }
-
-                if (path.inputIndex == imuInput.length) {
-                    allPaths.add(path.history + path.currentState?.name)
-                    nextPaths.add(Path(path.history + null, null, path.inputIndex, false))
-                    return@forEach
-                }
-
-                val currentChar = imuInput[path.inputIndex]
-                val possibleTransitions = transitions.filter {
-                    it.startState == path.currentState?.index && (it.name.isEmpty() || it.name.firstOrNull() == currentChar)
-                }
-
-                if (possibleTransitions.isEmpty()) {
-                    allPaths.add(path.history + path.currentState?.name)
-                    nextPaths.add(Path(path.history + null, null, path.inputIndex, false))
-                    return@forEach
-                }
-
-                for (transition in possibleTransitions) {
-                    val nextState = states.first { it.index == transition.endState }
-                    nextPaths.add(
-                        Path(
-                            path.history + path.currentState?.name,
-                            nextState,
-                            path.inputIndex + 1,
-                            true
-                        )
-                    )
-                }
+        val branches = mutableMapOf<Int, List<Branch>>()
+        for (node in active) {
+            val state = states.firstOrNull { it.name == node.stateName }
+            if (state == null) {
+                branches[node.id] = emptyList()
+                continue
             }
-
-            paths = nextPaths
-        }
-
-        val acceptedPaths = allPaths.filter { path ->
-            val last = path.lastOrNull()
-            last != null && states.any { it.name == last && it.finite }
-        }
-
-        val maxDepth = allPaths.maxOfOrNull { it.size } ?: 0
-        val normalizedPaths = allPaths.map { path ->
-            buildList {
-                addAll(path)
-                while (size < maxDepth) add(null)
+            val possibleTransitions = transitions.filter {
+                it.startState == state.index && input.startsWith(it.name)
+            }
+            if (possibleTransitions.isEmpty()) {
+                branches[node.id] = emptyList()
+                continue
+            }
+            val minLen = possibleTransitions.minOf { it.name.length }
+            val filtered = possibleTransitions.filter { it.name.length == minLen }
+            branches[node.id] = filtered.map { t ->
+                val endState = getStateByIndex(t.endState)
+                Branch(endState.name)
             }
         }
-
-        val tree = mutableListOf<List<TreeNode>>()
-
-        for (level in 1 until maxDepth) {
-            val nodeMap = mutableMapOf<String?, MutableList<Int>>()
-            normalizedPaths.forEachIndexed { pathIndex, path ->
-                val stateName = path[level]
-                if (stateName !in nodeMap) nodeMap[stateName] = mutableListOf()
-                nodeMap[stateName]?.add(pathIndex)
-            }
-
-            val levelNodes = nodeMap.map { (stateName, indices) ->
-                val weight = indices.size.toFloat()
-                val isAccepted = indices.any { acceptedPaths.contains(normalizedPaths[it]) }
-                val isCurrent = (stateName != null && states.firstOrNull { it.name == stateName }?.isCurrent == true) && currentTreePosition == level
-
-                TreeNode(
-                    stateName = stateName,
-                    weight = weight,
-                    isCurrent = isCurrent,
-                    isAccepted = isAccepted
-                )
-            }
-
-            tree.add(levelNodes)
-        }
-
-        return tree
+        derivationTree.expandActive(branches)
     }
 
     override fun getMathFormatData(): MachineFormatData {

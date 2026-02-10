@@ -44,10 +44,8 @@ import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.machine.MachineType
 import com.sfag.automata.domain.model.state.State
 import com.sfag.automata.domain.model.transition.PushDownTransition
-import com.sfag.shared.presentation.theme.perlamutr_white
-import com.sfag.automata.presentation.model.EditMachineStates
+import com.sfag.automata.domain.model.machine.EditMachineStates
 import com.sfag.R
-
 
 @SuppressLint("DefaultLocale", "UnrememberedMutableState")
 @Composable
@@ -334,13 +332,13 @@ internal fun Machine.ToolsRow(changedMode: (EditMachineStates) -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(16.dp)
-                .background(perlamutr_white)
+                .background(MaterialTheme.colorScheme.surface)
         )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(13f)
-                .background(perlamutr_white),
+                .background(MaterialTheme.colorScheme.surface),
             horizontalArrangement = Arrangement.Center
         ) {
             Icon(
@@ -348,7 +346,7 @@ internal fun Machine.ToolsRow(changedMode: (EditMachineStates) -> Unit) {
                 contentDescription = stringResource(R.string.edit_icon),
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.small)
-                    .background(if (editMode == EditMachineStates.EDITING) MaterialTheme.colorScheme.primaryContainer else Color.White)
+                    .background(if (editMode == EditMachineStates.EDITING) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
                     .clickable {
                         editMode = EditMachineStates.EDITING
                         changedMode(editMode)
@@ -362,7 +360,7 @@ internal fun Machine.ToolsRow(changedMode: (EditMachineStates) -> Unit) {
                 ),
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.small)
-                    .background(if (editMode == EditMachineStates.ADD_STATES) MaterialTheme.colorScheme.primaryContainer else Color.White)
+                    .background(if (editMode == EditMachineStates.ADD_STATES) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
                     .clickable {
                         editMode = EditMachineStates.ADD_STATES
                         changedMode(editMode)
@@ -376,7 +374,7 @@ internal fun Machine.ToolsRow(changedMode: (EditMachineStates) -> Unit) {
                 ),
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.small)
-                    .background(if (editMode == EditMachineStates.ADD_TRANSITIONS) MaterialTheme.colorScheme.primaryContainer else Color.White)
+                    .background(if (editMode == EditMachineStates.ADD_TRANSITIONS) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
                     .clickable {
                         editMode = EditMachineStates.ADD_TRANSITIONS
                         changedMode(editMode)
@@ -390,7 +388,7 @@ internal fun Machine.ToolsRow(changedMode: (EditMachineStates) -> Unit) {
                 ),
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.small)
-                    .background(if (editMode == EditMachineStates.DELETE) MaterialTheme.colorScheme.primaryContainer else Color.White)
+                    .background(if (editMode == EditMachineStates.DELETE) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
                     .clickable {
                         editMode = EditMachineStates.DELETE
                         changedMode(editMode)
@@ -404,7 +402,7 @@ internal fun Machine.ToolsRow(changedMode: (EditMachineStates) -> Unit) {
                 ),
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.small)
-                    .background(if (editMode == EditMachineStates.MOVE) MaterialTheme.colorScheme.primaryContainer else Color.White)
+                    .background(if (editMode == EditMachineStates.MOVE) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
                     .clickable {
                         editMode = EditMachineStates.MOVE
                         changedMode(editMode)
@@ -415,7 +413,7 @@ internal fun Machine.ToolsRow(changedMode: (EditMachineStates) -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp)
-                .background(perlamutr_white)
+                .background(MaterialTheme.colorScheme.surface)
         )
         Spacer(
             modifier = Modifier
