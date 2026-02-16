@@ -236,7 +236,7 @@ internal fun Machine.CreateTransitionWindow(
             }
             onFinished()
         },
-        modifier = if (machineType == MachineType.Pushdown) Modifier.height(650.dp) else Modifier
+        modifier = if (machineType == MachineType.Pushdown) Modifier.height(640.dp) else Modifier
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(0.8f),
@@ -256,7 +256,7 @@ internal fun Machine.CreateTransitionWindow(
         Row(
             Modifier
                 .fillMaxWidth()
-                .height(44.dp), verticalAlignment = CenterVertically
+                .height(48.dp), verticalAlignment = CenterVertically
         ) {
             Spacer(modifier = Modifier.width(16.dp))
             Text(text = "from")
@@ -268,7 +268,7 @@ internal fun Machine.CreateTransitionWindow(
             ) { selectedItem ->
                 startState = selectedItem as State
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Text(text = "to")
             Spacer(modifier = Modifier.width(8.dp))
             DropDownSelector(
@@ -310,7 +310,7 @@ internal fun Machine.CreateTransitionWindow(
                         },
                         modifier = Modifier
                             .width(96.dp)
-                            .height(70.dp)
+                            .height(64.dp)
                             .padding(start = 16.dp)
                     ) {
                         popVal.length == 1
@@ -321,7 +321,7 @@ internal fun Machine.CreateTransitionWindow(
                         contentDescription = "",
                         modifier = Modifier
                             .fillMaxHeight(0.3f)
-                            .width(46.dp)
+                            .width(48.dp)
                             .padding(end = 16.dp)
                             .clickable {
                                 Toast
@@ -342,8 +342,8 @@ internal fun Machine.CreateTransitionWindow(
                             popVal = ""
                         },
                         modifier = Modifier
-                            .width(130.dp)
-                            .height(60.dp)
+                            .width(128.dp)
+                            .height(64.dp)
                             .padding(start = 16.dp)
                     ) {
                         checkStack.length == 1
@@ -358,7 +358,7 @@ internal fun Machine.CreateTransitionWindow(
                         },
                         modifier = Modifier
                             .width(80.dp)
-                            .height(60.dp)
+                            .height(64.dp)
 
                     ) {
                         pushVal.length <= 1
@@ -368,7 +368,7 @@ internal fun Machine.CreateTransitionWindow(
                         contentDescription = "",
                         modifier = Modifier
                             .fillMaxHeight(0.25f)
-                            .width(42.dp)
+                            .width(48.dp)
                             .padding(end = 16.dp)
                             .clickable {
                                 Toast

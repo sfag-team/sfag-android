@@ -19,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.sp
 import com.sfag.automata.domain.model.machine.PushDownMachine
 
 /**
@@ -63,7 +62,7 @@ fun PushDownStackBar(stack: List<Char>) {
             // Stack label
             Text(
                 text = "Stack:",
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.width(TAPE_PADDING))

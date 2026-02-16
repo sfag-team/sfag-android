@@ -4,8 +4,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -55,25 +55,25 @@ fun DefaultButton(
             }
         },
         modifier = modifier
-            .padding(1.dp)
-            .width(95.dp)
+            .padding(2.dp)
+            .widthIn(min = 96.dp)
             .height(height.dp)
             .scale(scale)
             .border(
                 2.dp,
-                shape = RoundedCornerShape(10.dp),
+                shape = CircleShape,
                 color = if (conditionToEnable)
                     MaterialTheme.colorScheme.secondary
                 else
                     MaterialTheme.customColorScheme.disabledContainer
             )
             .shadow(
-                3.dp,
-                RoundedCornerShape(10.dp),
+                4.dp,
+                CircleShape,
                 clip = false,
                 ambientColor = MaterialTheme.colorScheme.secondary
             ),
-        shape = RoundedCornerShape(10.dp),
+        shape = CircleShape,
         colors = if (conditionToEnable) enabledColors else disabledColors,
         contentPadding = PaddingValues(
             horizontal = 8.dp,

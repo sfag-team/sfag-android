@@ -86,7 +86,7 @@ fun TuringTapeBar(
                 contentDescription = "Edit tape",
                 modifier = Modifier
                     .size(EDIT_ICON_SIZE)
-                    .clip(MaterialTheme.shapes.small)
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .clickable { onEditClick() },
                 tint = MaterialTheme.colorScheme.onSurface
             )

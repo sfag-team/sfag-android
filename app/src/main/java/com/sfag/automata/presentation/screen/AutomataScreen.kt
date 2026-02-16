@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.machine.MachineType
-import com.sfag.automata.domain.usecase.isDeterministicFinite
 import com.sfag.automata.presentation.viewmodel.AutomataViewModel
 import com.sfag.automata.presentation.viewmodel.CurrentMachine
 import com.sfag.automata.presentation.component.widget.DefaultDialogWindow
@@ -89,10 +88,6 @@ fun AutomataScreen(navBack: () -> Unit) {
 
     val context = LocalContext.current
 
-    // State for DFA/NFA dialog
-    var showDeterminismDialog by remember { mutableStateOf(false) }
-    var determinismText by remember { mutableStateOf("") }
-
     BackHandler {
         when (currentScreenState.value) {
             AutomataScreenStates.SIMULATING -> {
@@ -131,8 +126,8 @@ fun AutomataScreen(navBack: () -> Unit) {
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .height(80.dp)
-                        .padding(12.dp),
+                        .height(64.dp)
+                        .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -166,24 +161,6 @@ fun AutomataScreen(navBack: () -> Unit) {
                         )
                     }
 
-                    DefaultButton(
-                        text = "DFA",
-                        modifier = buttonModifier
-                    ) {
-                        determinismText = when (automata.machineType) {
-                            MachineType.Finite ->
-                                if (automata.isDeterministicFinite())
-                                    "The automaton is deterministic (DFA)."
-                                else
-                                    "The automaton is nondeterministic (NFA)."
-                            MachineType.Pushdown ->
-                                "This is a pushdown automaton (PDA). DFA/NFA check does not apply."
-                            MachineType.Turing ->
-                                "This is a Turing machine (TM). DFA/NFA check does not apply."
-                        }
-                        showDeterminismDialog = true
-                    }
-
                 }
 
                 // Canvas / main automaton area
@@ -195,9 +172,9 @@ fun AutomataScreen(navBack: () -> Unit) {
                         .border(
                             2.dp,
                             MaterialTheme.colorScheme.tertiary,
-                            MaterialTheme.shapes.large
+                            MaterialTheme.shapes.medium
                         )
-                        .clip(MaterialTheme.shapes.large)
+                        .clip(MaterialTheme.shapes.medium)
                 ) {
                     when (currentScreenState.value) {
                         AutomataScreenStates.SIMULATING -> {
@@ -284,18 +261,18 @@ fun AutomataScreen(navBack: () -> Unit) {
                     }
                 }
 
-                Spacer(modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.size(16.dp))
 
                 // Bottom navigation row (Editing Machine, Editing Input, TestMachine)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(65.dp)
-                        .clip(MaterialTheme.shapes.large)
+                        .height(64.dp)
+                        .clip(MaterialTheme.shapes.medium)
                         .border(
                             2.dp,
                             MaterialTheme.colorScheme.tertiary,
-                            MaterialTheme.shapes.large
+                            MaterialTheme.shapes.medium
                         )
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     verticalAlignment = Alignment.CenterVertically,
@@ -308,7 +285,7 @@ fun AutomataScreen(navBack: () -> Unit) {
                             currentScreenState.value = AutomataScreenStates.EDITING_MACHINE
                         }
                     )
-                    Spacer(modifier = Modifier.width(36.dp))
+                    Spacer(modifier = Modifier.width(32.dp))
                     Icon(
                         painter = painterResource(id = R.drawable.input_ic),
                         contentDescription = "",
@@ -316,7 +293,7 @@ fun AutomataScreen(navBack: () -> Unit) {
                             currentScreenState.value = AutomataScreenStates.EDITING_INPUT
                         }
                     )
-                    Spacer(modifier = Modifier.width(36.dp))
+                    Spacer(modifier = Modifier.width(32.dp))
                     Icon(
                         painter = painterResource(id = R.drawable.go_to_next),
                         contentDescription = "",
@@ -341,11 +318,11 @@ fun AutomataScreen(navBack: () -> Unit) {
                     )
                 }
 
-                Spacer(modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.size(16.dp))
 
                 BottomScreenPart(currentScreenState, automata, bottomRecompose = recompose)
 
-                Spacer(modifier = Modifier.size(30.dp))
+                Spacer(modifier = Modifier.size(32.dp))
             }
         }
 
@@ -358,28 +335,6 @@ fun AutomataScreen(navBack: () -> Unit) {
             }
         }
 
-        // DFA/NFA result dialog
-        if (showDeterminismDialog) {
-            DefaultDialogWindow(
-                title = "Automaton Determinism",
-                onDismiss = { showDeterminismDialog = false },
-                onConfirm = { showDeterminismDialog = false }
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight(0.4f),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = determinismText,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -431,7 +386,7 @@ private fun ExportWindow(machine: Machine, finished: () -> Unit = {}) {
     }
 
     DefaultDialogWindow(
-        title = "export machine as .jff",
+        title = "Export machine as .jff",
         onDismiss = finished,
         onConfirm = {
             launcher.launch("$filename.jff")

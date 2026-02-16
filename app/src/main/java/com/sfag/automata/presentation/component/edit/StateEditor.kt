@@ -250,9 +250,9 @@ internal fun Machine.AddStateWindow(clickOffset: Offset, chosedState: State?, fi
             modifier = Modifier.fillMaxWidth(0.8f),
             verticalAlignment = CenterVertically
         ) {
-            Text(text = "x: ${clickOffset.x}", fontSize = 18.sp)
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(text = "y: ${clickOffset.y}", fontSize = 18.sp)
+            Text(text = "x: ${clickOffset.x}", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(text = "y: ${clickOffset.y}", style = MaterialTheme.typography.titleMedium)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -302,6 +302,6 @@ private fun Machine.findNewStateIndex(): Int {
                 choosedIndex = previousItem + 1
             }
         }
-        return choosedIndex
+        choosedIndex
     }
 }

@@ -93,7 +93,7 @@ fun InputTapeBar(
                 contentDescription = "Edit input",
                 modifier = Modifier
                     .size(EDIT_ICON_SIZE)
-                    .clip(MaterialTheme.shapes.small)
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .clickable { onEditClick() },
                 tint = MaterialTheme.colorScheme.onSurface
             )

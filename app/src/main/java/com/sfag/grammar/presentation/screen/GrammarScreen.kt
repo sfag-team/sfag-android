@@ -125,7 +125,7 @@ fun GrammarScreen(grammarViewModel: GrammarViewModel) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
+                .height(290.dp)
                 .background(MaterialTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center
         ) {

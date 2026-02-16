@@ -76,7 +76,7 @@ abstract class Machine(
      * create path for composing arrow on the screen
      *
      * @param transition - pair (evidence num of start state to ev. num of destination state)
-     * @return pair Path to arrow, Path - to arrow head, in case that between states path doesn't exists - return pair null to null
+     * @return pair Path to arrow, Path - to arrow head, in case that between states path doesn't exist - return pair null to null
      */
     fun getTransitionByPath(
         transition: Transition? = null,
@@ -262,7 +262,7 @@ abstract class Machine(
     /**
      * checks if machine already has state with the same name
      * if so - modifies already existing state (extends name of existing state)
-     * behaviour of this function can be changed in children of Machine class
+     * behavior of this function can be changed in children of Machine class
      *
      * @param name - name of new state
      * @param startState and endState - states of transition

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
@@ -16,7 +17,9 @@ import com.sfag.automata.domain.model.machine.FiniteMachine
 import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.machine.MachineType
 import com.sfag.automata.domain.model.machine.PushDownMachine
+import com.sfag.automata.domain.model.machine.TuringMachine
 import com.sfag.automata.domain.model.transition.PushDownTransition
+import com.sfag.automata.domain.model.transition.TuringTransition
 import com.sfag.automata.presentation.viewmodel.CurrentMachine
 import com.sfag.shared.presentation.theme.AppTheme
 import com.sfag.automata.presentation.navigation.AutomataDestinations
@@ -41,19 +44,25 @@ class AutomataActivity : ComponentActivity() {
 
             content.let { jffXml ->
                 val (states, transitions) = JffParser.parseJff(jffXml)
-                val machineType: MachineType =
-                    if (jffXml.split("<type>")[1].split("</type>")[0] == MachineType.Finite.tag
-                    ) MachineType.Finite else MachineType.Pushdown
-                val machine = if (machineType == MachineType.Finite) FiniteMachine(
-                    name = "example Finite",
-                    states = states.toMutableList(),
-                    transitions = transitions.toMutableList()
-                ) else PushDownMachine(
-                    name = "example PDA",
-                    states = states.toMutableList(),
-                    transitions = transitions.filterIsInstance<PushDownTransition>().toMutableList()
-                )
-                exampleMachine = machine
+                val typeTag = jffXml.split("<type>")[1].split("</type>")[0].trim().lowercase()
+                val machineType = MachineType.fromTag(typeTag)
+                exampleMachine = when (machineType) {
+                    MachineType.Finite -> FiniteMachine(
+                        name = "example finite",
+                        states = states.toMutableList(),
+                        transitions = transitions.toMutableList()
+                    )
+                    MachineType.Pushdown -> PushDownMachine(
+                        name = "example pushdown",
+                        states = states.toMutableList(),
+                        transitions = transitions.filterIsInstance<PushDownTransition>().toMutableList()
+                    )
+                    MachineType.Turing -> TuringMachine(
+                        name = "example turing",
+                        states = states.toMutableList(),
+                        transitions = transitions.filterIsInstance<TuringTransition>().toMutableList()
+                    )
+                }
             }
         }
 
@@ -74,7 +83,8 @@ class AutomataActivity : ComponentActivity() {
                             NavHost(
                                 navController = this@apply,
                                 startDestination = AutomataDestinations.AUTOMATA_LIST.route,
-                                modifier = Modifier.weight(9f)
+                                modifier = Modifier.weight(9f),
+                                contentAlignment = Alignment.Center
                             ) {
                                 composable(route = AutomataDestinations.AUTOMATA.route) {
                                     AutomataScreen {

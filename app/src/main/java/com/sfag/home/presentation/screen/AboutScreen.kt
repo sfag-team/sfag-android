@@ -96,7 +96,7 @@ fun AboutScreen(navBack: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center) {
             DefaultButton(
-                text = "BACK",
+                text = "Back",
                 modifier = Modifier.padding(16.dp)) {
                 navBack()
             }

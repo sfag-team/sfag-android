@@ -34,14 +34,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.sfag.automata.domain.model.machine.FiniteMachine
 import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.machine.MachineType
 import com.sfag.automata.domain.model.machine.PushDownMachine
 import com.sfag.automata.domain.model.machine.TuringMachine
-import com.sfag.automata.domain.usecase.isDeterministicFinite
+import com.sfag.automata.domain.usecase.isDeterministic
 import com.sfag.automata.domain.model.transition.PushDownTransition
 import com.sfag.automata.domain.model.transition.TuringTransition
 import com.sfag.automata.presentation.viewmodel.AutomataViewModel
@@ -110,53 +109,59 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
         navBack()
     }
 
-    Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Spacer(Modifier.size(8.dp))
-        Row (modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            DefaultButton(text = "Back", modifier = Modifier.fillMaxWidth(0.25f)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = CenterVertically
+        ) {
+            DefaultButton(text = "Back", modifier = Modifier.weight(1f)) {
                 navBack()
             }
-            Spacer(modifier = Modifier.size(16.dp))
             ImmutableTextField(
-                text = "Nice to meet you!",
-                modifier = Modifier
-                    .fillMaxWidth(0.65f)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .clip(MaterialTheme.shapes.medium),
-                fontSize = 28.sp
+                text = "Nice to meet you",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.weight(2f)
             )
         }
 
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         LazyColumn(
             Modifier
-                .fillMaxWidth(0.9f)
-                .fillMaxHeight(0.85f)
-                .clip(MaterialTheme.shapes.large)
-                .border(4.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
+                .fillMaxWidth()
+                .weight(1f)
+                .clip(MaterialTheme.shapes.medium)
+                .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.medium)
                 .background(MaterialTheme.colorScheme.surface)
-                .padding(start = 16.dp)
+                .padding(horizontal = 8.dp)
         ) {
             items(viewModel.getAllMachinesName()) { item ->
                 val machine = viewModel.getMachineByName(item) ?: return@items
 
                 val detLabel = when (machine.machineType) {
                     MachineType.Finite ->
-                        if (machine.isDeterministicFinite()) "DFA" else "NFA"
-                    MachineType.Pushdown -> "PDA"
+                        if (machine.isDeterministic()) "DFA" else "NFA"
+                    MachineType.Pushdown ->
+                        if (machine.isDeterministic()) "DPDA" else "NPDA"
                     MachineType.Turing ->
-                        "TM"
+                        if (machine.isDeterministic()) "DTM" else "NTM"
                 }
-                Spacer(modifier = Modifier.size(12.dp))
+                Spacer(modifier = Modifier.size(8.dp))
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth(0.9f)
-                        .height(60.dp)
-                        .clip(MaterialTheme.shapes.large)
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .clip(MaterialTheme.shapes.small)
                         .border(
-                            3.dp,
+                            2.dp,
                             MaterialTheme.colorScheme.tertiary,
-                            MaterialTheme.shapes.large
+                            MaterialTheme.shapes.small
                         )
                         .background(MaterialTheme.colorScheme.primary)
                         .clickable {
@@ -166,7 +171,7 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
                     },
                     verticalAlignment = CenterVertically
                 ) {
-                    Spacer(modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.size(16.dp))
                     ImmutableTextField(
                         text = "$item ($detLabel)",
                         textColor = MaterialTheme.colorScheme.onPrimary
@@ -175,25 +180,26 @@ fun AutomataListScreen(exampleMachine:Machine? = null, navBack: () -> Unit, navT
                 Spacer(modifier = Modifier.size(8.dp))
             }
         }
+        Spacer(modifier = Modifier.size(8.dp))
         Row(
             modifier = Modifier
-                .height(50.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
+                .fillMaxWidth()
+                .height(48.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+            verticalAlignment = CenterVertically
         ) {
             Icon(
                 painter = painterResource(id = com.sfag.R.drawable.add_icon),
                 contentDescription = "",
                 modifier = Modifier
                     .clickable { createNewMachine = true }
-                    .size(50.dp)
+                    .size(48.dp)
             )
-            Spacer(modifier = Modifier.size(24.dp))
             DefaultButton(text = "Import") {
                 filePickerLauncher.launch(arrayOf("application/octet-stream", "text/xml"))
             }
         }
-
+        Spacer(modifier = Modifier.size(8.dp))
     }
     key(createNewMachine) {
         if (createNewMachine) {
@@ -220,7 +226,7 @@ private fun NewMachineWindow(finished: (Machine?) -> Unit) {
 
     DefaultDialogWindow(
         title = "Create new machine",
-        height = 350,
+        height = 352,
         conditionToEnable = name.isNotEmpty() && type != null,
         onDismiss = {
             finished(null)

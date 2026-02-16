@@ -20,7 +20,7 @@ class DerivationTree {
         val newActive = mutableListOf<TreeNode>()
         for (node in activeNodes) {
             val children = branches[node.id]
-            if (children == null || children.isEmpty()) {
+            if (children.isNullOrEmpty()) {
                 node.status = NodeStatus.REJECTED
                 continue
             }

@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.sfag.shared.presentation.component.DefaultButton
 
 private const val SCRIM_ALPHA = 0.31f
@@ -48,12 +47,12 @@ fun DefaultDialogWindow(
                 modifier = Modifier
                     .fillMaxWidth(0.7f)
                     .height(height = height.dp)
-                    .clip(MaterialTheme.shapes.medium)
+                    .clip(MaterialTheme.shapes.extraLarge)
                     .background(MaterialTheme.colorScheme.background)
                     .border(
-                        3.dp,
+                        2.dp,
                         MaterialTheme.colorScheme.primary,
-                        shape = MaterialTheme.shapes.medium
+                        shape = MaterialTheme.shapes.extraLarge
                     ),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
@@ -61,7 +60,7 @@ fun DefaultDialogWindow(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = title,
-                    fontSize = 24.sp,
+                    style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(top = 8.dp)
                 )
 

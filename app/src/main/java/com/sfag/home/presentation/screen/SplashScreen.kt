@@ -33,7 +33,7 @@ fun SplashScreen(
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.Center){
         Image(
             painter = painterResource(id = R.drawable.splash),
-            modifier = Modifier.size(300.dp),
+            modifier = Modifier.size(320.dp),
             contentDescription = ""
         )
     }

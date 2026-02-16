@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.machine.MachineType
 import com.sfag.automata.domain.model.machine.PushDownMachine
@@ -58,7 +57,7 @@ fun Machine.EditingInput(finishedEditing: () -> Unit) {
                     text = stringResource(R.string.editing_input_headline),
                     style = MaterialTheme.typography.headlineLarge
                 )
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 DefaultButton(text = "ADD") {
                     savedInputs.add(input)
                     input = java.lang.StringBuilder(savedInputs.last().toString()+"")
@@ -72,8 +71,8 @@ fun Machine.EditingInput(finishedEditing: () -> Unit) {
                     AcceptanceCriteria.BY_FINITE_STATE.text,
                     AcceptanceCriteria.BY_INITIAL_STACK.text
                 )
-                Spacer(modifier = Modifier.size(12.dp))
-                Text(fontSize = 24.sp, text = "Accept input by reaching:")
+                Spacer(modifier = Modifier.size(16.dp))
+                Text(text = "Accept input by reaching:", style = MaterialTheme.typography.headlineSmall)
                 Spacer(modifier = Modifier.size(4.dp))
                 DropDownSelector(
                     items = listOfCriteria,
@@ -121,8 +120,8 @@ fun Machine.EditingInput(finishedEditing: () -> Unit) {
                                     setInitialStateAsCurrent()
                                     editingRecompose++
                                 }
-                                .width(200.dp)
-                                .height(40.dp))
+                                .width(192.dp)
+                                .height(48.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(painter = painterResource(id = R.drawable.bin),
                             contentDescription = "",
@@ -131,7 +130,7 @@ fun Machine.EditingInput(finishedEditing: () -> Unit) {
                                     savedInputs.remove(input)
                                     editingRecompose++
                                 }
-                                .size(30.dp))
+                                .size(32.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
                             painter = painterResource(
@@ -152,14 +151,14 @@ fun Machine.EditingInput(finishedEditing: () -> Unit) {
 
                             ),
                             contentDescription = "",
-                            modifier = Modifier.size(30.dp)
+                            modifier = Modifier.size(32.dp)
                         )
                     }
 
                 }
             }
             Spacer(modifier = Modifier.size(16.dp))
-            DefaultButton(text = "Confirm", modifier = Modifier.width(130.dp), onClick = {
+            DefaultButton(text = "Confirm", modifier = Modifier.width(128.dp), onClick = {
                 setInitialStateAsCurrent()
                 finishedEditing()
             })

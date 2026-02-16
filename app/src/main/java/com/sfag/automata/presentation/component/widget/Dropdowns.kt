@@ -92,12 +92,12 @@ fun RowScope.ItemSpecificationIcon(
         modifier = Modifier
             .fillMaxHeight()
             .weight(3.5f)
-            .clip(MaterialTheme.shapes.medium)
+            .clip(MaterialTheme.shapes.small)
             .background(if (isActive) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
             .border(
-                3.dp,
+                2.dp,
                 MaterialTheme.colorScheme.primary,
-                shape = MaterialTheme.shapes.medium
+                shape = MaterialTheme.shapes.small
             )
             .clickable {
                 onClick()

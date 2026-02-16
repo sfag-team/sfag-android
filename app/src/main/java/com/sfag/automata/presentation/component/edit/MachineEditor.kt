@@ -33,13 +33,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+
 import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.machine.MachineType
 import com.sfag.automata.domain.model.state.State
@@ -233,36 +232,36 @@ fun Machine.EditingMachineBottom(recompose: MutableIntState) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(500.dp)
-                .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
+                .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.medium)
                 .background(MaterialTheme.colorScheme.surface)
-                .clip(MaterialTheme.shapes.large),
+                .clip(MaterialTheme.shapes.medium),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Spacer(modifier = Modifier.size(8.dp))
-            Text("States", fontSize = 30.sp)
+            Text("States", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.size(8.dp))
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth(0.95f)
-                    .height(190.dp)
-                    .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
+                    .height(192.dp)
+                    .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.surface)
-                    .clip(MaterialTheme.shapes.large),
+                    .clip(MaterialTheme.shapes.medium),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 items(states) { state ->
 
-                    Spacer(modifier = Modifier.size(12.dp))
+                    Spacer(modifier = Modifier.size(16.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
-                            .height(30.dp)
+                            .height(48.dp)
                             .background(MaterialTheme.colorScheme.background)
                             .border(
-                                1.dp,
+                                2.dp,
                                 MaterialTheme.colorScheme.primary,
-                                MaterialTheme.shapes.medium
+                                MaterialTheme.shapes.small
                             )
                             .clickable {
                                 onBottomStateClicked(state)
@@ -270,34 +269,34 @@ fun Machine.EditingMachineBottom(recompose: MutableIntState) {
                         verticalAlignment = CenterVertically,
                     ) {
                         Spacer(modifier = Modifier.size(16.dp))
-                        Text(text = "(${state.index}) ${state.name}:${if(state.finite) " final" else ""}${if(state.initial) " initial" else ""}", fontSize = 24.sp)
+                        Text(text = "(${state.index}) ${state.name}:${if(state.finite) " final" else ""}${if(state.initial) " initial" else ""}", style = MaterialTheme.typography.titleLarge)
                     }
 
                 }
             }
             Spacer(modifier = Modifier.size(8.dp))
-            Text("Transitions", fontSize = 30.sp)
+            Text("Transitions", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.size(8.dp))
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth(0.95f)
-                    .height(190.dp)
-                    .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.large)
+                    .height(192.dp)
+                    .border(2.dp, MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.surface)
-                    .clip(MaterialTheme.shapes.large),
+                    .clip(MaterialTheme.shapes.medium),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 items(transitions) { trans ->
-                    Spacer(modifier = Modifier.size(12.dp))
+                    Spacer(modifier = Modifier.size(16.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
-                            .height(30.dp)
+                            .height(48.dp)
                             .background(MaterialTheme.colorScheme.background)
                             .border(
-                                1.dp,
+                                2.dp,
                                 MaterialTheme.colorScheme.primary,
-                                MaterialTheme.shapes.medium
+                                MaterialTheme.shapes.small
                             )
                             .clickable {
                                 onBottomTransitionClicked(trans)
@@ -310,7 +309,7 @@ fun Machine.EditingMachineBottom(recompose: MutableIntState) {
                                 getStateByIndex(
                                     trans.endState
                                 ).name
-                            }: \"${trans.name}\" ${if(machineType==MachineType.Pushdown) "; "+(trans as PushDownTransition).pop+"; "+ trans.push+"." else "."}", fontSize = 24.sp
+                            }: \"${trans.name}\" ${if(machineType==MachineType.Pushdown) "; "+(trans as PushDownTransition).pop+"; "+ trans.push+"." else "."}", style = MaterialTheme.typography.titleLarge
                         )
                     }
 
@@ -322,7 +321,7 @@ fun Machine.EditingMachineBottom(recompose: MutableIntState) {
 
 @Composable
 internal fun Machine.ToolsRow(changedMode: (EditMachineStates) -> Unit) {
-    val spaceSize = 20.dp
+    val spaceSize = 24.dp
     Column(
         Modifier
             .fillMaxWidth()
@@ -345,7 +344,7 @@ internal fun Machine.ToolsRow(changedMode: (EditMachineStates) -> Unit) {
                 painter = painterResource(id = R.drawable.edit_icon),
                 contentDescription = stringResource(R.string.edit_icon),
                 modifier = Modifier
-                    .clip(MaterialTheme.shapes.small)
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(if (editMode == EditMachineStates.EDITING) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
                     .clickable {
                         editMode = EditMachineStates.EDITING
@@ -359,7 +358,7 @@ internal fun Machine.ToolsRow(changedMode: (EditMachineStates) -> Unit) {
                     R.string.add_states_icon
                 ),
                 modifier = Modifier
-                    .clip(MaterialTheme.shapes.small)
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(if (editMode == EditMachineStates.ADD_STATES) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
                     .clickable {
                         editMode = EditMachineStates.ADD_STATES
@@ -373,7 +372,7 @@ internal fun Machine.ToolsRow(changedMode: (EditMachineStates) -> Unit) {
                     R.string.add_transitions_icon
                 ),
                 modifier = Modifier
-                    .clip(MaterialTheme.shapes.small)
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(if (editMode == EditMachineStates.ADD_TRANSITIONS) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
                     .clickable {
                         editMode = EditMachineStates.ADD_TRANSITIONS
@@ -387,7 +386,7 @@ internal fun Machine.ToolsRow(changedMode: (EditMachineStates) -> Unit) {
                     R.string.bin_icon
                 ),
                 modifier = Modifier
-                    .clip(MaterialTheme.shapes.small)
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(if (editMode == EditMachineStates.DELETE) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
                     .clickable {
                         editMode = EditMachineStates.DELETE
@@ -401,7 +400,7 @@ internal fun Machine.ToolsRow(changedMode: (EditMachineStates) -> Unit) {
                     R.string.move_icon
                 ),
                 modifier = Modifier
-                    .clip(MaterialTheme.shapes.small)
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(if (editMode == EditMachineStates.MOVE) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
                     .clickable {
                         editMode = EditMachineStates.MOVE

@@ -33,7 +33,7 @@ import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.machine.MachineType
 import com.sfag.automata.domain.model.tree.NodeStatus
 import com.sfag.automata.domain.model.tree.TreeNode
-import com.sfag.automata.domain.usecase.isDeterministicFinite
+import com.sfag.automata.domain.usecase.isDeterministic
 import com.sfag.automata.presentation.component.TREE_EDGE_LINE_WIDTH
 import com.sfag.automata.presentation.component.TREE_PADDING
 import com.sfag.automata.presentation.component.TREE_NODE_RADIUS
@@ -42,7 +42,7 @@ import com.sfag.automata.presentation.component.TREE_NODE_TEXT_SIZE
 
 @Composable
 fun Machine.DerivationTree(recomposeKey: Int = 0) {
-    if (machineType != MachineType.Finite || isDeterministicFinite()) return
+    if (machineType != MachineType.Finite || isDeterministic()) return
     if (derivationTree.root == null) {
         val initialState = states.firstOrNull { it.initial }
         if (initialState != null) {
@@ -118,8 +118,8 @@ fun Machine.DerivationTree(recomposeKey: Int = 0) {
             .fillMaxWidth()
             .height(300.dp)
             .onSizeChanged { canvasWidthPx = it.width.toFloat() }
-            .clip(MaterialTheme.shapes.large)
-            .border(2.dp, colorTertiary, MaterialTheme.shapes.large)
+            .clip(MaterialTheme.shapes.medium)
+            .border(2.dp, colorTertiary, MaterialTheme.shapes.medium)
             .background(colorBg)
             .pointerInput(Unit) {
                 detectTransformGestures { centroid, pan, zoom, _ ->

@@ -3,7 +3,6 @@ package com.sfag.automata.presentation.component.widget
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -15,9 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.sfag.shared.presentation.theme.defaultTextInputColor
 
 @Composable
@@ -42,8 +39,8 @@ fun DefaultTextField(
             isFocused = state.isFocused
         },
         label = { Text(hint) },
-        textStyle = TextStyle(color = MaterialTheme.colorScheme.primary, fontSize = 20.sp),
-        shape = RoundedCornerShape(8.dp),
+        textStyle = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary),
+        shape = MaterialTheme.shapes.extraSmall,
         colors = TextFieldDefaults.defaultTextInputColor(),
         isError = isError
     )
@@ -51,10 +48,10 @@ fun DefaultTextField(
     if (isError && isFocused) {
         Text(
             text = requirementText,
-            fontSize = 12.sp,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier
-                .height(31.dp)
+                .height(32.dp)
                 .offset(y = (-4).dp)
                 .padding(2.dp)
         )

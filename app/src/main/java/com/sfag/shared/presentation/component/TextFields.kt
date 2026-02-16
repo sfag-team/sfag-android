@@ -13,26 +13,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.TextUnit
 
 @Composable
 fun ImmutableTextField(
     text: String,
     modifier: Modifier = Modifier,
     textColor: Color = MaterialTheme.colorScheme.tertiary,
-    fontSize: TextUnit = 24.sp
+    style: TextStyle = MaterialTheme.typography.titleLarge
 ) {
     Box(
         modifier = modifier
-            .clip(MaterialTheme.shapes.medium)
-            .border(3.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .clip(MaterialTheme.shapes.extraSmall)
+            .border(2.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.extraSmall)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            style = TextStyle(fontSize = fontSize),
+            style = style,
             textAlign = TextAlign.Center,
             color = textColor,
         )
