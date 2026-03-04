@@ -1,17 +1,17 @@
 package com.sfag.automata.domain.model.machine
 
 import com.sfag.automata.domain.model.simulation.SimulationResult
+import com.sfag.automata.domain.model.simulation.TransitionData
 import com.sfag.automata.domain.model.state.State
 import com.sfag.automata.domain.model.transition.PushDownTransition
 import com.sfag.automata.domain.model.transition.Transition
-import com.sfag.automata.domain.model.NODE_RADIUS
 import com.sfag.shared.util.Symbols
-import com.sfag.shared.util.XmlUtils.escapeXml
 import com.sfag.shared.util.XmlUtils.formatFloat
+import com.sfag.shared.util.XmlUtils.xmlTag
 
 @Suppress("UNCHECKED_CAST")
 class PushDownMachine(
-    name: String,
+    name: String = "",
     version: Int = 1,
     states: MutableList<State> = mutableListOf(),
     transitions: MutableList<PushDownTransition> = mutableListOf(),
@@ -22,15 +22,14 @@ class PushDownMachine(
     machineType = MachineType.Pushdown, states, transitions as MutableList<Transition>, savedInputs = savedInputs
 ) {
     override var currentState: Int? = null
-    var acceptanceCriteria = AcceptanceCriteria.BY_FINITE_STATE
+    var acceptanceCriteria = AcceptanceCriteria.BY_FINAL_STATE
 
     override fun calculateNextStep(): SimulationResult {
-        if (currentState == null) currentState = states.firstOrNull { it.initial }?.index
-        val currentStateIndex = currentState
-            ?: return SimulationResult.Ended(null)
+        if (!ensureCurrentState()) return SimulationResult.Ended(null)
+        val currentStateIndex = currentState!!
 
         val startState = getStateByIndex(currentStateIndex)
-        val conditionDone = if(acceptanceCriteria == AcceptanceCriteria.BY_FINITE_STATE) startState.finite else symbolStack.size==1
+        val conditionDone = if(acceptanceCriteria == AcceptanceCriteria.BY_FINAL_STATE) startState.final else symbolStack.size==1
         val possibleTransitions = getListOfAppropriateTransitions(startState)
         if (possibleTransitions.isEmpty()) {
             return SimulationResult.Ended(conditionDone)
@@ -40,21 +39,7 @@ class PushDownMachine(
             val nextInput = input.removePrefix(transition.name)
             val tempStack = symbolStack.toMutableList()
 
-            if (transition is PushDownTransition) {
-                // POP
-                if (transition.pop.isNotEmpty()) {
-                    val expectedTop = transition.pop.first()
-                    if (tempStack.isEmpty() || tempStack.last() != expectedTop) return@firstOrNull false
-                    tempStack.removeAt(tempStack.lastIndex)
-                }
-
-                // PUSH (in correct order: last symbol is top of stack)
-                if (transition.push.isNotEmpty()) {
-                    transition.push.reversed().forEach { symbol ->
-                        tempStack.add(symbol)
-                    }
-                }
-            }
+            if (!applyStackOperation(transition as PushDownTransition, tempStack)) return@firstOrNull false
 
             // check if we can reach final state
             val nextState = getStateByIndex(transition.endState)
@@ -65,7 +50,7 @@ class PushDownMachine(
             currentState = nextState.index
 
             val result = when (acceptanceCriteria) {
-                AcceptanceCriteria.BY_FINITE_STATE -> canReachFinalStatePDA(StringBuilder(nextInput), false, tempStack)
+                AcceptanceCriteria.BY_FINAL_STATE -> canReachFinalStatePDA(StringBuilder(nextInput), false, tempStack)
                 AcceptanceCriteria.BY_INITIAL_STACK -> canReachInitialStackPDA(StringBuilder(nextInput), false, tempStack)
             }
 
@@ -82,33 +67,18 @@ class PushDownMachine(
         }
 
         val endState = getStateByIndex(validTransition.endState)
-        val newInputValue = input.removePrefix(validTransition.name).toString()
-        input.clear()
-        input.append(newInputValue)
+        input.delete(0, validTransition.name.length)
 
         // Actual push/pop on symbolStack
-        if (validTransition is PushDownTransition) {
-            // POP
-            if (validTransition.pop.isNotEmpty()) {
-                symbolStack.removeAt(symbolStack.lastIndex)
-            }
+        applyStackOperation(validTransition as PushDownTransition, symbolStack)
 
-            // PUSH (in correct order)
-            if (validTransition.push.isNotEmpty()) {
-                validTransition.push.reversed().forEach { symbol ->
-                    symbolStack.add(symbol)
-                }
-            }
-        }
         val consumed = validTransition.name.length
         if (consumed > 0 && imuInput.isNotEmpty()) {
             imuInput.delete(0, minOf(consumed, imuInput.length))
         }
-        return SimulationResult.Transition(
-            startPosition = startState.position,
-            endPosition = endState.position,
-            radius = NODE_RADIUS,
-            onComplete = {
+        return SimulationResult.Step(
+            transitions = listOf(TransitionData(startStateIndex = startState.index, endStateIndex = endState.index)),
+            onAllComplete = {
                 startState.isCurrent = false
                 endState.isCurrent = true
                 currentState = endState.index
@@ -124,7 +94,7 @@ class PushDownMachine(
         val currentIdx = currentState ?: return null
         val state = getStateByIndexOrNull(currentIdx) ?: return null
         return when (acceptanceCriteria) {
-            AcceptanceCriteria.BY_FINITE_STATE -> if (state.finite) true else null
+            AcceptanceCriteria.BY_FINAL_STATE -> if (state.final) true else null
             AcceptanceCriteria.BY_INITIAL_STACK -> if (symbolStack.size == 1) true else null
         }
     }
@@ -136,6 +106,34 @@ class PushDownMachine(
             state.isCurrent = true
         }
         states.add(state)
+    }
+
+    fun addNewTransition(
+        name: String,
+        startState: State,
+        endState: State,
+        pop: String,
+        checkState: String,
+        push: String
+    ) {
+        val existing = transitions.filterIsInstance<PushDownTransition>()
+        transitions.add(
+            if (pop != "") {
+                if (existing.any {
+                    it.name == name && it.startState == startState.index &&
+                        it.endState == endState.index && it.pop == pop && it.push == ""
+                }) return
+                PushDownTransition(name, startState.index, endState.index, pop = pop, push = "")
+            } else if (checkState != "") {
+                if (existing.any {
+                    it.name == name && it.startState == startState.index &&
+                        it.endState == endState.index && it.pop == checkState && it.push == push + checkState
+                }) return
+                PushDownTransition(name, startState.index, endState.index, pop = checkState, push = push + checkState)
+            } else {
+                PushDownTransition(name, startState.index, endState.index, pop = "", push = push)
+            }
+        )
     }
 
     override fun resetMachineState() {
@@ -151,8 +149,8 @@ class PushDownMachine(
         val pdaTransitions = transitions.filterIsInstance<PushDownTransition>()
 
         val transitionDescriptions = pdaTransitions.map { t ->
-            val fromState = states.find { it.index == t.startState }?.name ?: "?"
-            val toState = states.find { it.index == t.endState }?.name ?: "?"
+            val fromState = getStateByIndexOrNull(t.startState)?.name ?: "?"
+            val toState = getStateByIndexOrNull(t.endState)?.name ?: "?"
             val readSymbol = t.name.ifEmpty { Symbols.EPSILON }
             val popSymbol = t.pop.ifEmpty { Symbols.EPSILON }
             val pushSymbol = t.push.ifEmpty { Symbols.EPSILON }
@@ -168,7 +166,7 @@ class PushDownMachine(
             stateNames = states.map { it.name },
             inputAlphabet = transitions.mapNotNull { it.name.firstOrNull() }.toSet(),
             initialStateName = states.firstOrNull { it.initial }?.name ?: "q0",
-            finalStateNames = states.filter { it.finite }.map { it.name },
+            finalStateNames = states.filter { it.final }.map { it.name },
             transitionDescriptions = transitionDescriptions,
             machineType = machineType,
             stackAlphabet = stackAlphabetSet,
@@ -180,37 +178,51 @@ class PushDownMachine(
         return canReachFinalStatePDA(input, fromInit = fromInit, initialStack = if(fromInit) listOf('Z') else symbolStack)
     }
 
-    private fun canReachFinalStatePDA(
-        input: StringBuilder,
-        fromInit:Boolean,
-        initialStack: List<Char>
-    ): Boolean {
+    /**
+     * Apply pop/push stack operations for a PDA transition.
+     * Returns false if the pop cannot be performed (stack empty or top mismatch).
+     */
+    private fun applyStackOperation(transition: PushDownTransition, stack: MutableList<Char>): Boolean {
+        if (transition.pop.isNotEmpty()) {
+            if (stack.isEmpty() || stack.last() != transition.pop.first()) return false
+            stack.removeAt(stack.lastIndex)
+        }
+        if (transition.push.isNotEmpty()) {
+            transition.push.reversed().forEach { stack.add(it) }
+        }
+        return true
+    }
 
-        data class Path(
+    private fun canReachPDA(
+        input: StringBuilder,
+        fromInit: Boolean,
+        stack: List<Char>,
+        isAccepted: (State, List<Char>) -> Boolean
+    ): Boolean {
+        data class BfsPath(
             val currentState: State,
             val inputIndex: Int,
             val symbolStack: List<Char>
         )
 
-        var startState = states.firstOrNull { if(!fromInit) it.isCurrent else it.initial }
+        var startState = states.firstOrNull { if (!fromInit) it.isCurrent else it.initial }
         if (startState == null) {
             setInitialStateAsCurrent()
             startState = states.firstOrNull { it.isCurrent }
         }
         if (startState == null) return false
 
-        var paths = mutableListOf(Path(startState, 0, initialStack))
+        var paths = mutableListOf(BfsPath(startState, 0, stack))
 
         while (paths.isNotEmpty()) {
-            val nextPaths = mutableListOf<Path>()
+            val nextPaths = mutableListOf<BfsPath>()
 
             for (path in paths) {
-                if (path.inputIndex == input.length && path.currentState.finite) {
+                if (path.inputIndex == input.length && isAccepted(path.currentState, path.symbolStack)) {
                     return true
                 }
 
                 val remainingInput = input.substring(path.inputIndex)
-
                 val possibleTransitions = transitions.filter {
                     it.startState == path.currentState.index &&
                             (it.name.isEmpty() || remainingInput.startsWith(it.name))
@@ -220,29 +232,9 @@ class PushDownMachine(
                     val nextState = states.first { it.index == transition.endState }
                     val newStack = path.symbolStack.toMutableList()
 
-                    if (transition is PushDownTransition) {
-                        if (transition.pop.isNotEmpty()) {
-                            val expectedTop = transition.pop.first()
-                            if (newStack.isEmpty() || newStack.last() != expectedTop) continue
-                            newStack.removeAt(newStack.lastIndex)
-                        }
+                    if (!applyStackOperation(transition as PushDownTransition, newStack)) continue
 
-                        if (transition.push.isNotEmpty()) {
-                            transition.push.reversed().forEach { symbol ->
-                                newStack.add(symbol)
-                            }
-                        }
-                    }
-
-                    val newIndex = path.inputIndex + transition.name.length
-
-                    nextPaths.add(
-                        Path(
-                            currentState = nextState,
-                            inputIndex = newIndex,
-                            symbolStack = newStack
-                        )
-                    )
+                    nextPaths.add(BfsPath(nextState, path.inputIndex + transition.name.length, newStack))
                 }
             }
 
@@ -252,85 +244,20 @@ class PushDownMachine(
         return false
     }
 
-    fun canReachInitialStackPDA(input: StringBuilder, fromInit: Boolean = false, symbolStack: List<Char>): Boolean {
-        data class Path(
-            val currentState: State,
-            val inputIndex: Int,
-            val symbolStack: List<Char>
-        )
+    private fun canReachFinalStatePDA(input: StringBuilder, fromInit: Boolean, initialStack: List<Char>) =
+        canReachPDA(input, fromInit, initialStack) { state, _ -> state.final }
 
-        val startState = states.firstOrNull { if(!fromInit) it.isCurrent else it.initial } ?: run {
-            setInitialStateAsCurrent()
-            states.firstOrNull { it.isCurrent }
-        } ?: return false
-
-        var paths = mutableListOf(Path(startState, 0, symbolStack))
-
-        while (paths.isNotEmpty()) {
-            val nextPaths = mutableListOf<Path>()
-
-            for (path in paths) {
-                if (path.inputIndex == input.length && path.symbolStack == listOf('Z')) {
-                    return true
-                }
-
-                val remainingInput = input.substring(path.inputIndex)
-
-                val possibleTransitions = transitions.filter {
-                    it.startState == path.currentState.index &&
-                            (it.name.isEmpty() || remainingInput.startsWith(it.name))
-                }
-
-                for (transition in possibleTransitions) {
-                    val nextState = states.first { it.index == transition.endState }
-                    val newStack = path.symbolStack.toMutableList()
-
-                    if (transition is PushDownTransition) {
-                        if (transition.pop.isNotEmpty()) {
-                            val expectedTop = transition.pop.first()
-                            if (newStack.isEmpty() || newStack.last() != expectedTop) continue
-                            newStack.removeAt(newStack.lastIndex)
-                        }
-                        if (transition.push.isNotEmpty()) {
-                            transition.push.reversed().forEach { symbol ->
-                                newStack.add(symbol)
-                            }
-                        }
-                    }
-
-                    val newIndex = path.inputIndex + transition.name.length
-
-                    nextPaths.add(Path(nextState, newIndex, newStack))
-                }
-            }
-
-            paths = nextPaths
-        }
-
-        return false
-    }
+    fun canReachInitialStackPDA(input: StringBuilder, fromInit: Boolean = false, symbolStack: List<Char>) =
+        canReachPDA(input, fromInit, symbolStack) { _, s -> s == listOf('Z') }
 
     override fun exportTransitionsToJFF(builder: StringBuilder) {
-        for (transition in transitions) {
+        for (transition in transitions.filterIsInstance<PushDownTransition>()) {
             builder.appendLine("        <transition>")
             builder.appendLine("            <from>${transition.startState}</from>")
             builder.appendLine("            <to>${transition.endState}</to>")
-            builder.appendLine("            <read>${escapeXml(transition.name)}</read>")
-
-            if (transition is PushDownTransition) {
-                builder.appendLine("            <pop>${escapeXml(transition.pop)}</pop>")
-                builder.appendLine("            <push>${escapeXml(transition.push)}</push>")
-            } else {
-                builder.appendLine("            <pop/>")
-                builder.appendLine("            <push/>")
-            }
-
-            transition.controlPoint?.let { cp ->
-                builder.appendLine("            <controlpoint>")
-                builder.appendLine("                <x>${formatFloat(cp.x)}</x>")
-                builder.appendLine("                <y>${formatFloat(cp.y)}</y>")
-                builder.appendLine("            </controlpoint>")
-            }
+            builder.appendLine("            ${xmlTag("read", transition.name)}")
+            builder.appendLine("            ${xmlTag("pop", transition.pop)}")
+            builder.appendLine("            ${xmlTag("push", transition.push)}")
             builder.appendLine("        </transition>")
         }
     }

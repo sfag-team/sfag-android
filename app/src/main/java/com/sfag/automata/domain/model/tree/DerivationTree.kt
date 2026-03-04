@@ -7,16 +7,19 @@ class DerivationTree {
         private set
     private var nextId = 0
     private val activeNodes = mutableListOf<TreeNode>()
+    private var currentGeneration = 0
 
     fun initialize(stateName: String) {
         nextId = 0
-        val node = TreeNode(id = nextId++, stateName = stateName, depth = 0)
+        currentGeneration = 0
+        val node = TreeNode(id = nextId++, stateName = stateName, depth = 0, generation = 0)
         root = node
         activeNodes.clear()
         activeNodes.add(node)
     }
 
     fun expandActive(branches: Map<Int, List<Branch>>) {
+        currentGeneration++
         val newActive = mutableListOf<TreeNode>()
         for (node in activeNodes) {
             val children = branches[node.id]
@@ -28,7 +31,8 @@ class DerivationTree {
                 val childNode = TreeNode(
                     id = nextId++,
                     stateName = child.stateName,
-                    depth = node.depth + 1
+                    depth = node.depth + 1,
+                    generation = currentGeneration
                 )
                 node.children.add(childNode)
                 newActive.add(childNode)
@@ -79,9 +83,12 @@ class DerivationTree {
 
     fun getActiveNodes(): List<TreeNode> = activeNodes.toList()
 
+    fun getCurrentGeneration(): Int = currentGeneration
+
     fun clear() {
         root = null
         nextId = 0
+        currentGeneration = 0
         activeNodes.clear()
     }
 }

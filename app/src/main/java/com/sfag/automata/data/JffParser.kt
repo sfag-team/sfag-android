@@ -2,7 +2,7 @@ package com.sfag.automata.data
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.ui.geometry.Offset
+import com.sfag.automata.domain.model.Vec2
 import com.sfag.automata.domain.model.machine.MachineType
 import com.sfag.automata.domain.model.state.State
 import com.sfag.automata.domain.model.transition.PushDownTransition
@@ -17,12 +17,13 @@ import org.w3c.dom.Element
 import org.w3c.dom.Node
 
 /**
- * Result of parsing a JFF file, containing machine type, states, and transitions.
+ * Result of parsing a JFF file.
  */
 data class JffParseResult(
     val machineType: MachineType,
     val states: List<State>,
-    val transitions: List<Transition>
+    val transitions: List<Transition>,
+    val positions: Map<Int, Vec2>
 )
 
 /**
@@ -37,19 +38,12 @@ object JffParser {
     }
 
     /**
-     * Parses a JFF XML string and returns states and transitions.
-     */
-    fun parseJff(jffXml: String): Pair<List<State>, List<Transition>> {
-        val result = parseJffWithType(jffXml)
-        return Pair(result.states, result.transitions)
-    }
-
-    /**
-     * Parses a JFF XML string and returns machine type, states, and transitions.
+     * Parses a JFF XML string and returns machine type, states, transitions, and state positions.
      */
     fun parseJffWithType(jffXml: String): JffParseResult {
         val states = mutableListOf<State>()
         val transitions = mutableListOf<Transition>()
+        val positions = mutableMapOf<Int, Vec2>()
 
         val doc = JffFileUtils.parseXml(jffXml)
         val root = doc.documentElement
@@ -62,7 +56,7 @@ object JffParser {
         val automaton = root.getElementsByTagName("automaton").item(0)
         if (automaton == null) {
             Log.w(TAG, "No automaton element found in JFF file")
-            return JffParseResult(machineType, states, transitions)
+            return JffParseResult(machineType, states, transitions, positions)
         }
 
         val nodeList = automaton.childNodes
@@ -73,15 +67,18 @@ object JffParser {
             val element = node as Element
 
             when (element.tagName) {
-                "state" -> parseState(element)?.let { states.add(it) }
+                "state" -> parseState(element)?.let { (state, pos) ->
+                    states.add(state)
+                    positions[state.index] = pos
+                }
                 "transition" -> parseTransition(element, isPda, isTuring)?.let { transitions.add(it) }
             }
         }
 
-        return JffParseResult(machineType, states, transitions)
+        return JffParseResult(machineType, states, transitions, positions)
     }
 
-    private fun parseState(element: Element): State? {
+    private fun parseState(element: Element): Pair<State, Vec2>? {
         val id = element.getAttribute("id").toIntOrNull()
         if (id == null) {
             Log.w(TAG, "Invalid state ID: ${element.getAttribute("id")}")
@@ -89,21 +86,19 @@ object JffParser {
         }
 
         val name = element.getAttribute("name").ifEmpty { "q$id" }
-        // TODO: JFLAP uses pixel coordinates, our app uses dp - imported positions appear
-        //  too spread out on high-density screens. Convert px→dp on import (divide by density).
         val x = element.getChildText("x")?.toFloatOrNull() ?: 0f
         val y = element.getChildText("y")?.toFloatOrNull() ?: 0f
         val isInitial = element.hasChild("initial")
         val isFinal = element.hasChild("final")
 
-        return State(
-            finite = isFinal,
+        val state = State(
+            final = isFinal,
             initial = isInitial,
             index = id,
             name = name,
-            isCurrent = false,
-            position = Offset(x, y)
+            isCurrent = false
         )
+        return state to Vec2(x, y)
     }
 
     private fun parseTransition(element: Element, isPda: Boolean, isTuring: Boolean): Transition? {
@@ -115,54 +110,24 @@ object JffParser {
             return null
         }
 
-        var read = element.getChildText("read") ?: ""
-        read = JffFileUtils.normalizeEpsilon(read)
+        val read = JffFileUtils.normalizeEpsilon(element.getChildText("read") ?: "")
 
-        val controlPoint = parseControlPoint(element)
-
-        val transition = when {
+        return when {
             isPda -> {
-                var pop = element.getChildText("pop") ?: ""
-                var push = element.getChildText("push") ?: ""
-                pop = JffFileUtils.normalizeEpsilon(pop)
-                push = JffFileUtils.normalizeEpsilon(push)
-
-                PushDownTransition(
-                    name = read,
-                    startState = from,
-                    endState = to,
-                    pop = pop,
-                    push = push
-                )
+                val pop = JffFileUtils.normalizeEpsilon(element.getChildText("pop") ?: "")
+                val push = JffFileUtils.normalizeEpsilon(element.getChildText("push") ?: "")
+                PushDownTransition(name = read, startState = from, endState = to, pop = pop, push = push)
             }
             isTuring -> {
                 val writeText = element.getChildText("write")?.trim()
                 val write = if (writeText.isNullOrEmpty()) Symbols.BLANK else writeText.first()
                 val move = element.getChildText("move")?.trim() ?: "R"
-
                 TuringTransition(
-                    name = read,
-                    startState = from,
-                    endState = to,
-                    writeSymbol = write,
-                    direction = TapeDirection.fromSymbol(move)
+                    name = read, startState = from, endState = to,
+                    writeSymbol = write, direction = TapeDirection.fromSymbol(move)
                 )
             }
             else -> Transition(read, from, to)
         }
-        transition.controlPoint = controlPoint
-        return transition
-    }
-
-    private fun parseControlPoint(element: Element): Offset? {
-        val controlPointElement = element.getElementsByTagName("controlpoint").item(0)
-        if (controlPointElement != null && controlPointElement is Element) {
-            val cpX = controlPointElement.getChildText("x")?.toFloatOrNull()
-            val cpY = controlPointElement.getChildText("y")?.toFloatOrNull()
-            if (cpX != null && cpY != null) {
-                return Offset(cpX, cpY)
-            }
-        }
-        return null
     }
 }

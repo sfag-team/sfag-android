@@ -9,10 +9,13 @@ import com.sfag.shared.util.Symbols
 /**
  * Unified determinism check - dispatches to the appropriate check based on machine type.
  */
-fun Machine.isDeterministic(): Boolean = when (machineType) {
-    MachineType.Finite -> isDeterministicFinite()
-    MachineType.Pushdown -> isDeterministicPushdown()
-    MachineType.Turing -> isDeterministicTuring()
+fun Machine.isDeterministic(): Boolean? {
+    if (states.isEmpty() && transitions.isEmpty()) return null
+    return when (machineType) {
+        MachineType.Finite -> isDeterministicFinite()
+        MachineType.Pushdown -> isDeterministicPushdown()
+        MachineType.Turing -> isDeterministicTuring()
+    }
 }
 
 /**
@@ -70,8 +73,9 @@ private fun Machine.isDeterministicPushdown(): Boolean {
 
     // (startState, input, pop) -> must be unique
     val seen = mutableSetOf<Triple<Int, String, String>>()
-    // (startState, pop) pairs that have an epsilon transition
+    // (startState, pop) pairs that have an epsilon or non-epsilon transition
     val epsilonPairs = mutableSetOf<Pair<Int, String>>()
+    val nonEpsilonPairs = mutableSetOf<Pair<Int, String>>()
 
     for (t in pdaTransitions) {
         val input = t.name.trim()
@@ -80,17 +84,15 @@ private fun Machine.isDeterministicPushdown(): Boolean {
         val key = Triple(t.startState, input, pop)
         if (!seen.add(key)) return false
 
+        val statePop = t.startState to pop
+        // If epsilon transition exists for (state, pop), no other transition from that
+        // state with same pop may exist - check both directions in a single pass
         if (input.isEmpty() || isEpsilonLabel(input)) {
-            epsilonPairs.add(t.startState to pop)
-        }
-    }
-
-    // If epsilon transition exists for (state, pop), no other transition
-    // from that state with same pop may exist
-    for (t in pdaTransitions) {
-        val input = t.name.trim()
-        if (input.isNotEmpty() && !isEpsilonLabel(input)) {
-            if ((t.startState to t.pop) in epsilonPairs) return false
+            if (statePop in nonEpsilonPairs) return false
+            epsilonPairs.add(statePop)
+        } else {
+            if (statePop in epsilonPairs) return false
+            nonEpsilonPairs.add(statePop)
         }
     }
 

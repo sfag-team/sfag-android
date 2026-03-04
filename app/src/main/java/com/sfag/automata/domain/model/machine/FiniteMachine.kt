@@ -5,13 +5,11 @@ import com.sfag.automata.domain.model.simulation.TransitionData
 import com.sfag.automata.domain.model.state.State
 import com.sfag.automata.domain.model.transition.Transition
 import com.sfag.automata.domain.model.tree.Branch
-import com.sfag.automata.domain.model.NODE_RADIUS
 import com.sfag.shared.util.Symbols
-import com.sfag.shared.util.XmlUtils.escapeXml
-import com.sfag.shared.util.XmlUtils.formatFloat
+import com.sfag.shared.util.XmlUtils.xmlTag
 
 class FiniteMachine(
-    name: String = "Untitled", version: Int = 1, states: MutableList<State> = mutableListOf(),
+    name: String = "", version: Int = 1, states: MutableList<State> = mutableListOf(),
     transitions: MutableList<Transition> = mutableListOf(), savedInputs: MutableList<StringBuilder> = mutableListOf()
 ) : Machine(
     name, version,
@@ -34,19 +32,10 @@ class FiniteMachine(
      * Works for both DFA and NFA.
      */
     override fun calculateNextStep(): SimulationResult {
-        // Initialize current states if empty
         if (currentStates.isEmpty()) {
-            val initialState = states.firstOrNull { it.initial }
-            if (initialState != null) {
-                currentStates.add(initialState.index)
-                initialState.isCurrent = true
-            }
+            if (!ensureCurrentState()) return SimulationResult.Ended(null)
+            getStateByIndexOrNull(currentState!!)?.isCurrent = true
         }
-
-        if (currentStates.isEmpty()) {
-            return SimulationResult.Ended(null)
-        }
-
         return calculateAllPathsStep()
     }
 
@@ -68,12 +57,12 @@ class FiniteMachine(
         // No transitions available - check if any current state is accepting
         if (allTransitions.isEmpty()) {
             val anyAccepting = currentStates.any { stateIndex ->
-                getStateByIndex(stateIndex).finite && input.isEmpty()
+                getStateByIndex(stateIndex).final && input.isEmpty()
             }
             // Mark derivation tree: accepted paths green, rest rejected
             if (anyAccepting) {
                 val acceptedIds = derivationTree.getActiveNodes()
-                    .filter { node -> states.any { it.name == node.stateName && it.finite } }
+                    .filter { node -> states.any { it.name == node.stateName && it.final } }
                     .map { it.id }.toSet()
                 derivationTree.markAcceptedPaths(acceptedIds)
             }
@@ -88,11 +77,9 @@ class FiniteMachine(
 
         // Build transition data for animation
         val transitionDataList = transitionsToProcess.map { (startState, transition) ->
-            val endState = getStateByIndex(transition.endState)
             TransitionData(
-                startPosition = startState.position,
-                endPosition = endState.position,
-                radius = NODE_RADIUS
+                startStateIndex = startState.index,
+                endStateIndex = transition.endState,
             )
         }
 
@@ -105,7 +92,7 @@ class FiniteMachine(
         // Consume input based on the transitions being processed
         consumeInput(minInputLength)
 
-        return SimulationResult.MultipleTransitions(
+        return SimulationResult.Step(
             transitions = transitionDataList,
             onAllComplete = {
                 // Clear old current states
@@ -125,9 +112,7 @@ class FiniteMachine(
 
     private fun consumeInput(length: Int) {
         if (length > 0) {
-            val newInputValue = input.drop(length).toString()
-            input.clear()
-            input.append(newInputValue)
+            input.delete(0, length)
             if (imuInput.isNotEmpty()) {
                 imuInput.delete(0, minOf(length, imuInput.length))
             }
@@ -141,7 +126,7 @@ class FiniteMachine(
     fun isAccepted(): Boolean? {
         if (currentStates.isEmpty()) return null
         val anyAccepting = currentStates.any { stateIndex ->
-            getStateByIndexOrNull(stateIndex)?.finite == true
+            getStateByIndexOrNull(stateIndex)?.final == true
         }
         return if (input.isEmpty() && anyAccepting) true else null
     }
@@ -198,8 +183,8 @@ class FiniteMachine(
 
     override fun getMathFormatData(): MachineFormatData {
         val transitionDescriptions = transitions.map { t ->
-            val fromState = states.find { it.index == t.startState }?.name ?: "?"
-            val toState = states.find { it.index == t.endState }?.name ?: "?"
+            val fromState = getStateByIndexOrNull(t.startState)?.name ?: "?"
+            val toState = getStateByIndexOrNull(t.endState)?.name ?: "?"
             val readSymbol = t.name.ifEmpty { Symbols.EPSILON }
             "${Symbols.DELTA}($fromState, $readSymbol) = $toState"
         }
@@ -208,46 +193,47 @@ class FiniteMachine(
             stateNames = states.map { it.name },
             inputAlphabet = transitions.mapNotNull { it.name.firstOrNull() }.toSet(),
             initialStateName = states.firstOrNull { it.initial }?.name ?: "q0",
-            finalStateNames = states.filter { it.finite }.map { it.name },
+            finalStateNames = states.filter { it.final }.map { it.name },
             transitionDescriptions = transitionDescriptions,
             machineType = machineType
         )
     }
 
-    override fun canReachFinalState(input: StringBuilder, fromInit:Boolean): Boolean {
-        data class Path(
-            val currentState: State,
-            val inputIndex: Int
-        )
+    override fun canReachFinalState(input: StringBuilder, fromInit: Boolean): Boolean {
+        data class Path(val currentState: State, val inputIndex: Int)
 
-        var paths = mutableListOf<Path>()
-        var startState = states.firstOrNull { if(!fromInit) it.isCurrent else it.initial}
-        if(startState==null){
+        var startState = states.firstOrNull { if (!fromInit) it.isCurrent else it.initial }
+        if (startState == null) {
             setInitialStateAsCurrent()
             startState = states.firstOrNull { it.isCurrent }
         }
-        if (startState != null) {
-            paths.add(Path(startState, 0))
-        }
+        if (startState == null) return false
+
+        // Track visited (stateIndex, inputIndex) to avoid infinite epsilon loops
+        val visited = mutableSetOf<Pair<Int, Int>>()
+        var paths = mutableListOf(Path(startState, 0))
 
         while (paths.isNotEmpty()) {
             val nextPaths = mutableListOf<Path>()
 
             for (path in paths) {
-                if (path.inputIndex == input.length && path.currentState.finite) {
-                    return true
-                }
+                if (!visited.add(path.currentState.index to path.inputIndex)) continue
+                if (path.inputIndex == input.length && path.currentState.final) return true
 
-                if (path.inputIndex == input.length) continue
-
-                val currentChar = input[path.inputIndex]
-                val possibleTransitions = transitions.filter {
-                    it.startState == path.currentState.index && (it.name.isEmpty() || it.name.first() == currentChar)
+                val possibleTransitions = if (path.inputIndex < input.length) {
+                    val currentChar = input[path.inputIndex]
+                    transitions.filter {
+                        it.startState == path.currentState.index &&
+                            (it.name.isEmpty() || it.name.first() == currentChar)
+                    }
+                } else {
+                    // At end of input: only follow epsilon transitions (avoid loop)
+                    transitions.filter { it.startState == path.currentState.index && it.name.isEmpty() }
                 }
 
                 for (transition in possibleTransitions) {
-                    val nextState = states.first { it.index == transition.endState }
-                    nextPaths.add(Path(nextState, path.inputIndex + 1))
+                    val nextState = states.firstOrNull { it.index == transition.endState } ?: continue
+                    nextPaths.add(Path(nextState, path.inputIndex + transition.name.length))
                 }
             }
 
@@ -262,13 +248,7 @@ class FiniteMachine(
             builder.appendLine("        <transition>")
             builder.appendLine("            <from>${transition.startState}</from>")
             builder.appendLine("            <to>${transition.endState}</to>")
-            builder.appendLine("            <read>${escapeXml(transition.name)}</read>")
-            transition.controlPoint?.let { cp ->
-                builder.appendLine("            <controlpoint>")
-                builder.appendLine("                <x>${formatFloat(cp.x)}</x>")
-                builder.appendLine("                <y>${formatFloat(cp.y)}</y>")
-                builder.appendLine("            </controlpoint>")
-            }
+            builder.appendLine("            ${xmlTag("read", transition.name)}")
             builder.appendLine("        </transition>")
         }
     }

@@ -16,7 +16,7 @@
             android:value="true" />
 
         <activity
-            android:name="com.sfag.home.presentation.activity.SplashActivity"
+            android:name="com.sfag.home.ui.activity.SplashActivity"
             android:exported="true"
             android:screenOrientation="fullUser">
             <intent-filter>
@@ -26,17 +26,17 @@
         </activity>
 
         <activity
-            android:name="com.sfag.home.presentation.activity.HomeActivity"
+            android:name="com.sfag.home.ui.activity.HomeActivity"
             android:exported="false"
             android:screenOrientation="fullUser" />
 
         <activity
-            android:name="com.sfag.automata.presentation.activity.AutomataActivity"
+            android:name="com.sfag.automata.ui.activity.AutomataActivity"
             android:exported="false"
             android:screenOrientation="fullUser" />
 
         <activity
-            android:name="com.sfag.grammar.presentation.activity.GrammarActivity"
+            android:name="com.sfag.grammar.ui.activity.GrammarActivity"
             android:exported="false"
             android:screenOrientation="fullUser" />
 

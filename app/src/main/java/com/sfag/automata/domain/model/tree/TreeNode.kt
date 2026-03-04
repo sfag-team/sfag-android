@@ -5,7 +5,8 @@ class TreeNode(
     val stateName: String?,
     val depth: Int,
     val children: MutableList<TreeNode> = mutableListOf(),
-    var status: NodeStatus = NodeStatus.ACTIVE
+    var status: NodeStatus = NodeStatus.ACTIVE,
+    val generation: Int = 0
 )
 
 enum class NodeStatus { ACTIVE, REJECTED, ACCEPTED }

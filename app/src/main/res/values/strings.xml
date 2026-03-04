@@ -1,14 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AutoGram</string>
-    <string name="requirement_text_for_machine_input">should contain only letters</string>
-    <string name="editing_input_headline">Editing Input</string>
-    <string name="add_states_icon">add states icon</string>
-    <string name="add_transitions_icon">add transitions icon</string>
-    <string name="bin_icon">bin icon</string>
-    <string name="move_icon">move icon</string>
-    <string name="edit_icon">edit icon</string>
-    <string name="new_state">new state</string>
-    <string name="initial_state">initial state</string>
-    <string name="new_transition">new transition</string>
+    <string name="editing_input_headline">tape input</string>
+    <string name="add_states">Add states</string>
+    <string name="add_transitions">Add transitions</string>
+    <string name="delete">Delete</string>
+    <string name="move">Move</string>
+    <string name="select">Select</string>
+    <!-- Automata module -->
+    <string name="untitled">untitled</string>
+    <string name="new_label">New</string>
+    <string name="import_label">Import</string>
+    <string name="export_label">Export</string>
+    <string name="share">Share</string>
+    <string name="create">Create</string>
+    <string name="pushdown">Pushdown</string>
+    <string name="finite">Finite</string>
+    <string name="automata_name">automata name</string>
+    <string name="deterministic">deterministic</string>
+    <string name="non_deterministic">non-deterministic</string>
+    <string name="tap_to_add_states">Tap + to add states</string>
+    <string name="no_states">No states</string>
+    <string name="states">States</string>
+    <string name="transitions">Transitions</string>
+    <string name="initial">Initial</string>
+    <string name="final_label">Final</string>
+    <string name="name_label">state name</string>
+    <string name="accept_by">Accept by:</string>
+    <string name="no_saved_inputs">No saved inputs yet</string>
+    <string name="transition_name">transition name</string>
+    <string name="from_label">from</string>
+    <string name="to_label">to</string>
+    <string name="start_state">start state</string>
+    <string name="end_state">end state</string>
+    <string name="stack_operation">Stack operation</string>
+    <string name="pop">pop</string>
+    <string name="push">push</string>
+    <string name="pop_check">pop-check</string>
+    <string name="help_pop">Pop: removes the top symbol from the stack.</string>
+    <string name="help_push">Push: reads the top symbol (pop-check) and pushes a new symbol.</string>
+    <string name="stack">Stack</string>
+    <string name="accepted_in_states">Accepted in state(s): %1$s</string>
+    <string name="rejected_in_states">Rejected in state(s): %1$s</string>
+    <string name="initial_state_exists">Your machine already has an initial state</string>
+    <string name="tape_input_label">Tape\ninput</string>
+    <string name="add_input">Add input</string>
+    <string name="save">Save</string>
+    <string name="discard">Discard</string>
+    <string name="choose_item">Choose an item</string>
+    <string name="jff_suffix">.jff</string>
+
+    <!-- Home module -->
+    <string name="automata_simulator">Automata simulator</string>
+    <string name="grammar_simulator">Grammar simulator</string>
+    <string name="examples">Examples</string>
+    <string name="about">About</string>
+    <string name="automata_examples">Automata examples</string>
+    <string name="grammar_examples">Grammar examples</string>
+
 </resources>

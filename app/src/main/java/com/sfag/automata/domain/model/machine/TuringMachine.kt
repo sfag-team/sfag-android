@@ -1,14 +1,14 @@
 package com.sfag.automata.domain.model.machine
 
 import com.sfag.automata.domain.model.simulation.SimulationResult
+import com.sfag.automata.domain.model.simulation.TransitionData
 import com.sfag.automata.domain.model.state.State
 import com.sfag.automata.domain.model.transition.TapeDirection
 import com.sfag.automata.domain.model.transition.Transition
 import com.sfag.automata.domain.model.transition.TuringTransition
-import com.sfag.automata.domain.model.NODE_RADIUS
 import com.sfag.shared.util.Symbols
 import com.sfag.shared.util.XmlUtils.escapeXml
-import com.sfag.shared.util.XmlUtils.formatFloat
+import com.sfag.shared.util.XmlUtils.xmlTag
 
 /**
  * Turing Machine implementation.
@@ -24,7 +24,7 @@ import com.sfag.shared.util.XmlUtils.formatFloat
  */
 @Suppress("UNCHECKED_CAST")
 class TuringMachine(
-    name: String,
+    name: String = "",
     version: Int = 1,
     states: MutableList<State> = mutableListOf(),
     transitions: MutableList<TuringTransition> = mutableListOf(),
@@ -82,14 +82,13 @@ class TuringMachine(
     }
 
     override fun calculateNextStep(): SimulationResult {
-        if (currentState == null) currentState = states.firstOrNull { it.initial }?.index
-        val currentStateIndex = currentState
-            ?: return SimulationResult.Ended(null)
+        if (!ensureCurrentState()) return SimulationResult.Ended(null)
+        val currentStateIndex = currentState!!
 
         val startState = getStateByIndex(currentStateIndex)
 
         // Check if we're in a final state
-        if (startState.finite) {
+        if (startState.final) {
             return SimulationResult.Ended(true)
         }
 
@@ -112,11 +111,9 @@ class TuringMachine(
 
         val endState = getStateByIndex(transition.endState)
 
-        return SimulationResult.Transition(
-            startPosition = startState.position,
-            endPosition = endState.position,
-            radius = NODE_RADIUS,
-            onComplete = {
+        return SimulationResult.Step(
+            transitions = listOf(TransitionData(startStateIndex = startState.index, endStateIndex = endState.index)),
+            onAllComplete = {
                 startState.isCurrent = false
                 endState.isCurrent = true
                 currentState = endState.index
@@ -130,7 +127,7 @@ class TuringMachine(
     fun isAccepted(): Boolean? {
         val currentIdx = currentState ?: return null
         val state = getStateByIndexOrNull(currentIdx) ?: return null
-        return if (state.finite) true else null
+        return if (state.final) true else null
     }
 
 
@@ -144,7 +141,11 @@ class TuringMachine(
 
     override fun resetMachineState() {
         tape.clear()
-        tape.add(blankSymbol)
+        if (fullInputSnapshot.isNotEmpty()) {
+            tape.addAll(fullInputSnapshot.toList())
+        } else {
+            tape.add(blankSymbol)
+        }
         headPosition = 0
     }
 
@@ -156,8 +157,8 @@ class TuringMachine(
         val turingTransitions = transitions.filterIsInstance<TuringTransition>()
 
         val transitionDescriptions = turingTransitions.map { t ->
-            val fromState = states.find { it.index == t.startState }?.name ?: "?"
-            val toState = states.find { it.index == t.endState }?.name ?: "?"
+            val fromState = getStateByIndexOrNull(t.startState)?.name ?: "?"
+            val toState = getStateByIndexOrNull(t.endState)?.name ?: "?"
             val readSymbol = t.name.ifEmpty { Symbols.EPSILON }
             "${Symbols.DELTA}($fromState, $readSymbol) = ($toState, ${t.writeSymbol}, ${t.direction})"
         }
@@ -172,7 +173,7 @@ class TuringMachine(
             stateNames = states.map { it.name },
             inputAlphabet = transitions.mapNotNull { it.name.firstOrNull() }.toSet(),
             initialStateName = states.firstOrNull { it.initial }?.name ?: "q0",
-            finalStateNames = states.filter { it.finite }.map { it.name },
+            finalStateNames = states.filter { it.final }.map { it.name },
             transitionDescriptions = transitionDescriptions,
             machineType = machineType,
             tapeAlphabet = tapeAlphabetSet,
@@ -197,7 +198,7 @@ class TuringMachine(
 
         while (steps < maxSteps && tempState != null) {
             val state = states.firstOrNull { it.index == tempState } ?: break
-            if (state.finite) return true
+            if (state.final) return true
 
             while (tempHead >= tempTape.size) tempTape.add(blankSymbol)
             while (tempHead < 0) {
@@ -224,22 +225,14 @@ class TuringMachine(
     }
 
     override fun exportTransitionsToJFF(builder: StringBuilder) {
-        for (transition in transitions) {
-            if (transition is TuringTransition) {
-                builder.appendLine("        <transition>")
-                builder.appendLine("            <from>${transition.startState}</from>")
-                builder.appendLine("            <to>${transition.endState}</to>")
-                builder.appendLine("            <read>${escapeXml(transition.name)}</read>")
-                builder.appendLine("            <write>${escapeXml(transition.writeSymbol.toString())}</write>")
-                builder.appendLine("            <move>${transition.direction.symbol}</move>")
-                transition.controlPoint?.let { cp ->
-                    builder.appendLine("            <controlpoint>")
-                    builder.appendLine("                <x>${formatFloat(cp.x)}</x>")
-                    builder.appendLine("                <y>${formatFloat(cp.y)}</y>")
-                    builder.appendLine("            </controlpoint>")
-                }
-                builder.appendLine("        </transition>")
-            }
+        for (transition in transitions.filterIsInstance<TuringTransition>()) {
+            builder.appendLine("        <transition>")
+            builder.appendLine("            <from>${transition.startState}</from>")
+            builder.appendLine("            <to>${transition.endState}</to>")
+            builder.appendLine("            ${xmlTag("read", transition.name)}")
+            builder.appendLine("            <write>${escapeXml(transition.writeSymbol.toString())}</write>")
+            builder.appendLine("            <move>${transition.direction.symbol}</move>")
+            builder.appendLine("        </transition>")
         }
     }
 }

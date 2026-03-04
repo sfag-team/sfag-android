@@ -1,6 +1,7 @@
 package com.sfag.automata.data
 
 import android.content.Context
+import com.sfag.automata.domain.model.Vec2
 import com.sfag.automata.domain.model.machine.FiniteMachine
 import com.sfag.automata.domain.model.machine.Machine
 import com.sfag.automata.domain.model.machine.MachineType
@@ -28,67 +29,59 @@ internal class AutomataFileStorage @Inject constructor(
         }
 
     /**
-     * Save a machine to a .jff file
+     * Auto-save the current machine to a fixed internal file.
+     * JFF goes to __current.jff; name + savedInputs go to __current.meta.
      */
-    fun saveMachine(machine: Machine) {
-        val filename = "${sanitizeFilename(machine.name)}.jff"
-        val file = File(storageDir, filename)
-        val jffContent = machine.exportToJFF()
-        file.writeText(jffContent)
-    }
-
-    /**
-     * Get all saved machine names
-     */
-    fun getAllMachineNames(): List<String> {
-        return storageDir.listFiles()
-            ?.filter { it.extension == "jff" }
-            ?.map { it.nameWithoutExtension }
-            ?: emptyList()
-    }
-
-    /**
-     * Load a machine by name from .jff file
-     */
-    fun getMachineByName(name: String): Machine? {
-        val filename = "${sanitizeFilename(name)}.jff"
-        val file = File(storageDir, filename)
-
-        if (!file.exists()) {
-            return null
+    fun saveCurrentMachine(machine: Machine, positions: Map<Int, Vec2>) {
+        File(storageDir, "__current.jff").writeText(machine.exportToJFF(positions))
+        val meta = buildString {
+            appendLine(machine.name)
+            machine.savedInputs.forEach { appendLine(it.toString()) }
         }
+        File(storageDir, "__current.meta").writeText(meta)
+    }
 
-        val jffContent = file.readText()
-        val parseResult = JffParser.parseJffWithType(jffContent)
+    /**
+     * Load the auto-saved current machine.
+     * Returns the machine and its positions, or null if no saved machine exists.
+     */
+    fun loadCurrentMachine(): Pair<Machine, Map<Int, Vec2>>? {
+        val jffFile = File(storageDir, "__current.jff")
+        if (!jffFile.exists()) return null
 
-        return when (parseResult.machineType) {
+        val parseResult = JffParser.parseJffWithType(jffFile.readText())
+        val metaFile = File(storageDir, "__current.meta")
+        val lines = if (metaFile.exists()) metaFile.readLines() else emptyList()
+        val name = lines.firstOrNull() ?: "untitled"
+        val savedInputs = lines.drop(1)
+            .filter { it.isNotEmpty() }
+            .map { StringBuilder(it) }
+            .toMutableList()
+
+        val machine = when (parseResult.machineType) {
             MachineType.Finite -> FiniteMachine(
                 name = name,
                 version = 1,
                 states = parseResult.states.toMutableList(),
                 transitions = parseResult.transitions.toMutableList(),
-                savedInputs = mutableListOf()
+                savedInputs = savedInputs
             )
             MachineType.Pushdown -> PushDownMachine(
                 name = name,
                 version = 1,
                 states = parseResult.states.toMutableList(),
                 transitions = parseResult.transitions.filterIsInstance<PushDownTransition>().toMutableList(),
-                savedInputs = mutableListOf()
+                savedInputs = savedInputs
             )
             MachineType.Turing -> TuringMachine(
                 name = name,
                 version = 1,
                 states = parseResult.states.toMutableList(),
                 transitions = parseResult.transitions.filterIsInstance<TuringTransition>().toMutableList(),
-                savedInputs = mutableListOf()
+                savedInputs = savedInputs
             )
         }
+        return machine to parseResult.positions
     }
-    /**
-     * Sanitize filename to remove invalid characters
-     */
-    private fun sanitizeFilename(name: String): String {
-        return name.replace(Regex("[^a-zA-Z0-9._-]"), "_")
-    }
+
 }

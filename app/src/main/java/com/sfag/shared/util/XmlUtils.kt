@@ -17,6 +17,13 @@ object XmlUtils {
         .replace("'", "&apos;")
 
     /**
+     * Emits a self-closing XML tag for empty values, or a full tag with escaped content otherwise.
+     * e.g. xmlTag("read", "") → "<read/>", xmlTag("read", "a") → "<read>a</read>"
+     */
+    fun xmlTag(tag: String, value: String): String =
+        if (value.isEmpty()) "<$tag/>" else "<$tag>${escapeXml(value)}</$tag>"
+
+    /**
      * Formats a float value with 2 decimal places for consistent XML output.
      * Uses Locale.US to ensure dot as decimal separator (required for XML/JFF format).
      */
