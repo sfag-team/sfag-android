@@ -1,20 +1,15 @@
 package com.sfag.automata.data
 
 import android.content.Context
-import com.sfag.automata.domain.model.Vec2
-import com.sfag.automata.domain.model.machine.FiniteMachine
-import com.sfag.automata.domain.model.machine.Machine
-import com.sfag.automata.domain.model.machine.MachineType
-import com.sfag.automata.domain.model.machine.PushDownMachine
-import com.sfag.automata.domain.model.machine.TuringMachine
-import com.sfag.automata.domain.model.transition.PushDownTransition
-import com.sfag.automata.domain.model.transition.TuringTransition
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 
+import com.sfag.automata.model.machine.Machine
+import com.sfag.automata.model.machine.Vec2
+
 /**
- * File-based storage for automata machines using .jff files
+ * File-based storage for automata using .jff files
  */
 internal class AutomataFileStorage @Inject constructor(
     @param:ApplicationContext private val context: Context
@@ -58,30 +53,7 @@ internal class AutomataFileStorage @Inject constructor(
             .map { StringBuilder(it) }
             .toMutableList()
 
-        val machine = when (parseResult.machineType) {
-            MachineType.Finite -> FiniteMachine(
-                name = name,
-                version = 1,
-                states = parseResult.states.toMutableList(),
-                transitions = parseResult.transitions.toMutableList(),
-                savedInputs = savedInputs
-            )
-            MachineType.Pushdown -> PushDownMachine(
-                name = name,
-                version = 1,
-                states = parseResult.states.toMutableList(),
-                transitions = parseResult.transitions.filterIsInstance<PushDownTransition>().toMutableList(),
-                savedInputs = savedInputs
-            )
-            MachineType.Turing -> TuringMachine(
-                name = name,
-                version = 1,
-                states = parseResult.states.toMutableList(),
-                transitions = parseResult.transitions.filterIsInstance<TuringTransition>().toMutableList(),
-                savedInputs = savedInputs
-            )
-        }
+        val machine = parseResult.toMachine(name, savedInputs)
         return machine to parseResult.positions
     }
-
 }

@@ -1,20 +1,24 @@
 package com.sfag.automata.data
 
-import android.content.Context
 import android.util.Log
-import com.sfag.automata.domain.model.Vec2
-import com.sfag.automata.domain.model.machine.MachineType
-import com.sfag.automata.domain.model.state.State
-import com.sfag.automata.domain.model.transition.PushDownTransition
-import com.sfag.automata.domain.model.transition.TapeDirection
-import com.sfag.automata.domain.model.transition.Transition
-import com.sfag.automata.domain.model.transition.TuringTransition
-import com.sfag.shared.util.JffFileUtils
-import com.sfag.shared.util.JffFileUtils.getChildText
-import com.sfag.shared.util.JffFileUtils.hasChild
-import com.sfag.shared.util.Symbols
 import org.w3c.dom.Element
 import org.w3c.dom.Node
+
+import com.sfag.automata.model.machine.FiniteMachine
+import com.sfag.automata.model.machine.Machine
+import com.sfag.automata.model.machine.MachineType
+import com.sfag.automata.model.machine.PushdownMachine
+import com.sfag.automata.model.machine.State
+import com.sfag.automata.model.machine.TuringMachine
+import com.sfag.automata.model.machine.Vec2
+import com.sfag.automata.model.transition.PushdownTransition
+import com.sfag.automata.model.transition.TapeDirection
+import com.sfag.automata.model.transition.Transition
+import com.sfag.automata.model.transition.TuringTransition
+import com.sfag.shared.Symbols
+import com.sfag.shared.util.JffUtils
+import com.sfag.shared.util.JffUtils.getChildText
+import com.sfag.shared.util.JffUtils.hasChild
 
 /**
  * Result of parsing a JFF file.
@@ -26,16 +30,36 @@ data class JffParseResult(
     val positions: Map<Int, Vec2>
 )
 
+fun JffParseResult.toMachine(
+    name: String,
+    savedInputs: MutableList<StringBuilder> = mutableListOf()
+): Machine = when (machineType) {
+    MachineType.Finite -> FiniteMachine(
+        name = name,
+        states = states.toMutableList(),
+        transitions = transitions.toMutableList(),
+        savedInputs = savedInputs
+    )
+    MachineType.Pushdown -> PushdownMachine(
+        name = name,
+        states = states.toMutableList(),
+        transitions = transitions.filterIsInstance<PushdownTransition>().toMutableList(),
+        savedInputs = savedInputs
+    )
+    MachineType.Turing -> TuringMachine(
+        name = name,
+        states = states.toMutableList(),
+        transitions = transitions.filterIsInstance<TuringTransition>().toMutableList(),
+        savedInputs = savedInputs
+    )
+}
+
 /**
  * Automata-specific JFF file operations.
- * Uses shared JffFileUtils for common operations.
+ * Uses shared JffUtils for common operations.
  */
 object JffParser {
     private const val TAG = "JffParser"
-
-    fun shareJffFile(context: Context, jffContent: String, filename: String) {
-        JffFileUtils.shareFile(context, jffContent, filename, "Share automata with your friends")
-    }
 
     /**
      * Parses a JFF XML string and returns machine type, states, transitions, and state positions.
@@ -45,10 +69,10 @@ object JffParser {
         val transitions = mutableListOf<Transition>()
         val positions = mutableMapOf<Int, Vec2>()
 
-        val doc = JffFileUtils.parseXml(jffXml)
+        val doc = JffUtils.parseXml(jffXml)
         val root = doc.documentElement
 
-        val machineTypeTag = JffFileUtils.getJffType(doc)
+        val machineTypeTag = JffUtils.getJffType(doc)
         val machineType = MachineType.fromTag(machineTypeTag)
         val isPda = machineType == MachineType.Pushdown
         val isTuring = machineType == MachineType.Turing
@@ -110,13 +134,13 @@ object JffParser {
             return null
         }
 
-        val read = JffFileUtils.normalizeEpsilon(element.getChildText("read") ?: "")
+        val read = JffUtils.normalizeEpsilon(element.getChildText("read") ?: "")
 
         return when {
             isPda -> {
-                val pop = JffFileUtils.normalizeEpsilon(element.getChildText("pop") ?: "")
-                val push = JffFileUtils.normalizeEpsilon(element.getChildText("push") ?: "")
-                PushDownTransition(name = read, startState = from, endState = to, pop = pop, push = push)
+                val pop = JffUtils.normalizeEpsilon(element.getChildText("pop") ?: "")
+                val push = JffUtils.normalizeEpsilon(element.getChildText("push") ?: "")
+                PushdownTransition(name = read, startState = from, endState = to, pop = pop, push = push)
             }
             isTuring -> {
                 val writeText = element.getChildText("write")?.trim()

@@ -2,9 +2,10 @@ package com.sfag.grammar.data
 
 import android.content.Context
 import android.net.Uri
-import com.sfag.grammar.domain.model.GrammarRule
-import com.sfag.shared.util.JffFileUtils
-import com.sfag.shared.util.Symbols
+
+import com.sfag.grammar.model.GrammarRule
+import com.sfag.shared.Symbols
+import com.sfag.shared.util.JffUtils
 
 /**
  * Grammar-specific JFF file operations.
@@ -17,7 +18,7 @@ internal object GrammarFileStorage {
      */
     fun saveToJff(rules: List<GrammarRule>, context: Context, uri: Uri) {
         try {
-            val doc = JffFileUtils.createDocument()
+            val doc = JffUtils.createDocument()
 
             // Root structure
             val structureElement = doc.createElement("structure")
@@ -37,7 +38,7 @@ internal object GrammarFileStorage {
                 productionElement.appendChild(leftElement)
 
                 val rightElement = doc.createElement("right")
-                if (rule.right == Symbols.EPSILON) {
+                if (rule.right == "${Symbols.EPSILON}") {
                     productionElement.appendChild(rightElement)
                 } else {
                     rightElement.appendChild(doc.createTextNode(rule.right))
@@ -47,7 +48,7 @@ internal object GrammarFileStorage {
                 structureElement.appendChild(productionElement)
             }
 
-            JffFileUtils.writeXmlToUri(context, doc, uri)
+            JffUtils.writeXmlToUri(context, doc, uri)
         } catch (e: Exception) {
             e.printStackTrace()
         }
