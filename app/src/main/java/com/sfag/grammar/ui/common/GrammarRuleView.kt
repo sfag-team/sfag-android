@@ -1,11 +1,9 @@
 package com.sfag.grammar.ui.common
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
@@ -32,9 +30,9 @@ fun GrammarRuleView(
     onEdit: () -> Unit,
 ) {
     Row(
-        modifier =
-            Modifier.fillMaxWidth().height(60.dp).padding(horizontal = 8.dp, vertical = 2.dp),
+        modifier = Modifier.fillMaxWidth().height(60.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         OutlinedTextField(
             value = grammarRule.left,
@@ -42,13 +40,10 @@ fun GrammarRuleView(
             readOnly = true,
             modifier = Modifier.weight(1f),
         )
-        Spacer(modifier = Modifier.width(4.dp))
         Text(
             Symbols.ARROW,
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.align(Alignment.CenterVertically),
         )
-        Spacer(modifier = Modifier.width(4.dp))
         OutlinedTextField(
             value = grammarRule.right,
             onValueChange = {},
@@ -56,8 +51,6 @@ fun GrammarRuleView(
             modifier = Modifier.weight(1f),
         )
         if (!isGrammarFinished) {
-            Spacer(modifier = Modifier.width(8.dp))
-
             IconButton(onClick = { onEdit() }) {
                 Icon(Icons.Default.Create, contentDescription = stringResource(R.string.edit_rule))
             }
@@ -65,6 +58,5 @@ fun GrammarRuleView(
                 Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.remove_rule))
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }

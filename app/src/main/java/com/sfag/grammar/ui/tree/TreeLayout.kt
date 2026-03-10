@@ -3,6 +3,7 @@ package com.sfag.grammar.ui.tree
 import com.sfag.grammar.domain.grammar.DerivationStep
 import com.sfag.grammar.domain.grammar.findReplacementIndex
 import com.sfag.grammar.domain.tree.TreeNode
+import com.sfag.main.config.Symbols
 import java.util.IdentityHashMap
 
 private const val UNRESTRICTED_NODE_SPACING = 120f
@@ -22,6 +23,7 @@ internal fun buildTree(steps: List<DerivationStep>): TreeNode {
 
     for ((stepIndex, step) in steps.withIndex()) {
         val replaceIndex = findReplacementIndex(step.appliedRule, step.previous, step.derived)
+        if (replaceIndex < 0 || replaceIndex + step.appliedRule.left.length > currentLeaves.size) continue
         val newChildren =
             step.appliedRule.right.mapTo(LinkedHashSet()) { symbol ->
                 TreeNode(stepIndex + 1, symbol, LinkedHashSet(), LinkedHashSet())
@@ -33,7 +35,8 @@ internal fun buildTree(steps: List<DerivationStep>): TreeNode {
                 targetNode.addChild(child)
             }
         }
-        currentLeaves = root.getLeaves()
+        currentLeaves =
+            root.getLeaves().filterNot { it.label.toString() == Symbols.EPSILON }.toMutableList()
     }
     return root
 }

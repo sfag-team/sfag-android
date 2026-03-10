@@ -3,21 +3,21 @@
     <type>pda</type>
     <automaton>
         <state id="1" name="q0">
-            <x>20.269989</x>
-            <y>236.1499</y>
+            <x>30.40</x>
+            <y>354.22</y>
             <initial/>
         </state>
         <state id="2" name="q1">
-            <x>130.07986</x>
-            <y>241.74004</y>
+            <x>195.12</x>
+            <y>362.61</y>
         </state>
         <state id="3" name="q2">
-            <x>254.68994</x>
-            <y>243.49995</y>
+            <x>382.03</x>
+            <y>365.25</y>
         </state>
         <state id="4" name="q3">
-            <x>255.29001</x>
-            <y>353.92</y>
+            <x>382.94</x>
+            <y>530.88</y>
             <final/>
         </state>
         <transition>

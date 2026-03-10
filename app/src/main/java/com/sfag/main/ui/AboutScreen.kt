@@ -78,11 +78,11 @@ fun AboutScreen(navBack: () -> Unit) {
         Text("Autori:", style = MaterialTheme.typography.titleMedium)
         Text("Peter Chovanec (2025)", style = MaterialTheme.typography.bodyMedium)
         Text("Vadim Rohach (2025)", style = MaterialTheme.typography.bodyMedium)
-        Text("Jakub Taňkoš (2025)", style = MaterialTheme.typography.bodyMedium)
-        Text("Juraj Lopušek (2025)", style = MaterialTheme.typography.bodyMedium)
-        Text("Martin Lukačka (2025)", style = MaterialTheme.typography.bodyMedium)
-        Text("Samuel Strečko (2025)", style = MaterialTheme.typography.bodyMedium)
-        Text("Slavomír Tung Le Minh (2025)", style = MaterialTheme.typography.bodyMedium)
+        Text("Jakub Taňkoš (2026)", style = MaterialTheme.typography.bodyMedium)
+        Text("Juraj Lopušek (2026)", style = MaterialTheme.typography.bodyMedium)
+        Text("Martin Lukačka (2026)", style = MaterialTheme.typography.bodyMedium)
+        Text("Samuel Strečko (2026)", style = MaterialTheme.typography.bodyMedium)
+        Text("Slavomír Tung Le Minh (2026)", style = MaterialTheme.typography.bodyMedium)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -92,7 +92,7 @@ fun AboutScreen(navBack: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text("FEI STU Bratislava", style = MaterialTheme.typography.labelMedium)
-        Text("AutoGram simulator v2.1 ©2025", style = MaterialTheme.typography.labelSmall)
+        Text("AutoGram simulator v2.2 ©2026", style = MaterialTheme.typography.labelSmall)
     }
 
     BackHandler { navBack() }

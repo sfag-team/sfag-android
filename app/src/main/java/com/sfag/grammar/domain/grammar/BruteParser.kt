@@ -106,9 +106,10 @@ fun findReplacementIndex(
     current: String,
 ): Int {
     val left = rule.left
+    val right = rule.right.replace(Symbols.EPSILON, "")
     for (i in previous.indices) {
         if (i + left.length <= previous.length && previous.substring(i, i + left.length) == left) {
-            val candidate = previous.take(i) + rule.right + previous.substring(i + left.length)
+            val candidate = previous.take(i) + right + previous.substring(i + left.length)
             if (candidate == current) {
                 return i
             }

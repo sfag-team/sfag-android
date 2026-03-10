@@ -127,18 +127,21 @@ fun SingleInputScreen(
     val tree = treeData?.first
     val treePositions = treeData?.second
 
-    Column(modifier = modifier.fillMaxSize().padding(horizontal = 10.dp)) {
+    Column(modifier = modifier.fillMaxSize()) {
         Text(
             text = stringResource(R.string.test_an_input),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 8.dp, end = 8.dp),
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
         HorizontalDivider(
-            modifier = Modifier.height(4.dp).fillMaxWidth(),
+            modifier = Modifier.height(4.dp).fillMaxWidth().padding(horizontal = 16.dp),
             color = MaterialTheme.colorScheme.primary,
         )
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             OutlinedTextField(
                 value = inputText,
                 onValueChange = {
@@ -195,6 +198,7 @@ fun SingleInputScreen(
                     modifier =
                         Modifier
                             .fillMaxSize()
+                            .padding(top = 8.dp)
                             .background(MaterialTheme.colorScheme.surfaceDim)
                             .zIndex(1f),
                 ) {
@@ -305,7 +309,7 @@ fun SingleInputScreen(
             val acceptedText = stringResource(R.string.input_accepted)
             val notAcceptedText = stringResource(R.string.input_not_accepted)
             val inconclusiveText = stringResource(R.string.input_inconclusive)
-            Row(modifier = Modifier.fillMaxWidth().padding(6.dp)) {
+            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp)) {
                 val inputSpanStyle =
                     MaterialTheme.typography.titleLarge
                         .toSpanStyle()
@@ -377,8 +381,8 @@ fun SingleInputScreen(
             if (steps != null) {
                 // Visual options
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(6.dp),
-                    Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
                 ) {
                     IconButton(
                         onClick = {
@@ -409,10 +413,10 @@ fun SingleInputScreen(
                     }
                 }
                 if (isTableShown) {
-                    StateTable(steps)
+                    StateTable(steps, Modifier.padding(horizontal = 16.dp))
                 }
                 if (isLinearShown) {
-                    LinearDerivation(steps)
+                    LinearDerivation(steps, Modifier.padding(horizontal = 16.dp))
                 }
             }
         }
@@ -421,9 +425,9 @@ fun SingleInputScreen(
                 text = stringResource(R.string.grammar_rule),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 12.dp, start = 8.dp, end = 8.dp),
+                modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp),
             )
-            LazyColumn {
+            LazyColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
                 items(rules) { rule ->
                     GrammarRuleView(
                         grammarRule = rule,
@@ -437,10 +441,10 @@ fun SingleInputScreen(
 }
 
 @Composable
-private fun LinearDerivation(steps: List<DerivationStep>) {
+private fun LinearDerivation(steps: List<DerivationStep>, modifier: Modifier = Modifier) {
     Box(
         modifier =
-            Modifier
+            modifier
                 .background(
                     MaterialTheme.colorScheme.surfaceContainerHigh,
                     MaterialTheme.shapes.medium,
@@ -458,104 +462,110 @@ private fun LinearDerivation(steps: List<DerivationStep>) {
                             it.derived.replace(Symbols.EPSILON, "")
                         }
                     },
+            style = MaterialTheme.typography.bodyMedium,
         )
     }
 }
 
 @Composable
-private fun StateTable(steps: List<DerivationStep>) {
+private fun StateTable(steps: List<DerivationStep>, modifier: Modifier = Modifier) {
     var currentStep by remember { mutableIntStateOf(1) }
 
     Column(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
-                .padding(6.dp)
                 .background(
                     MaterialTheme.colorScheme.surfaceContainerHigh,
                     MaterialTheme.shapes.medium,
-                ),
+                ).padding(8.dp),
     ) {
-        // Table Header
-        Row(modifier = Modifier.padding(horizontal = 6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+        ) {
             IconButton(
-                onClick = { if (currentStep > 1) currentStep-- }, // Lower bound
+                onClick = { if (currentStep > 1) currentStep-- },
             ) {
                 Icon(ChevronLeft, contentDescription = stringResource(R.string.previous_step))
             }
             IconButton(
-                onClick = { if (currentStep < steps.size) currentStep++ }, // Upper bound
+                onClick = { if (currentStep < steps.size) currentStep++ },
             ) {
                 Icon(ChevronRight, contentDescription = stringResource(R.string.next_step))
             }
             IconButton(
-                onClick = { currentStep = steps.size }, // Jump to the end
+                onClick = { currentStep = steps.size },
             ) {
                 Icon(KeyboardDoubleArrowRight, contentDescription = stringResource(R.string.jump_to_end))
             }
         }
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
                 text = stringResource(R.string.applied_rule),
                 modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleSmall,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = stringResource(R.string.derivation_string),
-                modifier = Modifier.weight(2f),
-                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleSmall,
                 textAlign = TextAlign.Center,
             )
         }
         HorizontalDivider()
 
-        // Table Rows
         LazyColumn {
             items(steps.take(currentStep)) { derivation ->
-                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                    val diffIndex =
-                        findReplacementIndex(derivation.appliedRule, derivation.previous, derivation.derived)
+                val diffIndex =
+                    findReplacementIndex(derivation.appliedRule, derivation.previous, derivation.derived)
 
-                    val right =
-                        if (derivation.appliedRule.right == Symbols.EPSILON) { // ε
-                            ""
-                        } else {
-                            derivation.appliedRule.right.replace(Symbols.EPSILON, "")
-                        }
+                val right =
+                    if (derivation.appliedRule.right == Symbols.EPSILON) {
+                        ""
+                    } else {
+                        derivation.appliedRule.right.replace(Symbols.EPSILON, "")
+                    }
 
-                    // Build annotated string for displaying with different colors
-                    val annotatedString =
-                        buildAnnotatedString {
-                            // Unchanged part
+                val annotatedString =
+                    buildAnnotatedString {
+                        if (diffIndex >= 0) {
                             append(derivation.previous.replace(Symbols.EPSILON, "").take(diffIndex))
-
-                            // Changed part with different color
-                            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                                append(right)
-                            }
-                            // The remaining unchanged portion
+                        }
+                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                            append(right)
+                        }
+                        if (diffIndex >= 0) {
                             append(
                                 derivation.previous
                                     .replace(Symbols.EPSILON, "")
                                     .drop(diffIndex + derivation.appliedRule.left.length),
                             )
                         }
+                    }
 
+                HorizontalDivider()
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
                         text = derivation.appliedRule.toString(),
                         modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
                     )
                     Text(
                         text = annotatedString,
-                        modifier = Modifier.weight(2f),
-                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
                     )
                 }
-                HorizontalDivider()
             }
         }
     }

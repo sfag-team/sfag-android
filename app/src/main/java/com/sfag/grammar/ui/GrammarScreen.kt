@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,7 +18,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -66,16 +64,16 @@ fun GrammarScreen(
     var editingRule by remember { mutableStateOf<GrammarRule?>(null) }
     val isGrammarFinished = grammarViewModel.isGrammarFinished
 
-    Column(modifier = modifier.padding(horizontal = 4.dp).fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = stringResource(R.string.rules_p),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp),
+            modifier = Modifier.padding(top = 8.dp, start = 24.dp, end = 24.dp),
         )
         // LazyColumn for displaying rules and input fields
         LazyColumn(
-            modifier = Modifier.weight(1f), // Makes the LazyColumn fill remaining space
+            modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
         ) {
             items(rules) { rule ->
                 if (editingRule == rule) {
@@ -128,17 +126,13 @@ fun GrammarScreen(
                     )
                 }
                 Button(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     onClick = { grammarViewModel.toggleGrammarFinished() },
                 ) {
                     Text(if (isGrammarFinished) stringResource(R.string.edit_grammar) else stringResource(R.string.editing_done))
                 }
             }
         }
-        HorizontalDivider(
-            modifier = Modifier.height(4.dp).fillMaxWidth(),
-            color = MaterialTheme.colorScheme.primary,
-        )
         Box(
             modifier =
                 Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.secondaryContainer),
@@ -165,9 +159,9 @@ private fun AddRule(
     val invalidCharsError = stringResource(R.string.invalid_chars_error)
     val nonTerminalMissingError = stringResource(R.string.non_terminal_missing)
     Row(
-        modifier =
-            Modifier.fillMaxWidth().height(60.dp).padding(horizontal = 8.dp, vertical = 2.dp),
+        modifier = Modifier.fillMaxWidth().height(60.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         OutlinedTextField(
             value = leftText,
@@ -179,13 +173,10 @@ private fun AddRule(
                     if (focusState.isFocused) onFieldFocusChange("left")
                 },
         )
-        Spacer(modifier = Modifier.width(4.dp))
         Text(
             Symbols.ARROW,
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.align(Alignment.CenterVertically),
         )
-        Spacer(modifier = Modifier.width(4.dp))
         OutlinedTextField(
             value = rightText,
             onValueChange = { onRightChange(it) },
@@ -196,10 +187,9 @@ private fun AddRule(
                     if (focusState.isFocused) onFieldFocusChange("right")
                 },
         )
-        Spacer(modifier = Modifier.width(8.dp))
         Column(
             verticalArrangement = Arrangement.spacedBy(3.dp),
-            modifier = Modifier.fillMaxHeight().width(30.dp),
+            modifier = Modifier.fillMaxHeight().width(48.dp),
         ) {
             FilledTonalButton(
                 onClick = {
@@ -254,7 +244,6 @@ private fun AddRule(
             }
         }
 
-        Spacer(modifier = Modifier.width(4.dp))
         FilledIconButton(
             onClick = {
                 val validChars =

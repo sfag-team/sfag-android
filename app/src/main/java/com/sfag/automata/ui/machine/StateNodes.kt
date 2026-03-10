@@ -25,16 +25,11 @@ import androidx.compose.ui.unit.dp
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.State
 import com.sfag.automata.domain.simulation.SimulationOutcome
-import com.sfag.automata.ui.common.EDGE_LINE_WIDTH
-import com.sfag.automata.ui.common.NODE_INNER_OUTLINE_WIDTH
-import com.sfag.automata.ui.common.NODE_INNER_RADIUS
-import com.sfag.automata.ui.common.NODE_OUTLINE_WIDTH
+import com.sfag.automata.ui.common.FONT_SCALE_3_CHAR
+import com.sfag.automata.ui.common.FONT_SCALE_4_CHAR
+import com.sfag.automata.ui.common.FONT_SCALE_5_PLUS
 import com.sfag.automata.ui.common.NODE_RADIUS
 import com.sfag.main.ui.theme.extendedColorScheme
-
-private const val FONT_SCALE_3_CHAR = 0.8f
-private const val FONT_SCALE_4_CHAR = 0.65f
-private const val FONT_SCALE_5_PLUS = 0.55f
 
 /** Renders all states as draggable/tappable nodes. */
 @Composable
@@ -57,13 +52,13 @@ internal fun Machine.StateNodes(
     // Pre-compute initial-state arrow paths (same geometry for all states, depends only on density)
     val initialArrowPaths =
         remember(densityValue) {
-            val canvasSizePx = NODE_RADIUS * densityValue
+            val canvasSizePx = NODE_RADIUS * 1.125f * densityValue
             val cx = canvasSizePx / 2f
             val cy = canvasSizePx / 2f
-            val arrowTip = cx - (NODE_RADIUS + NODE_OUTLINE_WIDTH / 2f)
-            val headLength = 26f
-            val headHalf = headLength * 0.5f
-            val arrowStart = arrowTip - headLength - NODE_RADIUS
+            val arrowTip = cx - (NODE_RADIUS + NODE_RADIUS * 0.25f / 2f)
+            val headLength = NODE_RADIUS * 0.5f
+            val headHalf = headLength * 0.55f
+            val arrowStart = arrowTip - NODE_RADIUS * 1.5f
             val linePath =
                 Path().apply {
                     moveTo(arrowStart, cy)
@@ -123,13 +118,14 @@ internal fun Machine.StateNodes(
                 textColor = borderColor
             }
 
+            val outlineHalf = NODE_RADIUS * 0.0625f
             Box(
                 modifier =
                     Modifier
-                        .size(NODE_RADIUS.dp)
+                        .size((NODE_RADIUS * 1.125f).dp)
                         .offset(
-                            (statePosition.x + offsetX / densityValue).dp,
-                            (statePosition.y + offsetY / densityValue).dp,
+                            (statePosition.x - outlineHalf + offsetX / densityValue).dp,
+                            (statePosition.y - outlineHalf + offsetY / densityValue).dp,
                         ),
             ) {
                 Canvas(
@@ -163,8 +159,8 @@ internal fun Machine.StateNodes(
                 ) {
                     drawCircle(
                         color = borderColor,
-                        radius = NODE_RADIUS + 1,
-                        style = Stroke(width = NODE_OUTLINE_WIDTH),
+                        radius = NODE_RADIUS,
+                        style = Stroke(width = NODE_RADIUS * 0.25f),
                     )
                     drawCircle(
                         color = fillColor,
@@ -173,16 +169,16 @@ internal fun Machine.StateNodes(
                     if (state.final) {
                         drawCircle(
                             color = borderColor,
-                            radius = NODE_INNER_RADIUS,
-                            style = Stroke(width = NODE_INNER_OUTLINE_WIDTH),
+                            radius = NODE_RADIUS * 0.75f,
+                            style = Stroke(width = NODE_RADIUS * 0.125f),
                         )
                         drawCircle(
                             color = fillColor,
                             radius =
                                 if (state.isCurrent) {
-                                    NODE_INNER_RADIUS - 2
+                                    NODE_RADIUS * 0.75f - 2
                                 } else {
-                                    NODE_INNER_RADIUS - 1
+                                    NODE_RADIUS * 0.75f - 1
                                 },
                         )
                     }
@@ -190,12 +186,12 @@ internal fun Machine.StateNodes(
                         drawPath(
                             path = initialArrowPaths.first,
                             color = borderColor,
-                            style = Stroke(width = EDGE_LINE_WIDTH, cap = StrokeCap.Round),
+                            style = Stroke(width = NODE_RADIUS * 0.125f, cap = StrokeCap.Round),
                         )
                         drawPath(path = initialArrowPaths.second, color = borderColor)
                     }
                 }
-                val baseStyle = MaterialTheme.typography.titleMedium
+                val baseStyle = MaterialTheme.typography.headlineSmall
                 val scaledFontSize =
                     when {
                         state.name.length <= 2 -> baseStyle.fontSize

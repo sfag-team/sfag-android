@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -22,10 +23,15 @@ import com.sfag.automata.ui.common.CELL_SIZE
 /** PDA stack bar. Shows stack contents left-to-right (bottom-to-top). */
 @Composable
 fun PushdownMachine.Stack() {
+    val cellPadding = (BAR_HEIGHT - CELL_SIZE) / 2
     Row(
-        modifier = Modifier.fillMaxWidth().height(BAR_HEIGHT),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(BAR_HEIGHT)
+                .padding(horizontal = cellPadding),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Start,
+        horizontalArrangement = Arrangement.spacedBy(cellPadding),
     ) {
         Box(modifier = Modifier.size(CELL_SIZE), contentAlignment = Alignment.Center) {
             Text(
@@ -36,10 +42,14 @@ fun PushdownMachine.Stack() {
         }
         LazyRow(
             modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy((BAR_HEIGHT - CELL_SIZE) / 2),
+            horizontalArrangement = Arrangement.spacedBy(cellPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            items(symbolStack) { Cell(symbol = it) }
+            if (symbolStack.isEmpty()) {
+                item { Cell(symbol = ' ') }
+            } else {
+                items(symbolStack) { Cell(symbol = it) }
+            }
         }
     }
 }

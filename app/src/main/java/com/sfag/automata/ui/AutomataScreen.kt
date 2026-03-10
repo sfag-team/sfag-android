@@ -310,18 +310,28 @@ fun AutomataScreen(
                                     }
                                 }
                                 DefaultIconButton(
-                                    icon = R.drawable.replay,
+                                    icon =
+                                        if (currentMode.value == Mode.MACHINE_EDITOR) {
+                                            R.drawable.center_focus
+                                        } else {
+                                            R.drawable.replay
+                                        },
                                     modifier = Modifier.weight(1f),
                                 ) {
-                                    simulationOutcome = null
-                                    animationOverlay.value = null
-                                    machine.currentInput.clear()
-                                    machine.currentInput.append(machine.fullInput)
-                                    machine.remainingInput =
-                                        StringBuilder(machine.fullInput)
-                                    machine.setInitialStateAsCurrent()
-                                    recomposeKey.intValue++
-                                    currentMode.value = Mode.SIMULATOR
+                                    if (currentMode.value == Mode.MACHINE_EDITOR) {
+                                        viewModel.machineAutoCenter = true
+                                        recomposeKey.intValue++
+                                    } else {
+                                        simulationOutcome = null
+                                        animationOverlay.value = null
+                                        machine.currentInput.clear()
+                                        machine.currentInput.append(machine.fullInput)
+                                        machine.remainingInput =
+                                            StringBuilder(machine.fullInput)
+                                        machine.setInitialStateAsCurrent()
+                                        recomposeKey.intValue++
+                                        currentMode.value = Mode.SIMULATOR
+                                    }
                                 }
                                 DefaultIconButton(
                                     icon = R.drawable.skip_next,
@@ -373,14 +383,14 @@ fun AutomataScreen(
                                             val capturedPositions = viewModel.statePositions.toMap()
                                             animationOverlay.value = {
                                                 val animDensity = LocalDensity.current
-                                                val transitionPaths =
+                                                val arrowPaths =
                                                     machine.computePaths(
                                                         capturedPositions,
                                                         animDensity,
                                                     )
                                                 machine.TransitionAnimation(
                                                     transitionRefs = simulation.transitionRefs,
-                                                    transitionPaths = transitionPaths,
+                                                    arrowPaths = arrowPaths,
                                                     offsetXCanvas = viewModel.offsetXCanvas,
                                                     offsetYCanvas = viewModel.offsetYCanvas,
                                                     onAnimationsEnd = {

@@ -37,10 +37,10 @@ import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.tree.TreeNode
-import com.sfag.automata.ui.common.EDGE_LINE_WIDTH
-import com.sfag.automata.ui.common.NODE_OUTLINE_WIDTH
+import com.sfag.automata.ui.common.FONT_SCALE_3_CHAR
+import com.sfag.automata.ui.common.FONT_SCALE_4_CHAR
+import com.sfag.automata.ui.common.FONT_SCALE_5_PLUS
 import com.sfag.automata.ui.common.NODE_RADIUS
-import com.sfag.automata.ui.common.NODE_TEXT_SIZE
 import com.sfag.automata.ui.common.TREE_CANVAS_HEIGHT
 import com.sfag.main.config.MANUAL_MAX_ZOOM
 import com.sfag.main.config.MANUAL_MIN_ZOOM
@@ -67,13 +67,13 @@ fun Machine.TreeView(
     val colors = MaterialTheme.colorScheme
     val extendedColors = MaterialTheme.extendedColorScheme
 
+    val baseTextSize = 24f * density.fontScale * density.density
     val textPaint =
         remember(density) {
             Paint().apply {
                 textAlign = Paint.Align.CENTER
-                typeface = Typeface.DEFAULT
+                typeface = Typeface.create(Typeface.DEFAULT, 400, false)
                 isAntiAlias = true
-                textSize = NODE_TEXT_SIZE * density.density
             }
         }
 
@@ -82,7 +82,7 @@ fun Machine.TreeView(
             Paint().apply {
                 textAlign = Paint.Align.CENTER
                 isAntiAlias = true
-                textSize = NODE_TEXT_SIZE * density.density
+                textSize = 22f * density.density
                 color = colors.onSurface.toArgb()
             }
         }
@@ -100,7 +100,7 @@ fun Machine.TreeView(
             }
         }
 
-    var scale by remember { mutableFloatStateOf(0.75f) }
+    var scale by remember { mutableFloatStateOf(0.5f) }
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
     var userHasDragged by remember { mutableStateOf(false) }
@@ -186,7 +186,7 @@ fun Machine.TreeView(
                             val nodePositionPx = positionsPx[node.id] ?: continue
                             val dx = treeX - nodePositionPx.x
                             val dy = treeY - nodePositionPx.y
-                            val hitRadius = NODE_RADIUS + NODE_OUTLINE_WIDTH / 2f
+                            val hitRadius = NODE_RADIUS * 1.125f
                             if (dx * dx + dy * dy <= hitRadius * hitRadius) {
                                 onSelectNode(node.id)
                                 return@detectTapGestures
@@ -256,7 +256,7 @@ fun Machine.TreeView(
                             color = colors.onSurface,
                             start = Offset(parentWorld.x + NODE_RADIUS, parentWorld.y),
                             end = Offset(childWorld.x - NODE_RADIUS, childWorld.y),
-                            strokeWidth = EDGE_LINE_WIDTH,
+                            strokeWidth = NODE_RADIUS * 0.125f,
                             alpha = nodeAlpha(child),
                         )
                         drawEdges(child)
@@ -275,7 +275,7 @@ fun Machine.TreeView(
                         color = colors.onSurface,
                         radius = NODE_RADIUS,
                         center = world,
-                        style = Stroke(width = NODE_OUTLINE_WIDTH),
+                        style = Stroke(width = NODE_RADIUS * 0.25f),
                         alpha = alpha,
                     )
                     drawCircle(
@@ -287,6 +287,13 @@ fun Machine.TreeView(
                     node.stateName?.let { name ->
                         textPaint.color = textColor(node)
                         textPaint.alpha = (alpha * 255).toInt()
+                        textPaint.textSize =
+                            baseTextSize * when {
+                                name.length <= 2 -> 1f
+                                name.length == 3 -> FONT_SCALE_3_CHAR
+                                name.length == 4 -> FONT_SCALE_4_CHAR
+                                else -> FONT_SCALE_5_PLUS
+                            }
                         drawContext.canvas.nativeCanvas.drawText(
                             name,
                             world.x,
@@ -297,7 +304,7 @@ fun Machine.TreeView(
 
                     // Draw "S" badge outside the top-right of the selected node
                     if (selectedId != null && node.id == selectedId) {
-                        val badgeX = world.x + NODE_RADIUS + NODE_OUTLINE_WIDTH
+                        val badgeX = world.x + NODE_RADIUS + NODE_RADIUS * 0.25f
                         val badgeY = world.y - NODE_RADIUS + badgePaint.textSize / 3f
                         drawContext.canvas.nativeCanvas.drawText("S", badgeX, badgeY, badgePaint)
                     }

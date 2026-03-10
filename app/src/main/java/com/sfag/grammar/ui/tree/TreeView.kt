@@ -68,12 +68,13 @@ fun TreeView(
         remember(root, currentStep, grammarType) {
             val collected = mutableSetOf<TreeNode>()
             root.collect(collected, currentStep)
+            val filtered = collected.filter { positions[it] != null }.toMutableSet()
             if (grammarType == GrammarType.UNRESTRICTED || grammarType == GrammarType.CONTEXT_SENSITIVE) {
-                collected
+                filtered
                     .sortedWith(compareBy({ pos(it).depth.max() }, { pos(it).x }))
                     .toCollection(LinkedHashSet())
             } else {
-                collected
+                filtered
             }
         }
 
