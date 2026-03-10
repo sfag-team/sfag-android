@@ -7,6 +7,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 
+private const val CANVAS_TAG = "__canvas:"
+
 /** File-based storage for automata using .jff files */
 internal class Storage
     @Inject
@@ -22,28 +24,28 @@ internal class Storage
                 return dir
             }
 
-        /**
-         * Auto-save the current machine to a fixed internal file. JFF goes to __current.jff; name +
-         * savedInputs go to __current.meta.
-         */
         fun saveMachine(
             machine: Machine,
             positions: Map<Int, Point2D>,
+            offsetX: Float,
+            offsetY: Float,
+            scale: Float,
         ) {
             File(storageDir, "__current.jff").writeText(machine.exportToJff(positions))
             val metadata =
                 buildString {
                     appendLine(machine.name)
                     machine.savedInputs.forEach { appendLine(it.toString()) }
+                    append("$CANVAS_TAG$offsetX,$offsetY,$scale")
                 }
             File(storageDir, "__current.meta").writeText(metadata)
         }
 
         /**
-         * Load the auto-saved current machine. Returns the machine and its positions, or null if no
-         * saved machine exists.
+         * Load the auto-saved current machine. Returns the machine, positions, and canvas offset,
+         * or null if no saved machine exists.
          */
-        fun loadMachine(): Pair<Machine, Map<Int, Point2D>>? {
+        fun loadMachine(): Triple<Machine, Map<Int, Point2D>, Triple<Float, Float, Float>>? {
             val jffFile = File(storageDir, "__current.jff")
             if (!jffFile.exists()) return null
 
@@ -51,14 +53,25 @@ internal class Storage
             val metaFile = File(storageDir, "__current.meta")
             val lines = if (metaFile.exists()) metaFile.readLines() else emptyList()
             val name = lines.firstOrNull() ?: "untitled"
+
+            val canvasLine = lines.lastOrNull { it.startsWith(CANVAS_TAG) }
+            val canvas =
+                canvasLine?.removePrefix(CANVAS_TAG)?.split(",")?.let { parts ->
+                    Triple(
+                        parts.getOrNull(0)?.toFloatOrNull() ?: 0f,
+                        parts.getOrNull(1)?.toFloatOrNull() ?: 0f,
+                        parts.getOrNull(2)?.toFloatOrNull() ?: 0.5f,
+                    )
+                } ?: Triple(0f, 0f, 0.5f)
+
             val savedInputs =
                 lines
                     .drop(1)
-                    .filter { it.isNotEmpty() }
+                    .filter { it.isNotEmpty() && !it.startsWith(CANVAS_TAG) }
                     .map { StringBuilder(it) }
                     .toMutableList()
 
             val machine = jff.toMachine(name, savedInputs)
-            return machine to jff.positions
+            return Triple(machine, jff.positions, canvas)
         }
     }

@@ -27,8 +27,13 @@ internal fun Toolbar(
     activeTool: MachineEditMode,
     onSelectTool: (MachineEditMode) -> Unit,
 ) {
+    val cellPadding = (BAR_HEIGHT - CELL_SIZE) / 2
     Row(
-        modifier = Modifier.fillMaxWidth().height(BAR_HEIGHT),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(BAR_HEIGHT)
+                .padding(horizontal = cellPadding),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = CenterVertically,
     ) {

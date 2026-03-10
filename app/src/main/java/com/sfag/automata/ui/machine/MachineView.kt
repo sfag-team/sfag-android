@@ -58,8 +58,6 @@ import com.sfag.automata.ui.common.MACHINE_CANVAS_HEIGHT
 import com.sfag.automata.ui.common.NODE_RADIUS
 import com.sfag.automata.ui.edit.StateDialog
 import com.sfag.automata.ui.edit.TransitionDialog
-import com.sfag.main.config.AUTO_FIT_MAX_ZOOM
-import com.sfag.main.config.AUTO_FIT_MIN_ZOOM
 import com.sfag.main.config.MANUAL_MAX_ZOOM
 import com.sfag.main.config.MANUAL_MIN_ZOOM
 import kotlin.math.sqrt
@@ -137,12 +135,12 @@ fun Machine.MachineView(
             var offsetY by remember { mutableFloatStateOf(viewModel.offsetYCanvas) }
             var scale by remember { mutableFloatStateOf(viewModel.scaleCanvas) }
 
-            // Auto-fit on first load or reset
+            // Center machine in viewport
             val viewW = maxWidth.value
             val viewH = maxHeight.value
             SideEffect {
                 if (
-                    viewModel.shouldAutoFit &&
+                    viewModel.machineAutoCenter &&
                     states.isNotEmpty() &&
                     viewModel.statePositions.isNotEmpty()
                 ) {
@@ -151,25 +149,14 @@ fun Machine.MachineView(
                     val maxX = positions.values.maxOf { it.x }
                     val minY = positions.values.minOf { it.y }
                     val maxY = positions.values.maxOf { it.y }
+                    val centroidX = (minX + maxX + NODE_RADIUS) / 2
+                    val centroidY = (minY + maxY + NODE_RADIUS) / 2
 
-                    val nodeSize = NODE_RADIUS
-                    val padding = nodeSize * 2
-                    val contentW = maxX - minX + nodeSize + padding * 2
-                    val contentH = maxY - minY + nodeSize + padding * 2
-
-                    val fitScale =
-                        minOf(viewW / contentW, viewH / contentH)
-                            .coerceIn(AUTO_FIT_MIN_ZOOM, AUTO_FIT_MAX_ZOOM)
-                    val centroidX = (minX + maxX + nodeSize) / 2
-                    val centroidY = (minY + maxY + nodeSize) / 2
-
-                    scale = fitScale
-                    offsetX = density.density * (viewW / (2 * fitScale) - centroidX)
-                    offsetY = density.density * (viewH / (2 * fitScale) - centroidY)
-                    viewModel.scaleCanvas = scale
+                    offsetX = density.density * (viewW / (2f * scale) - centroidX)
+                    offsetY = density.density * (viewH / (2f * scale) - centroidY)
                     viewModel.offsetXCanvas = offsetX
                     viewModel.offsetYCanvas = offsetY
-                    viewModel.shouldAutoFit = false
+                    viewModel.machineAutoCenter = false
                 }
             }
 
@@ -212,9 +199,9 @@ fun Machine.MachineView(
                                     size.height.toFloat() / scale - bounds.top * pxPerDp,
                                 )
                         }
-                        viewModel.scaleCanvas = scale
                         viewModel.offsetXCanvas = offsetX
                         viewModel.offsetYCanvas = offsetY
+                        viewModel.scaleCanvas = scale
                     }
                 }
 
@@ -280,7 +267,7 @@ fun Machine.MachineView(
                             val dragModifier = Modifier
 
                             key(recomposeKey, localRecomposeKey) {
-                                TransitionArrows(
+                                ArrowBodies(
                                     positions = positions,
                                     modifier = dragModifier,
                                     offsetX = offsetX,
@@ -296,7 +283,12 @@ fun Machine.MachineView(
                                                     )
                                             }
                                             MachineEditMode.REMOVE -> { transition ->
-                                                removeTransition(transition)
+                                                val toRemove =
+                                                    transitions.filter {
+                                                        it.fromState == transition.fromState &&
+                                                            it.toState == transition.toState
+                                                    }
+                                                toRemove.forEach { removeTransition(it) }
                                                 localRecomposeKey++
                                                 onRecompose()
                                             }
@@ -344,16 +336,26 @@ fun Machine.MachineView(
                                         onRecompose()
                                     },
                                 )
+                                ArrowHeads(
+                                    positions = positions,
+                                    offsetX = offsetX,
+                                    offsetY = offsetY,
+                                )
                             }
                         }
                     } else {
                         key(recomposeKey) {
-                            TransitionArrows(
+                            ArrowBodies(
                                 positions = positions,
                                 modifier = Modifier,
                                 offsetX = offsetX,
                                 offsetY = offsetY,
                                 onClickTransition = null,
+                            )
+                            ArrowHeads(
+                                positions = positions,
+                                offsetX = offsetX,
+                                offsetY = offsetY,
                             )
                         }
                         animationOverlay?.invoke()

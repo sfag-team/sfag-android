@@ -19,7 +19,7 @@ android {
         targetSdk = 36
 
         // Major * 10000 + Minor * 100 + Patch
-        versionCode = 20108
+        versionCode = 20109
         versionName = "2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

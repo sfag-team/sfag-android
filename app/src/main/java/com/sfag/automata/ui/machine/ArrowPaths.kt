@@ -8,7 +8,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.Transition
-import com.sfag.automata.ui.common.NODE_OUTLINE_WIDTH
 import com.sfag.automata.ui.common.NODE_RADIUS
 import kotlin.math.PI
 import kotlin.math.abs
@@ -18,12 +17,11 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 private const val ARROW_CURVATURE = 0.125f
-private const val ARROW_HEAD_LENGTH = 25f
+private const val ARROW_HEAD_LENGTH = NODE_RADIUS * 0.5f
 private const val ARROW_HEAD_HALF_WIDTH = ARROW_HEAD_LENGTH * 0.55f
-private const val NODE_OUTLINE_RADIUS = NODE_RADIUS + NODE_OUTLINE_WIDTH / 2f
 
 /** Precomputed path for a single transition's visual representation. */
-data class TransitionPath(
+data class ArrowPath(
     val bodyPath: Path,
     val headPath: Path,
     /** For regular: bezier control position. For self-loop: arc peak (outermost position). */
@@ -92,9 +90,9 @@ private fun getArrowHeadGeometry(
 fun Machine.computePaths(
     positions: Map<Int, Offset>,
     density: Density,
-): List<TransitionPath?> {
-    val halfSpread = NODE_OUTLINE_RADIUS / sqrt(2f)
-    val result = arrayOfNulls<TransitionPath>(transitions.size)
+): List<ArrowPath?> {
+    val halfSpread = NODE_RADIUS * 1.125f / sqrt(2f)
+    val result = arrayOfNulls<ArrowPath>(transitions.size)
 
     // Pass 1: build geom for each transition
     val geometries = mutableListOf<ArrowGeometry>()
@@ -126,7 +124,7 @@ fun Machine.computePaths(
                     (positions[stateIndex]?.y ?: return@count false) > startPos.y
                 }
             val loopSign = if (above > below) 1f else -1f
-            val peakY = startCenter.y + loopSign * NODE_OUTLINE_RADIUS * 2.5f
+            val peakY = startCenter.y + loopSign * NODE_RADIUS * 1.125f * 2.5f
             val rightAttach =
                 Offset(startCenter.x + halfSpread, startCenter.y + loopSign * halfSpread)
             val leftAttach =
@@ -165,9 +163,9 @@ fun Machine.computePaths(
                 )
 
             val startOffset =
-                Offset(startCenter.x + NODE_OUTLINE_RADIUS * chordDirX, startCenter.y + NODE_OUTLINE_RADIUS * chordDirY)
+                Offset(startCenter.x + NODE_RADIUS * 1.125f * chordDirX, startCenter.y + NODE_RADIUS * 1.125f * chordDirY)
             val endOffset =
-                Offset(endCenter.x - NODE_OUTLINE_RADIUS * chordDirX, endCenter.y - NODE_OUTLINE_RADIUS * chordDirY)
+                Offset(endCenter.x - NODE_RADIUS * 1.125f * chordDirX, endCenter.y - NODE_RADIUS * 1.125f * chordDirY)
 
             geometries.add(
                 ArrowGeometry(
@@ -240,12 +238,12 @@ private fun ArrowGeometry.recomputeControlPoint() {
 private fun buildSelfLoopPath(
     geometry: ArrowGeometry,
     halfSpread: Float,
-): TransitionPath {
+): ArrowPath {
     val arcCenterFactor = 5.25f / (5f - sqrt(2f))
-    val arcRadius = (2.5f - arcCenterFactor) * NODE_OUTLINE_RADIUS
-    val arcCenterY = geometry.startCenter.y + geometry.loopSign * arcCenterFactor * NODE_OUTLINE_RADIUS
+    val arcRadius = (2.5f - arcCenterFactor) * NODE_RADIUS * 1.125f
+    val arcCenterY = geometry.startCenter.y + geometry.loopSign * arcCenterFactor * NODE_RADIUS * 1.125f
 
-    val attachDy = abs(halfSpread - arcCenterFactor * NODE_OUTLINE_RADIUS)
+    val attachDy = abs(halfSpread - arcCenterFactor * NODE_RADIUS * 1.125f)
     val attachAngle = (atan2(attachDy.toDouble(), halfSpread.toDouble()) * 180.0 / PI).toFloat()
     val startAngle = -geometry.loopSign * attachAngle
     val sweepAngle = geometry.loopSign * (180f + 2f * attachAngle)
@@ -257,19 +255,23 @@ private fun buildSelfLoopPath(
             right = geometry.startCenter.x + arcRadius,
             bottom = arcCenterY + arcRadius,
         )
-    val bodyPath = Path().apply { arcTo(oval, startAngle, sweepAngle, forceMoveTo = true) }
-
     val endAngleRad = (startAngle + sweepAngle) * PI / 180.0
     val sweepSign = if (sweepAngle > 0) 1f else -1f
     val headDirX = (-sin(endAngleRad) * sweepSign).toFloat()
     val headDirY = (cos(endAngleRad) * sweepSign).toFloat()
-    val headPath = getArrowHeadGeometry(geometry.endOffset, headDirX, headDirY)
+    val tipOffset = Offset(geometry.endOffset.x, geometry.endOffset.y)
+    val bodyPath =
+        Path().apply {
+            arcTo(oval, startAngle, sweepAngle, forceMoveTo = true)
+            lineTo(tipOffset.x, tipOffset.y)
+        }
+    val headPath = getArrowHeadGeometry(tipOffset, headDirX, headDirY)
     val textPosition =
         Offset(
             geometry.controlPoint.x,
             geometry.controlPoint.y + geometry.loopSign * NODE_RADIUS * 2f,
         )
-    return TransitionPath(
+    return ArrowPath(
         bodyPath = bodyPath,
         headPath = headPath,
         controlPoint = geometry.controlPoint,
@@ -278,7 +280,7 @@ private fun buildSelfLoopPath(
     )
 }
 
-private fun buildRegularPath(geometry: ArrowGeometry): TransitionPath {
+private fun buildRegularPath(geometry: ArrowGeometry): ArrowPath {
     val bodyPath =
         Path().apply {
             moveTo(geometry.startOffset.x, geometry.startOffset.y)
@@ -305,7 +307,7 @@ private fun buildRegularPath(geometry: ArrowGeometry): TransitionPath {
             bezierMidX + geometry.perpX * NODE_RADIUS * 2f,
             bezierMidY + geometry.perpY * NODE_RADIUS * 2f,
         )
-    return TransitionPath(
+    return ArrowPath(
         bodyPath = bodyPath,
         headPath = headPath,
         controlPoint = geometry.controlPoint,
@@ -355,8 +357,8 @@ private fun spreadConnections(
         val angle = angles[i]
         val newOffset =
             Offset(
-                (nodeCenter.x + NODE_OUTLINE_RADIUS * cos(angle)).toFloat(),
-                (nodeCenter.y + NODE_OUTLINE_RADIUS * sin(angle)).toFloat(),
+                (nodeCenter.x + NODE_RADIUS * 1.125f * cos(angle)).toFloat(),
+                (nodeCenter.y + NODE_RADIUS * 1.125f * sin(angle)).toFloat(),
             )
         for (geometry in geometryGroup) {
             if (isEnd) geometry.endOffset = newOffset else geometry.startOffset = newOffset

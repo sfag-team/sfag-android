@@ -10,9 +10,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,7 +57,7 @@ fun DefaultDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    TextButton(onClick = onDismiss, shape = MaterialTheme.shapes.medium) {
+                    OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.medium) {
                         Text(dismissLabel)
                     }
                     Button(

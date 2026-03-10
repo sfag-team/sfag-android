@@ -8,13 +8,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -73,15 +71,18 @@ fun Tape(
         remember(density) { with(density) { (CELL_SIZE + tapeCellPadding).roundToPx() } }
 
     Row(
-        modifier = Modifier.fillMaxWidth().height(BAR_HEIGHT),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(BAR_HEIGHT)
+                .padding(horizontal = tapeCellPadding),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Start,
+        horizontalArrangement = Arrangement.spacedBy(tapeCellPadding),
     ) {
         if (onEdit != null) {
             Box(
                 modifier =
                     Modifier
-                        .padding(start = 4.dp)
                         .size(CELL_SIZE)
                         .clip(MaterialTheme.shapes.small)
                         .background(MaterialTheme.colorScheme.secondaryContainer)
@@ -97,7 +98,6 @@ fun Tape(
                     lineHeight = 14.sp,
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
         }
 
         BoxWithConstraints(modifier = Modifier.weight(1f)) {
@@ -141,9 +141,6 @@ fun Tape(
                 }
             }
         }
-        if (onEdit != null) {
-            Spacer(modifier = Modifier.width(4.dp))
-        }
     }
 }
 
@@ -153,7 +150,7 @@ fun FiniteMachine.Tape(
     onEdit: () -> Unit,
 ) {
     val symbols = fullInput.ifEmpty { currentInput.toString() }
-    val headIndex = (symbols.length - remainingInput.length).coerceIn(0, symbols.length)
+    val headIndex = (symbols.length - remainingInput.length).coerceIn(0, (symbols.length - 1).coerceAtLeast(0))
 
     Tape(
         symbols = symbols.toList(),
@@ -162,7 +159,7 @@ fun FiniteMachine.Tape(
         headColor = MaterialTheme.colorScheme.primary,
         isConsumedShown = true,
         onEdit = onEdit,
-        infiniteRight = true,
+        infiniteRight = false,
     )
 }
 
@@ -172,7 +169,7 @@ fun PushdownMachine.Tape(
     onEdit: () -> Unit,
 ) {
     val symbols = fullInput.ifEmpty { currentInput.toString() }
-    val headIndex = (symbols.length - remainingInput.length).coerceIn(0, symbols.length)
+    val headIndex = (symbols.length - remainingInput.length).coerceIn(0, (symbols.length - 1).coerceAtLeast(0))
 
     Tape(
         symbols = symbols.toList(),
@@ -181,7 +178,7 @@ fun PushdownMachine.Tape(
         headColor = MaterialTheme.colorScheme.primary,
         isConsumedShown = true,
         onEdit = onEdit,
-        infiniteRight = true,
+        infiniteRight = false,
     )
 }
 

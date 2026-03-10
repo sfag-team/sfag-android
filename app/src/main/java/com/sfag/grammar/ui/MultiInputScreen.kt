@@ -60,7 +60,7 @@ fun MultiInputScreen(
             text = stringResource(R.string.test_multiple_inputs),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 8.dp, end = 8.dp),
+            modifier = Modifier,
         )
         HorizontalDivider(
             modifier = Modifier.height(4.dp).fillMaxWidth(),

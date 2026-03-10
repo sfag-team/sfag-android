@@ -23,25 +23,25 @@ fun FormalDefinitionView(
             text = "G = (N, T, P, S)",
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 8.dp),
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
         Text(
             text = stringResource(R.string.start_symbol),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp),
+            modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp),
         )
         Text(
             text = "S",
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
-            modifier = Modifier.padding(horizontal = 8.dp),
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
         Text(
             text = stringResource(R.string.non_terminal),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp),
+            modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp),
         )
         Text(
             text =
@@ -52,13 +52,13 @@ fun FormalDefinitionView(
                 },
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
-            modifier = Modifier.padding(horizontal = 8.dp),
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
         Text(
             text = stringResource(R.string.grammar_terminal),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp),
+            modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp),
         )
         Text(
             text =
@@ -69,19 +69,19 @@ fun FormalDefinitionView(
                 },
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
-            modifier = Modifier.padding(horizontal = 8.dp),
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
         Text(
             text = stringResource(R.string.grammar_type),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 8.dp),
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
         Text(
             text = grammarType.toString(),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
-            modifier = Modifier.padding(horizontal = 8.dp),
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
     }
 }

@@ -22,35 +22,41 @@ class AutomataViewModel
     internal constructor(
         private val storage: Storage,
     ) : ViewModel() {
-        // The single current machine — observed by the Activity to key the composition.
+        // The single current machine - observed by the Activity to key the composition.
         var currentMachine by mutableStateOf<Machine?>(null)
             private set
 
-        // Layout state — persists across simulation/edit mode switches
+        // Layout state - persists across simulation/edit mode switches
         val statePositions: SnapshotStateMap<Int, Offset> = mutableStateMapOf()
-        var scaleCanvas by mutableFloatStateOf(1f)
         var offsetXCanvas by mutableFloatStateOf(0f)
         var offsetYCanvas by mutableFloatStateOf(0f)
-        var shouldAutoFit by mutableStateOf(true)
+        var scaleCanvas by mutableFloatStateOf(0.5f)
+        var machineAutoCenter by mutableStateOf(false)
 
-        /** Sets the active machine and initializes layout state. */
+        /** Sets the active machine, initializes positions, and resets view to default scale + center. */
         fun setCurrentMachine(
             machine: Machine,
             positions: Map<Int, Point2D> = emptyMap(),
         ) {
             currentMachine = machine
             initPositions(positions)
+            scaleCanvas = 0.5f
+            machineAutoCenter = true
         }
 
         /** Persists the current machine to the fixed auto-save slot. */
         fun autoSave(machine: Machine) {
-            storage.saveMachine(machine, getPositions())
+            storage.saveMachine(machine, getPositions(), offsetXCanvas, offsetYCanvas, scaleCanvas)
         }
 
         /** Loads the auto-saved machine. Returns true on success. */
         fun loadMachine(): Boolean {
-            val (machine, positions) = storage.loadMachine() ?: return false
-            setCurrentMachine(machine, positions)
+            val (machine, positions, canvas) = storage.loadMachine() ?: return false
+            currentMachine = machine
+            initPositions(positions)
+            offsetXCanvas = canvas.first
+            offsetYCanvas = canvas.second
+            scaleCanvas = canvas.third
             return true
         }
 
@@ -60,10 +66,6 @@ class AutomataViewModel
         fun initPositions(positions: Map<Int, Point2D>) {
             statePositions.clear()
             positions.forEach { (index, point2D) -> statePositions[index] = Offset(point2D.x, point2D.y) }
-            shouldAutoFit = true
-            scaleCanvas = 1f
-            offsetXCanvas = 0f
-            offsetYCanvas = 0f
         }
 
         /** Returns current positions for JFF export/save. */
