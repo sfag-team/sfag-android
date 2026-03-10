@@ -5,13 +5,16 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
@@ -37,565 +39,553 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-
 import com.sfag.R
-import com.sfag.automata.AUTOMATA_CANVAS_HEIGHT
-import com.sfag.automata.TAPE_BAR_HEIGHT
-import com.sfag.automata.data.JffParser
+import com.sfag.automata.data.Jff
+import com.sfag.automata.data.exportToJff
 import com.sfag.automata.data.toMachine
-import com.sfag.automata.model.machine.FiniteMachine
-import com.sfag.automata.model.machine.Machine
-import com.sfag.automata.model.machine.MachineType
-import com.sfag.automata.model.machine.PushdownMachine
-import com.sfag.automata.model.machine.isDeterministic
-import com.sfag.automata.model.simulation.SimulationOutcome
-import com.sfag.automata.model.simulation.SimulationStep
-import com.sfag.automata.ui.diagram.AutomataView
-import com.sfag.automata.ui.diagram.EditActions
-import com.sfag.automata.ui.diagram.MathFormatView
-import com.sfag.automata.ui.diagram.MultipleAnimationsOfTransition
-import com.sfag.automata.ui.diagram.computePaths
-import com.sfag.automata.ui.editor.EditingInput
-import com.sfag.automata.ui.editor.EditingMachineBottom
-import com.sfag.automata.ui.tree.DerivationTree
-import com.sfag.shared.JFF_OPEN_MIME_TYPES
-import com.sfag.shared.JFF_SAVE_MIME_TYPES
-import com.sfag.shared.ui.component.DefaultButton
-import com.sfag.shared.ui.component.DefaultDialogWindow
-import com.sfag.shared.ui.component.DefaultIconButton
-import com.sfag.shared.ui.component.DefaultTextField
-import com.sfag.shared.ui.component.ItemSpecificationIcon
-import com.sfag.shared.util.JffUtils
+import com.sfag.automata.domain.common.checkDeterminism
+import com.sfag.automata.domain.common.getFormalDefinition
+import com.sfag.automata.domain.machine.FiniteMachine
+import com.sfag.automata.domain.machine.Machine
+import com.sfag.automata.domain.machine.PushdownMachine
+import com.sfag.automata.domain.simulation.Simulation
+import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.automata.ui.common.FormalDefinitionView
+import com.sfag.automata.ui.edit.StateList
+import com.sfag.automata.ui.edit.TransitionList
+import com.sfag.automata.ui.machine.DialogRequest
+import com.sfag.automata.ui.machine.MachineView
+import com.sfag.automata.ui.machine.TransitionAnimation
+import com.sfag.automata.ui.machine.computePaths
+import com.sfag.automata.ui.tree.TreeView
+import com.sfag.main.config.EXTRA_OPEN_FILE_PICKER
+import com.sfag.main.config.JFF_OPEN_MIME_TYPES
+import com.sfag.main.config.JFF_SAVE_MIME_TYPE
+import com.sfag.main.data.JffUtils
+import com.sfag.main.ui.component.DefaultButton
+import com.sfag.main.ui.component.DefaultDialog
+import com.sfag.main.ui.component.DefaultIconButton
+import com.sfag.main.ui.component.DefaultTextField
+import com.sfag.main.ui.component.ItemSpecificationIcon
 
-private enum class ScreenState {
-    SIMULATING,
-    SIMULATION_RUN,
-    EDITING_INPUT,
-    EDITING_MACHINE,
+private enum class Mode {
+    SIMULATOR,
+    SIMULATION_STEP,
+    INPUT_EDITOR,
+    MACHINE_EDITOR,
 }
 
-private enum class ActiveDialog { RENAME, NEW_MACHINE }
+private sealed interface ActiveDialog {
+    data object NewMachine : ActiveDialog
+
+    data class Rename(
+        val initialName: String,
+    ) : ActiveDialog
+}
 
 @Composable
-fun AutomataScreen(modifier: Modifier = Modifier, snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }, navBack: () -> Unit) {
-    val viewModel: AutomataViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
-    val context = LocalContext.current
-    val noInitialStateMessage = stringResource(R.string.no_initial_state)
+fun AutomataScreen(
+    snackbarHostState: SnackbarHostState,
+    modifier: Modifier = Modifier,
+    navBack: () -> Unit,
+) {
+    val activity = LocalActivity.current as? ComponentActivity ?: return
+    val viewModel: AutomataViewModel = hiltViewModel(activity)
+    val noInitialStateMsg = stringResource(R.string.no_initial_state)
 
-    val initImportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let { it ->
-            val content = context.contentResolver.openInputStream(it)?.bufferedReader()?.use { it.readText() }
-            content?.let { jffXml ->
-                val parseResult = JffParser.parseJffWithType(jffXml)
-                val imported = parseResult.toMachine("untitled")
-                viewModel.setCurrentMachine(imported, parseResult.positions)
+    val initImportLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri ->
+            uri?.let {
+                activity.contentResolver.openInputStream(it)?.use { stream ->
+                    val jff = Jff.parse(stream)
+                    val newMachine = jff.toMachine("untitled")
+                    viewModel.setCurrentMachine(newMachine, jff.positions)
+                }
             }
         }
-    }
 
     val machine = viewModel.currentMachine
     if (machine == null) {
-        NewMachineWindow(
-            onImport = {
-                initImportLauncher.launch(JFF_OPEN_MIME_TYPES)
-            }
-        ) { newMachine ->
-            if (newMachine != null) {
-                viewModel.setCurrentMachine(newMachine)
-            } else {
-                navBack()
-            }
+        val importMode = activity.intent?.getBooleanExtra(EXTRA_OPEN_FILE_PICKER, false) ?: false
+        if (importMode) {
+            LaunchedEffect(Unit) { initImportLauncher.launch(JFF_OPEN_MIME_TYPES) }
+        } else {
+            LaunchedEffect(Unit) { navBack() }
         }
         return
     }
 
-    val recompose = remember {
-        mutableIntStateOf(0)
-    }
+    key(machine) {
+        val recomposeKey = remember { mutableIntStateOf(0) }
 
-    // On screen entry: ensure initial state is highlighted and derivation tree is ready.
-    // Fixes inconsistency between newly-created machines (isCurrent set via addNewState)
-    // and machines loaded from file (isCurrent defaults to false in JffParser).
-    LaunchedEffect(machine) {
-        machine.setInitialStateAsCurrent()
-        recompose.intValue++
-    }
-
-    val animation = remember {
-        mutableIntStateOf(0)
-    }
-    val currentScreenState = remember {
-        mutableStateOf(ScreenState.SIMULATING)
-    }
-    var isLockedAnimation by remember { mutableStateOf(true) }
-    var simulationOutcome by remember { mutableStateOf<SimulationOutcome?>(null) }
-    val animOverlay = remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
-    val editActions = remember { EditActions() }
-    var pendingMessage by remember { mutableStateOf<String?>(null) }
-    var activeDialog by remember { mutableStateOf<ActiveDialog?>(null) }
-    var pendingName by remember { mutableStateOf("") }
-
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument(JFF_SAVE_MIME_TYPES)
-    ) { uri ->
-        uri?.let {
-            context.contentResolver.openOutputStream(it)?.use { stream ->
-                stream.write(machine.exportToJFF(viewModel.getPositionsAsVec2()).toByteArray(Charsets.UTF_8))
-            }
+        // Ensure initial state is highlighted and derivation tree is ready on screen entry
+        LaunchedEffect(machine) {
+            machine.setInitialStateAsCurrent()
+            recomposeKey.intValue++
         }
-    }
 
-    val importLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let { it ->
-            val content = context.contentResolver.openInputStream(it)?.bufferedReader()?.use { it.readText() }
-            content?.let { jffXml ->
-                val parseResult = JffParser.parseJffWithType(jffXml)
-                val imported = parseResult.toMachine("untitled")
-                viewModel.autoSave(machine)
-                viewModel.setCurrentMachine(imported, parseResult.positions)
-            }
-        }
-    }
+        val currentMode = remember { mutableStateOf(Mode.SIMULATOR) }
+        var simulationOutcome by remember { mutableStateOf<SimulationOutcome?>(null) }
+        val animationOverlay = remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
+        val dialogRequest = remember { mutableStateOf<DialogRequest?>(null) }
+        var snackbarMsg by remember { mutableStateOf<String?>(null) }
+        var activeDialog by remember { mutableStateOf<ActiveDialog?>(null) }
 
-    BackHandler {
-        when (currentScreenState.value) {
-            ScreenState.SIMULATING -> {
-                viewModel.autoSave(machine)
-                navBack()
-            }
-
-            ScreenState.SIMULATION_RUN -> {
-                // Ignore back during animation
-            }
-
-            ScreenState.EDITING_INPUT -> {
-                machine.setInitialStateAsCurrent()
-                viewModel.autoSave(machine)
-                currentScreenState.value = ScreenState.SIMULATING
-            }
-
-            ScreenState.EDITING_MACHINE -> {
-                machine.setInitialStateAsCurrent()
-                recompose.intValue++
-                viewModel.autoSave(machine)
-                currentScreenState.value = ScreenState.SIMULATING
-            }
-        }
-    }
-
-    LaunchedEffect(pendingMessage) {
-        pendingMessage?.let {
-            snackbarHostState.showSnackbar(it)
-            pendingMessage = null
-        }
-    }
-
-    val diagramScrollBlocker = remember {
-        object : NestedScrollConnection {
-            // Only consume vertical scroll; horizontal is used by tape-bar LazyRows
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset =
-                Offset(0f, available.y)
-        }
-    }
-
-    Box(
-        modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLowest)
-    ) {
-        if (currentScreenState.value != ScreenState.EDITING_INPUT) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
-            ) {
-                item {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        DefaultButton(
-                            text = stringResource(R.string.share_label),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            JffUtils.shareFile(
-                                context = context,
-                                jffContent = machine.exportToJFF(viewModel.getPositionsAsVec2()),
-                                filename = machine.name
-                            )
-                        }
-
-                        DefaultButton(
-                            text = stringResource(R.string.export_label),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            exportLauncher.launch("${machine.name.ifEmpty { "untitled" }}.jff")
-                        }
-
-                        DefaultButton(
-                            text = stringResource(R.string.import_label),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            importLauncher.launch(JFF_OPEN_MIME_TYPES)
-                        }
-
-                        DefaultButton(
-                            text = stringResource(R.string.new_label),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            activeDialog = ActiveDialog.NEW_MACHINE
-                        }
+        val exportLauncher =
+            rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.CreateDocument(JFF_SAVE_MIME_TYPE),
+            ) { uri ->
+                uri?.let {
+                    activity.contentResolver.openOutputStream(it)?.use { stream ->
+                        stream.write(
+                            machine
+                                .exportToJff(viewModel.getPositions())
+                                .toByteArray(Charsets.UTF_8),
+                        )
                     }
+                }
+            }
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(
-                                TAPE_BAR_HEIGHT + AUTOMATA_CANVAS_HEIGHT +
-                                    if (machine.machineType == MachineType.Pushdown &&
-                                        currentScreenState.value != ScreenState.EDITING_MACHINE
-                                    ) TAPE_BAR_HEIGHT else 0.dp
-                            )
-                            .nestedScroll(diagramScrollBlocker)
-                            .clip(MaterialTheme.shapes.medium)
-                            .background(MaterialTheme.colorScheme.surfaceContainer)
-                    ) {
-                        // Preserve original trigger structure: key resets the scope each step,
-                        // isLockedAnimation prevents re-calling calculateNextStep on recompose.
-                        if (currentScreenState.value == ScreenState.SIMULATION_RUN) {
-                            key(animation.intValue) {
-                                if (!isLockedAnimation) {
-                                    when (val result = viewModel.calculateNextStep()) {
-                                        is SimulationStep.Ended -> {
-                                            isLockedAnimation = true
-                                            simulationOutcome = result.outcome
-                                            recompose.intValue++
-                                            currentScreenState.value = ScreenState.SIMULATING
-                                            val message = when (result.outcome) {
-                                                SimulationOutcome.ACCEPTED -> {
-                                                    val acceptingStates = machine.states
-                                                        .filter { it.isCurrent && it.final }
-                                                        .joinToString(", ") { it.name }
-                                                    stringResource(R.string.accepted_in_states, acceptingStates)
-                                                }
-                                                SimulationOutcome.REJECTED -> {
-                                                    val currentStatesStr = machine.states
-                                                        .filter { it.isCurrent }
-                                                        .joinToString(", ") { it.name }
-                                                    stringResource(R.string.rejected_in_states, currentStatesStr)
-                                                }
-                                                SimulationOutcome.ACTIVE -> null
-                                            }
-                                            message?.let { pendingMessage = it }
+        val importLauncher =
+            rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri ->
+                uri?.let {
+                    activity.contentResolver.openInputStream(it)?.use { stream ->
+                        val jff = Jff.parse(stream)
+                        val newMachine = jff.toMachine("untitled")
+                        viewModel.autoSave(machine)
+                        viewModel.setCurrentMachine(newMachine, jff.positions)
+                    }
+                }
+            }
+
+        BackHandler {
+            when (currentMode.value) {
+                Mode.SIMULATOR -> {
+                    viewModel.autoSave(machine)
+                    navBack()
+                }
+
+                Mode.SIMULATION_STEP -> {
+                    // Ignore back during animation
+                }
+
+                Mode.INPUT_EDITOR -> {
+                    machine.setInitialStateAsCurrent()
+                    viewModel.autoSave(machine)
+                    currentMode.value = Mode.SIMULATOR
+                }
+
+                Mode.MACHINE_EDITOR -> {
+                    machine.setInitialStateAsCurrent()
+                    recomposeKey.intValue++
+                    viewModel.autoSave(machine)
+                    currentMode.value = Mode.SIMULATOR
+                }
+            }
+        }
+
+        LaunchedEffect(snackbarMsg) {
+            snackbarMsg?.let {
+                snackbarHostState.showSnackbar(it)
+                snackbarMsg = null
+            }
+        }
+
+        val canvasScrollBlocker =
+            remember {
+                object : NestedScrollConnection {
+                    // Consume vertical scroll only; horizontal passes to tape-bar LazyRows
+                    override fun onPreScroll(
+                        available: Offset,
+                        source: NestedScrollSource,
+                    ): Offset = Offset(0f, available.y)
+                }
+            }
+
+        Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLowest)) {
+            if (currentMode.value != Mode.INPUT_EDITOR) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp),
+                ) {
+                    item {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            ) {
+                                DefaultButton(
+                                    text = stringResource(R.string.share_file),
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    JffUtils.shareFile(
+                                        context = activity,
+                                        jffContent =
+                                            machine.exportToJff(viewModel.getPositions()),
+                                        filename = machine.name,
+                                    )
+                                }
+
+                                DefaultButton(
+                                    text = stringResource(R.string.export_file),
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    exportLauncher.launch(
+                                        "${machine.name.ifEmpty { "untitled" }}.jff",
+                                    )
+                                }
+
+                                DefaultButton(
+                                    text = stringResource(R.string.import_file),
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    importLauncher.launch(JFF_OPEN_MIME_TYPES)
+                                }
+
+                                DefaultButton(
+                                    text = stringResource(R.string.create_new),
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    activeDialog = ActiveDialog.NewMachine
+                                }
+                            }
+
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .nestedScroll(canvasScrollBlocker)
+                                        .clip(MaterialTheme.shapes.medium)
+                                        .background(MaterialTheme.colorScheme.surfaceContainer),
+                            ) {
+                                machine.MachineView(
+                                    isEditing =
+                                        currentMode.value == Mode.MACHINE_EDITOR,
+                                    recomposeKey = recomposeKey.intValue,
+                                    animationOverlay = animationOverlay.value,
+                                    dialogRequest = dialogRequest,
+                                    simulationOutcome = simulationOutcome,
+                                    onEdit = {
+                                        if (
+                                            currentMode.value != Mode.SIMULATION_STEP
+                                        ) {
+                                            simulationOutcome = null
+                                            currentMode.value = Mode.INPUT_EDITOR
                                         }
-                                        is SimulationStep.Step -> {
-                                            // Lock before setting animOverlay - otherwise the
-                                            // state write triggers a recompose where
-                                            // !isLockedAnimation is still true and
-                                            // calculateNextStep() runs a second time.
-                                            isLockedAnimation = true
-                                            val capturedPositions = viewModel.statePositions.toMap()
-                                            animOverlay.value = {
-                                                val animDensity = LocalDensity.current
-                                                val renderData = machine.computePaths(capturedPositions, animDensity)
-                                                machine.MultipleAnimationsOfTransition(
-                                                    transitions = result.transitions,
-                                                    renderData = renderData,
-                                                    offsetXGraph = viewModel.offsetXGraph,
-                                                    offsetYGraph = viewModel.offsetYGraph,
-                                                    onAllAnimationsEnd = {
-                                                        result.onAllComplete()
-                                                        animOverlay.value = null
-                                                        recompose.intValue++
-                                                        currentScreenState.value = ScreenState.SIMULATING
+                                    },
+                                    onRecompose = { recomposeKey.intValue++ },
+                                    onClickName = {
+                                        activeDialog = ActiveDialog.Rename(machine.name.ifEmpty { "" })
+                                    },
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            ) {
+                                DefaultIconButton(
+                                    icon = R.drawable.edit,
+                                    modifier = Modifier.weight(1f),
+                                    isActive =
+                                        currentMode.value == Mode.MACHINE_EDITOR,
+                                ) {
+                                    if (currentMode.value == Mode.SIMULATION_STEP) {
+                                        return@DefaultIconButton
+                                    }
+                                    if (currentMode.value == Mode.MACHINE_EDITOR) {
+                                        machine.setInitialStateAsCurrent()
+                                        recomposeKey.intValue++
+                                        currentMode.value = Mode.SIMULATOR
+                                    } else {
+                                        currentMode.value = Mode.MACHINE_EDITOR
+                                    }
+                                }
+                                DefaultIconButton(
+                                    icon = R.drawable.replay,
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    simulationOutcome = null
+                                    animationOverlay.value = null
+                                    machine.currentInput.clear()
+                                    machine.currentInput.append(machine.fullInput)
+                                    machine.remainingInput =
+                                        StringBuilder(machine.fullInput)
+                                    machine.setInitialStateAsCurrent()
+                                    recomposeKey.intValue++
+                                    currentMode.value = Mode.SIMULATOR
+                                }
+                                DefaultIconButton(
+                                    icon = R.drawable.skip_next,
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    if (currentMode.value == Mode.SIMULATION_STEP) {
+                                        return@DefaultIconButton
+                                    }
+                                    if (machine.states.none { it.initial }) {
+                                        snackbarMsg = noInitialStateMsg
+                                        return@DefaultIconButton
+                                    }
+                                    if (currentMode.value != Mode.SIMULATOR) {
+                                        currentMode.value = Mode.SIMULATOR
+                                    }
+                                    when (val simulation = viewModel.advanceSimulation()) {
+                                        is Simulation.Ended -> {
+                                            simulationOutcome = simulation.outcome
+                                            recomposeKey.intValue++
+                                            snackbarMsg =
+                                                when (simulation.outcome) {
+                                                    SimulationOutcome.ACCEPTED -> {
+                                                        val stateNames =
+                                                            machine.states
+                                                                .filter { it.isCurrent && it.final }
+                                                                .joinToString(", ") { it.name }
+                                                        activity.getString(
+                                                            R.string.accepted_in_states,
+                                                            stateNames,
+                                                        )
                                                     }
+                                                    SimulationOutcome.REJECTED -> {
+                                                        val stateNames =
+                                                            machine.states
+                                                                .filter { it.isCurrent }
+                                                                .joinToString(", ") { it.name }
+                                                        activity.getString(
+                                                            R.string.rejected_in_states,
+                                                            stateNames,
+                                                        )
+                                                    }
+                                                    SimulationOutcome.ACTIVE,
+                                                    SimulationOutcome.DEAD,
+                                                    -> null
+                                                }
+                                        }
+                                        is Simulation.Step -> {
+                                            currentMode.value = Mode.SIMULATION_STEP
+                                            val capturedPositions = viewModel.statePositions.toMap()
+                                            animationOverlay.value = {
+                                                val animDensity = LocalDensity.current
+                                                val transitionPaths =
+                                                    machine.computePaths(
+                                                        capturedPositions,
+                                                        animDensity,
+                                                    )
+                                                machine.TransitionAnimation(
+                                                    transitionRefs = simulation.transitionRefs,
+                                                    transitionPaths = transitionPaths,
+                                                    offsetXCanvas = viewModel.offsetXCanvas,
+                                                    offsetYCanvas = viewModel.offsetYCanvas,
+                                                    onAnimationsEnd = {
+                                                        simulation.onAllComplete()
+                                                        animationOverlay.value = null
+                                                        recomposeKey.intValue++
+                                                        currentMode.value =
+                                                            Mode.SIMULATOR
+                                                    },
                                                 )
                                             }
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        machine.AutomataView(
-                            isEditing = currentScreenState.value == ScreenState.EDITING_MACHINE,
-                            recomposeKey = recompose.intValue,
-                            onEditInputClick = {
-                                simulationOutcome = null
-                                currentScreenState.value = ScreenState.EDITING_INPUT
-                            },
-                            increaseRecomposeValue = { recompose.intValue++ },
-                            animationOverlay = animOverlay.value,
-                            editActions = editActions,
-                            onNameClick = {
-                                pendingName = machine.name.ifEmpty { "" }
-                                activeDialog = ActiveDialog.RENAME
-                            },
-                            simulationOutcome = simulationOutcome
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        DefaultIconButton(
-                            icon = R.drawable.edit,
-                            modifier = Modifier.weight(1f),
-                            isActive = currentScreenState.value == ScreenState.EDITING_MACHINE
-                        ) {
-                            if (currentScreenState.value == ScreenState.EDITING_MACHINE) {
-                                machine.setInitialStateAsCurrent()
-                                recompose.intValue++
-                                currentScreenState.value = ScreenState.SIMULATING
-                            } else {
-                                currentScreenState.value = ScreenState.EDITING_MACHINE
-                            }
+                            BottomScreenPart(
+                                currentMode,
+                                machine,
+                                viewModel,
+                                recomposeKey = recomposeKey,
+                                dialogRequest = dialogRequest,
+                            )
                         }
-                        DefaultIconButton(icon = R.drawable.replay, modifier = Modifier.weight(1f)) {
-                            isLockedAnimation = true
-                            simulationOutcome = null
-                            animOverlay.value = null
-                            // Restore full input from snapshot (machine.input may be
-                            // partially consumed; fullInputSnapshot holds the original).
-                            machine.input.clear()
-                            machine.input.append(machine.fullInputSnapshot)
-                            machine.imuInput = StringBuilder(machine.fullInputSnapshot)
-                            // Reset state highlighting + derivation tree + machine internals
-                            // (stack / tape / currentStates via resetMachineState override).
-                            machine.setInitialStateAsCurrent()
-                            recompose.intValue++
-                            currentScreenState.value = ScreenState.SIMULATING
-                        }
-                        DefaultIconButton(icon = R.drawable.skip_next, modifier = Modifier.weight(1f)) {
-                            if (currentScreenState.value == ScreenState.SIMULATION_RUN) return@DefaultIconButton
-                            if (machine.states.none { it.initial }) {
-                                pendingMessage = noInitialStateMessage
-                                return@DefaultIconButton
-                            }
-                            if (currentScreenState.value != ScreenState.SIMULATING) {
-                                currentScreenState.value = ScreenState.SIMULATING
-                            }
-                            currentScreenState.value = ScreenState.SIMULATION_RUN
-                            isLockedAnimation = false
-                            animation.intValue++
-                        }
-                    }
-
-                    BottomScreenPart(currentScreenState, machine, viewModel, bottomRecompose = recompose, editActions = editActions)
                     }
                 }
             }
-        }
 
-        // Full-screen input editor overlay - hides all other controls when active
-        if (currentScreenState.value == ScreenState.EDITING_INPUT) {
-            machine.EditingInput(
-                onConfirm = {
-                    viewModel.autoSave(machine)
-                    currentScreenState.value = ScreenState.SIMULATING
-                },
-                onDiscard = {
-                    viewModel.autoSave(machine)
-                    currentScreenState.value = ScreenState.SIMULATING
-                }
-            )
-        }
-
-        if (activeDialog == ActiveDialog.RENAME) {
-            DefaultDialogWindow(
-                title = null,
-                conditionToEnable = pendingName.isNotBlank(),
-                onDismiss = { activeDialog = null },
-                onConfirm = {
-                    machine.name = pendingName
-                    viewModel.autoSave(machine)
-                    activeDialog = null
-                }
+            // Full-screen input editor overlay - slides up over all other controls
+            AnimatedVisibility(
+                visible = currentMode.value == Mode.INPUT_EDITOR,
+                enter = slideInVertically(initialOffsetY = { it }),
+                exit = slideOutVertically(targetOffsetY = { it }),
             ) {
-                DefaultTextField(
-                    hint = stringResource(R.string.machine_name),
-                    value = pendingName,
-                    suffix = stringResource(R.string.jff_suffix),
-                    modifier = Modifier.fillMaxWidth(),
-                    onTextChange = { pendingName = it }
-                ) { pendingName.isNotBlank() }
+                machine.InputScreen(
+                    onConfirm = {
+                        viewModel.autoSave(machine)
+                        currentMode.value = Mode.SIMULATOR
+                    },
+                    onDismiss = {
+                        viewModel.autoSave(machine)
+                        currentMode.value = Mode.SIMULATOR
+                    },
+                )
             }
-        }
 
-        if (activeDialog == ActiveDialog.NEW_MACHINE) {
-            NewMachineWindow { newMachine ->
-                activeDialog = null
-                newMachine?.let {
-                    viewModel.autoSave(machine)
-                    viewModel.setCurrentMachine(it)
+            when (val dialog = activeDialog) {
+                is ActiveDialog.Rename -> {
+                    var editingName by remember(dialog) {
+                        mutableStateOf(dialog.initialName)
+                    }
+                    DefaultDialog(
+                        title = null,
+                        enabled = editingName.isNotBlank(),
+                        onDismiss = { activeDialog = null },
+                        onConfirm = {
+                            machine.name = editingName
+                            viewModel.autoSave(machine)
+                            activeDialog = null
+                        },
+                    ) {
+                        DefaultTextField(
+                            label = stringResource(R.string.machine_name),
+                            value = editingName,
+                            suffix = ".jff",
+                            modifier = Modifier.fillMaxWidth(),
+                            onValueChange = { editingName = it },
+                        ) {
+                            editingName.isNotBlank()
+                        }
+                    }
                 }
+                is ActiveDialog.NewMachine ->
+                    NewMachineWindow { newMachine ->
+                        activeDialog = null
+                        newMachine?.let {
+                            viewModel.autoSave(machine)
+                            viewModel.setCurrentMachine(it)
+                        }
+                    }
+                null -> {}
             }
         }
     }
 }
 
-/**
- * Bottom part - displays derivation tree or editing bottom UI based on state
- */
+/** Bottom part - displays derivation tree or editing bottom UI based on mode */
 @Composable
 private fun BottomScreenPart(
-    currentScreenState: MutableState<ScreenState>,
+    currentMode: MutableState<Mode>,
     machine: Machine,
     viewModel: AutomataViewModel,
-    bottomRecompose: MutableIntState,
-    editActions: EditActions
+    recomposeKey: MutableIntState,
+    dialogRequest: MutableState<DialogRequest?>,
 ) {
-    when (currentScreenState.value) {
-        ScreenState.SIMULATING,
-        ScreenState.SIMULATION_RUN -> {
-            val showsTree = machine.isDeterministic() == false
-            if (showsTree) {
-                machine.DerivationTree(recomposeKey = bottomRecompose.intValue)
+    val isEditingMachine = currentMode.value == Mode.MACHINE_EDITOR
+    Crossfade(targetState = isEditingMachine, label = "bottom-panel") { isEditing ->
+        if (isEditing) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                machine.StateList(
+                    recomposeKey = recomposeKey,
+                    onClickState = { state ->
+                        dialogRequest.value = DialogRequest.ForState(Offset.Zero, state)
+                    },
+                    onRemoveState = { state ->
+                        viewModel.statePositions.remove(state.index)
+                        machine.removeState(state)
+                        recomposeKey.intValue++
+                    },
+                )
+                machine.TransitionList(
+                    recomposeKey = recomposeKey,
+                    onClickTransition = { transition ->
+                        val fromState = machine.getStateByIndex(transition.fromState)
+                        val toState = machine.getStateByIndex(transition.toState)
+                        dialogRequest.value =
+                            DialogRequest.ForTransition(fromState, toState, transition.name)
+                    },
+                    onRemoveTransition = { transition ->
+                        machine.removeTransition(transition)
+                        recomposeKey.intValue++
+                    },
+                )
             }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
-            ) {
-                MathFormatView(machine.getFormalDefinition())
-            }
-        }
-
-        ScreenState.EDITING_MACHINE -> {
-            machine.EditingMachineBottom(
-                recompose = bottomRecompose,
-                onStateClick = editActions.openState,
-                onTransitionClick = editActions.openTransition,
-                onDeleteState = { state ->
-                    viewModel.statePositions.remove(state.index)
-                    machine.deleteState(state)
-                    bottomRecompose.intValue++
-                },
-                onDeleteTransition = { transition ->
-                    machine.deleteTransition(transition)
-                    bottomRecompose.intValue++
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                val showsTree = machine.checkDeterminism() == false
+                if (showsTree) {
+                    machine.TreeView(
+                        recomposeKey = recomposeKey.intValue,
+                        onSelectNode =
+                            if (machine is PushdownMachine) {
+                                { nodeId ->
+                                    machine.selectNode(nodeId)
+                                    recomposeKey.intValue++
+                                }
+                            } else {
+                                null
+                            },
+                    )
                 }
-            )
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(MaterialTheme.colorScheme.surfaceContainer),
+                ) {
+                    FormalDefinitionView(machine.getFormalDefinition())
+                }
+            }
         }
-
-        else -> {}
     }
 }
 
+private enum class NewMachineChoice {
+    FINITE,
+    PUSHDOWN,
+}
+
 @Composable
-private fun NewMachineWindow(onImport: (() -> Unit)? = null, finished: (Machine?) -> Unit) {
-    var type by remember { mutableStateOf<MachineType?>(null) }
-    var name by remember { mutableStateOf("") }
+private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
+    var machineChoice by remember { mutableStateOf<NewMachineChoice?>(null) }
+    var machineName by remember { mutableStateOf("") }
 
-    val pushdownLabel = stringResource(R.string.pushdown)
-    val finiteLabel = stringResource(R.string.finite)
-
-    val iconsAndTextField: @Composable () -> Unit = {
+    DefaultDialog(
+        title = null,
+        confirmLabel = stringResource(R.string.create_new),
+        enabled = machineChoice != null,
+        onDismiss = { onImport(null) },
+        onConfirm = {
+            when (machineChoice) {
+                NewMachineChoice.FINITE -> onImport(FiniteMachine(name = machineName))
+                NewMachineChoice.PUSHDOWN -> onImport(PushdownMachine(name = machineName))
+                null -> {}
+            }
+        },
+    ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp),
+            modifier = Modifier.fillMaxWidth().height(120.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             ItemSpecificationIcon(
                 icon = R.drawable.finite_automata,
-                text = finiteLabel,
-                isActive = type?.equals(MachineType.Finite) ?: false
+                text = stringResource(R.string.finite_automaton),
+                isActive = machineChoice == NewMachineChoice.FINITE,
             ) {
-                type = MachineType.Finite
+                machineChoice = NewMachineChoice.FINITE
             }
-
             ItemSpecificationIcon(
                 icon = R.drawable.pushdown_automata,
-                text = pushdownLabel,
-                isActive = type?.equals(MachineType.Pushdown) ?: false
+                text = stringResource(R.string.pushdown_automaton),
+                isActive = machineChoice == NewMachineChoice.PUSHDOWN,
             ) {
-                type = MachineType.Pushdown
+                machineChoice = NewMachineChoice.PUSHDOWN
             }
         }
 
         DefaultTextField(
-            hint = stringResource(R.string.machine_name),
-            value = name,
-            suffix = stringResource(R.string.jff_suffix),
+            label = stringResource(R.string.machine_name),
+            value = machineName,
+            suffix = ".jff",
             modifier = Modifier.fillMaxWidth(),
-            onTextChange = { name = it }
+            onValueChange = { machineName = it },
         )
-    }
-
-    val onCreateConfirm: () -> Unit = {
-        when (type) {
-            MachineType.Finite -> finished(FiniteMachine(name = name))
-            MachineType.Pushdown -> finished(PushdownMachine(name = name))
-            else -> {}
-        }
-    }
-
-    if (onImport != null) {
-        // Fresh install: Import + New buttons in content
-        Dialog(onDismissRequest = { finished(null) }) {
-            Surface(
-                shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.surfaceContainerLow
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    iconsAndTextField()
-
-                    Spacer(Modifier.height(4.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        DefaultButton(
-                            text = stringResource(R.string.import_label),
-                            modifier = Modifier.weight(1f),
-                            height = 40
-                        ) {
-                            onImport()
-                        }
-                        DefaultButton(
-                            text = stringResource(R.string.new_label),
-                            modifier = Modifier.weight(1f),
-                            height = 40,
-                            conditionToEnable = type != null
-                        ) {
-                            onCreateConfirm()
-                        }
-                    }
-                }
-            }
-        }
-    } else {
-        // Normal: Discard + New via DefaultDialogWindow
-        DefaultDialogWindow(
-            title = null,
-            confirmLabel = stringResource(R.string.new_label),
-            conditionToEnable = type != null,
-            onDismiss = { finished(null) },
-            onConfirm = onCreateConfirm
-        ) {
-            iconsAndTextField()
-        }
     }
 }

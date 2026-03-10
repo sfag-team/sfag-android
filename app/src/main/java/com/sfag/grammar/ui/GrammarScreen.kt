@@ -1,36 +1,61 @@
 package com.sfag.grammar.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.sfag.R
+import com.sfag.grammar.domain.grammar.GrammarRule
+import com.sfag.grammar.ui.common.FormalDefinitionView
+import com.sfag.grammar.ui.common.GrammarRuleView
+import com.sfag.main.config.Symbols
 import kotlinx.coroutines.launch
 
-import com.sfag.grammar.model.GrammarRule
-import com.sfag.grammar.model.GrammarType
-import com.sfag.shared.Symbols
-
 @Composable
-fun GrammarScreen(grammarViewModel: GrammarViewModel, snackbarHostState: SnackbarHostState) {
-
+fun GrammarScreen(
+    grammarViewModel: GrammarViewModel,
+    snackbarHostState: SnackbarHostState,
+    modifier: Modifier = Modifier,
+) {
     val rules = grammarViewModel.rules
-    val nonterminals = grammarViewModel.nonterminals
+    val nonTerminals = grammarViewModel.nonTerminals
     val terminals = grammarViewModel.terminals
-    val type = grammarViewModel.grammarType
+    val grammarType = grammarViewModel.grammarType
 
     // State variables for new rule input
     var newLeft by remember { mutableStateOf(TextFieldValue("")) }
@@ -39,22 +64,18 @@ fun GrammarScreen(grammarViewModel: GrammarViewModel, snackbarHostState: Snackba
     // Track which TextField is focused
     var focusedField by remember { mutableStateOf("") }
     var editingRule by remember { mutableStateOf<GrammarRule?>(null) }
-    val finnishGrammar = grammarViewModel.isGrammarFinished
+    val isGrammarFinished = grammarViewModel.isGrammarFinished
 
-    Column(
-        modifier = Modifier
-            .padding(horizontal = 4.dp)
-            .fillMaxWidth()
-    ) {
+    Column(modifier = modifier.padding(horizontal = 4.dp).fillMaxWidth()) {
         Text(
-            text = "Rules P:",
-            fontSize = 15.sp,
+            text = stringResource(R.string.rules_p),
+            style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
+            modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp),
         )
         // LazyColumn for displaying rules and input fields
         LazyColumn(
-            modifier = Modifier.weight(1f) // Makes the LazyColumn fill remaining space
+            modifier = Modifier.weight(1f), // Makes the LazyColumn fill remaining space
         ) {
             items(rules) { rule ->
                 if (editingRule == rule) {
@@ -68,27 +89,27 @@ fun GrammarScreen(grammarViewModel: GrammarViewModel, snackbarHostState: Snackba
                         snackbarHostState = snackbarHostState,
                         onLeftChange = { editLeft = it },
                         onRightChange = { editRight = it },
-                        onFocusedFieldChange = { focusedField = it },
+                        onFieldFocusChange = { focusedField = it },
                         onAddRule = {
                             if (editLeft.text.isNotBlank() && editRight.text.isNotBlank()) {
                                 grammarViewModel.updateRule(rule, editLeft.text, editRight.text)
                                 editingRule = null
                             }
-                        }
+                        },
                     )
                 } else {
-                    DisplayRule(
-                        rule = rule,
+                    GrammarRuleView(
+                        grammarRule = rule,
                         grammarViewModel = grammarViewModel,
-                        finnishGrammar,
-                        onEditClick = { editingRule = rule }
+                        isGrammarFinished,
+                        onEdit = { editingRule = rule },
                     )
                 }
             }
 
             // Input fields for adding a new rule
             item {
-                if(!finnishGrammar){
+                if (!isGrammarFinished) {
                     AddRule(
                         leftText = newLeft,
                         rightText = newRight,
@@ -96,270 +117,169 @@ fun GrammarScreen(grammarViewModel: GrammarViewModel, snackbarHostState: Snackba
                         snackbarHostState = snackbarHostState,
                         onLeftChange = { newLeft = it },
                         onRightChange = { newRight = it },
-                        onFocusedFieldChange = { focusedField = it },
+                        onFieldFocusChange = { focusedField = it },
                         onAddRule = {
                             if (newLeft.text.isNotBlank() && newRight.text.isNotBlank()) {
                                 grammarViewModel.addRule(newLeft.text, newRight.text)
                                 newLeft = TextFieldValue("")
                                 newRight = TextFieldValue("")
                             }
-                        }
+                        },
                     )
                 }
                 Button(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-                    onClick = { grammarViewModel.toggleGrammarFinished() }) {
-                    Text(if (finnishGrammar) "Edit Grammar" else "Done")
+                    onClick = { grammarViewModel.toggleGrammarFinished() },
+                ) {
+                    Text(if (isGrammarFinished) stringResource(R.string.edit_grammar) else stringResource(R.string.editing_done))
                 }
             }
         }
         HorizontalDivider(
-            modifier = Modifier
-                .height(4.dp)
-                .fillMaxWidth(),
-            color = MaterialTheme.colorScheme.primary
+            modifier = Modifier.height(4.dp).fillMaxWidth(),
+            color = MaterialTheme.colorScheme.primary,
         )
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(290.dp)
-                .background(MaterialTheme.colorScheme.secondaryContainer),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center,
         ) {
-            GrammarInfo(nonterminals, terminals, type)
+            FormalDefinitionView(nonTerminals, terminals, grammarType)
         }
     }
 }
 
 @Composable
-fun GrammarInfo(
-    nonterminals: Set<Char>,
-    terminals: Set<Char>,
-    type: GrammarType?
-) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(vertical = 8.dp)
-    ) {
-        item{
-            Text(
-                text = "G = (N, T, P, S)",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 25.sp,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-        }
-        item {
-            Text(
-                text = "Start symbol",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 15.sp,
-                modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
-            )
-        }
-        item {
-            Text(
-                text = "S",
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontSize = 25.sp,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-        }
-        item {
-            Text(
-                text = "Non-terminals",
-                fontSize = 15.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
-            )
-        }
-        item {
-            Text(
-                text = if (nonterminals.isNotEmpty()) {
-                    "N = ${nonterminals.joinToString(", ", "{", "}")}"
-                } else "N = {}",
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontSize = 25.sp,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-        }
-        item {
-            Text(
-                text = "Terminals",
-                fontSize = 15.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp, start = 8.dp, end = 8.dp)
-            )
-        }
-        item {
-            Text(
-                text = if (terminals.isNotEmpty()) {
-                    "T = ${terminals.joinToString(", ", "{", "}")}"
-                } else "T = {}",
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontSize = 25.sp,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-        }
-        item {
-            Text(
-                text = "Type",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 15.sp,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-        }
-        item {
-            Text(
-                text = type.toString(),
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontSize = 25.sp,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun DisplayRule(rule: GrammarRule, grammarViewModel: GrammarViewModel, finnishGrammar: Boolean, onEditClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(60.dp)
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        OutlinedTextField(
-            value = rule.left,
-            onValueChange = {},
-            readOnly = true,
-            modifier = Modifier.weight(1f)
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(Symbols.ARROW_STR, fontSize = 30.sp, modifier = Modifier.align(Alignment.CenterVertically))
-        Spacer(modifier = Modifier.width(4.dp))
-        OutlinedTextField(
-            value = rule.right,
-            onValueChange = {},
-            readOnly = true,
-            modifier = Modifier.weight(1f)
-        )
-        if(!finnishGrammar){
-            Spacer(modifier = Modifier.width(8.dp))
-
-            IconButton(onClick = { onEditClick() }) {
-                Icon(Icons.Default.Create, contentDescription = "Edit Rule")
-            }
-            IconButton(onClick = { grammarViewModel.removeRule(rule) }) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete Rule")
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-    }
-}
-
-
-@Composable
-fun AddRule(
+private fun AddRule(
     leftText: TextFieldValue,
     rightText: TextFieldValue,
     focusedField: String,
     snackbarHostState: SnackbarHostState,
     onLeftChange: (TextFieldValue) -> Unit,
     onRightChange: (TextFieldValue) -> Unit,
-    onFocusedFieldChange: (String) -> Unit,
+    onFieldFocusChange: (String) -> Unit,
     onAddRule: () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
+    val invalidCharsError = stringResource(R.string.invalid_chars_error)
+    val nonTerminalMissingError = stringResource(R.string.non_terminal_missing)
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(60.dp)
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier.fillMaxWidth().height(60.dp).padding(horizontal = 8.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         OutlinedTextField(
             value = leftText,
             onValueChange = { onLeftChange(it) },
-            placeholder = { Text("Left Side") },
+            placeholder = { Text(stringResource(R.string.left_side)) },
             singleLine = true,
-            modifier = Modifier
-                .weight(1f)
-                .onFocusChanged { focusState ->
-                    if (focusState.isFocused) onFocusedFieldChange("left")
-                }
+            modifier =
+                Modifier.weight(1f).onFocusChanged { focusState ->
+                    if (focusState.isFocused) onFieldFocusChange("left")
+                },
         )
         Spacer(modifier = Modifier.width(4.dp))
-        Text(Symbols.ARROW_STR, fontSize = 30.sp, modifier = Modifier.align(Alignment.CenterVertically))
+        Text(
+            Symbols.ARROW,
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.align(Alignment.CenterVertically),
+        )
         Spacer(modifier = Modifier.width(4.dp))
         OutlinedTextField(
             value = rightText,
             onValueChange = { onRightChange(it) },
-            placeholder = { Text("Right Side") },
+            placeholder = { Text(stringResource(R.string.right_side)) },
             singleLine = true,
-            modifier = Modifier
-                .weight(1f)
-                .onFocusChanged { focusState ->
-                    if (focusState.isFocused) onFocusedFieldChange("right")
-                }
+            modifier =
+                Modifier.weight(1f).onFocusChanged { focusState ->
+                    if (focusState.isFocused) onFieldFocusChange("right")
+                },
         )
         Spacer(modifier = Modifier.width(8.dp))
         Column(
             verticalArrangement = Arrangement.spacedBy(3.dp),
-            modifier = Modifier.fillMaxHeight().width(30.dp)
+            modifier = Modifier.fillMaxHeight().width(30.dp),
         ) {
             FilledTonalButton(
                 onClick = {
                     when (focusedField) {
-                        "left" -> onLeftChange(
-                            TextFieldValue(leftText.text + "|", TextRange(leftText.text.length + 1))
-                        )
-                        "right" -> onRightChange(
-                            TextFieldValue(rightText.text + "|", TextRange(rightText.text.length + 1))
-                        )
+                        "left" ->
+                            onLeftChange(
+                                TextFieldValue(
+                                    leftText.text + "|",
+                                    TextRange(leftText.text.length + 1),
+                                ),
+                            )
+                        "right" ->
+                            onRightChange(
+                                TextFieldValue(
+                                    rightText.text + "|",
+                                    TextRange(rightText.text.length + 1),
+                                ),
+                            )
                     }
                 },
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 contentPadding = PaddingValues(0.dp),
-                shape = MaterialTheme.shapes.extraSmall
-            ) { Text("|", fontSize = 15.sp) }
+                shape = MaterialTheme.shapes.extraSmall,
+            ) {
+                Text("|", style = MaterialTheme.typography.labelLarge)
+            }
 
             FilledTonalButton(
                 onClick = {
                     when (focusedField) {
-                        "left" -> onLeftChange(
-                            TextFieldValue(leftText.text + Symbols.EPSILON, TextRange(leftText.text.length + 1))
-                        )
-                        "right" -> onRightChange(
-                            TextFieldValue(rightText.text + Symbols.EPSILON, TextRange(rightText.text.length + 1))
-                        )
+                        "left" ->
+                            onLeftChange(
+                                TextFieldValue(
+                                    leftText.text + Symbols.EPSILON,
+                                    TextRange(leftText.text.length + 1),
+                                ),
+                            )
+                        "right" ->
+                            onRightChange(
+                                TextFieldValue(
+                                    rightText.text + Symbols.EPSILON,
+                                    TextRange(rightText.text.length + 1),
+                                ),
+                            )
                     }
                 },
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 contentPadding = PaddingValues(0.dp),
-                shape = MaterialTheme.shapes.extraSmall
-            ) { Text("${Symbols.EPSILON}", fontSize = 15.sp) }
+                shape = MaterialTheme.shapes.extraSmall,
+            ) {
+                Text(Symbols.EPSILON, style = MaterialTheme.typography.labelLarge)
+            }
         }
 
         Spacer(modifier = Modifier.width(4.dp))
         FilledIconButton(
             onClick = {
-                val validChars = leftText.text.all { it.isLetterOrDigit() || it == '|' || it == Symbols.EPSILON } &&
-                        rightText.text.all { it.isLetterOrDigit() || it == '|' || it == Symbols.EPSILON }
+                val validChars =
+                    leftText.text.all {
+                        it.isLetterOrDigit() || it == '|' || "$it" == Symbols.EPSILON
+                    } &&
+                        rightText.text.all {
+                            it.isLetterOrDigit() || it == '|' || "$it" == Symbols.EPSILON
+                        }
                 if (!validChars) {
-                    scope.launch { snackbarHostState.showSnackbar("Only letters, digits, ${Symbols.EPSILON} or | are allowed") }
+                    scope.launch {
+                        snackbarHostState.showSnackbar(invalidCharsError)
+                    }
                 } else if (!leftText.text.any { it.isUpperCase() }) {
-                    scope.launch { snackbarHostState.showSnackbar("Non-terminal symbol missing on the left side") }
+                    scope.launch {
+                        snackbarHostState.showSnackbar(nonTerminalMissingError)
+                    }
                 } else {
                     onAddRule()
                     focusManager.clearFocus()
                 }
             },
-            shape = MaterialTheme.shapes.extraSmall
+            shape = MaterialTheme.shapes.extraSmall,
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Add Rule")
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_rule))
         }
     }
 }
