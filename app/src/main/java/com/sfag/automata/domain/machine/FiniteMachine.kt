@@ -86,7 +86,7 @@ class FiniteMachine(
             val anyAccepting =
                 currentConfigs.any { config ->
                     getStateByIndex(config.stateIndex).final &&
-                        config.inputOffset >= currentInput.length
+                        config.inputOffset >= remainingInput.length
                 }
             if (anyAccepting) {
                 val acceptedIds =
@@ -146,11 +146,8 @@ class FiniteMachine(
     }
 
     private fun consumeInput(length: Int) {
-        if (length > 0) {
-            currentInput.delete(0, length)
-            if (remainingInput.isNotEmpty()) {
-                remainingInput.delete(0, minOf(length, remainingInput.length))
-            }
+        if (length > 0 && remainingInput.isNotEmpty()) {
+            remainingInput.delete(0, minOf(length, remainingInput.length))
         }
     }
 
@@ -240,8 +237,8 @@ class FiniteMachine(
 
     private fun getMatchingTransitions(fromState: State, inputOffset: Int): List<Transition> {
         val remaining =
-            if (inputOffset < currentInput.length) {
-                currentInput.substring(inputOffset)
+            if (inputOffset < remainingInput.length) {
+                remainingInput.substring(inputOffset)
             } else {
                 ""
             }

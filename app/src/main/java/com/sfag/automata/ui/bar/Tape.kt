@@ -149,7 +149,7 @@ fun FiniteMachine.Tape(
     listState: LazyListState,
     onEdit: () -> Unit,
 ) {
-    val symbols = fullInput.ifEmpty { currentInput.toString() }
+    val symbols = fullInput
     val headIndex = (symbols.length - remainingInput.length).coerceIn(0, (symbols.length - 1).coerceAtLeast(0))
 
     Tape(
@@ -168,7 +168,7 @@ fun PushdownMachine.Tape(
     listState: LazyListState,
     onEdit: () -> Unit,
 ) {
-    val symbols = fullInput.ifEmpty { currentInput.toString() }
+    val symbols = fullInput
     val headIndex = (symbols.length - remainingInput.length).coerceIn(0, (symbols.length - 1).coerceAtLeast(0))
 
     Tape(

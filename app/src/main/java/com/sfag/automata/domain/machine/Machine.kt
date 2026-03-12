@@ -23,9 +23,13 @@ sealed class Machine(
 
     val tree = Tree()
 
-    // Snapshot of full input for simulation reset
     var fullInput: String = ""
-    var currentInput = StringBuilder()
+        private set
+
+    fun loadInput(input: String) {
+        fullInput = input
+        setInitialStateAsCurrent()
+    }
 
     abstract fun removeTransition(transition: Transition)
 
@@ -54,6 +58,7 @@ sealed class Machine(
                 currentState = initialState.index
                 tree.initialize(initialState.name)
             }
+        remainingInput = StringBuilder(fullInput)
         resetSimulation()
     }
 

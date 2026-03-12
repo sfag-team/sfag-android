@@ -53,19 +53,14 @@ fun Machine.InputScreen(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // Capture original state once on first composition
-    val originalInput = remember { currentInput.toString() }
-    val originalSavedInputs =
+    val savedInputs =
         remember {
-            savedInputs.map { StringBuilder(it.toString()) }.toMutableList()
+            this@InputScreen.savedInputs.map { StringBuilder(it.toString()) }.toMutableList()
         }
-    val originalCriteria = remember { (this as? PushdownMachine)?.acceptanceCriteria }
+    val criteria = remember { (this as? PushdownMachine)?.acceptanceCriteria }
 
     var recomposeKey by remember { mutableIntStateOf(0) }
-    val inputText = remember { mutableStateOf(currentInput.toString()) }
-
-    // Sync inputText when recomposeKey changes (save/remove/select actions)
-    LaunchedEffect(recomposeKey) { inputText.value = currentInput.toString() }
+    val newFullInput = remember { mutableStateOf(fullInput) }
 
     val acceptedFill = MaterialTheme.extendedColorScheme.accepted.colorContainer
     val rejectedFill = MaterialTheme.extendedColorScheme.rejected.colorContainer
@@ -124,8 +119,8 @@ fun Machine.InputScreen(
 
             // Text field + add button
             var isInputAccepted by remember { mutableStateOf<Boolean?>(null) }
-            LaunchedEffect(inputText.value, recomposeKey) {
-                val text = inputText.value
+            LaunchedEffect(newFullInput.value, recomposeKey) {
+                val text = newFullInput.value
                 isInputAccepted =
                     withContext(Dispatchers.Default) { isAccepted(StringBuilder(text)) }
             }
@@ -139,21 +134,16 @@ fun Machine.InputScreen(
             DefaultTextField(
                 modifier = Modifier.fillMaxWidth(),
                 label = stringResource(R.string.tape_input),
-                value = inputText.value,
+                value = newFullInput.value,
                 labelColor = validationColor,
                 textColor = validationColor,
-                onValueChange = { newInput ->
-                    currentInput.clear()
-                    currentInput.append(newInput)
-                    inputText.value = newInput
-                    remainingInput = StringBuilder(currentInput.toString())
-                    fullInput = currentInput.toString()
+                onValueChange = { value ->
+                    newFullInput.value = value
                 },
                 trailingIcon = {
                     IconButton(
                         onClick = {
-                            savedInputs.add(currentInput)
-                            currentInput = StringBuilder(savedInputs.last().toString())
+                            this@InputScreen.savedInputs.add(StringBuilder(newFullInput.value))
                             recomposeKey++
                         },
                     ) {
@@ -175,15 +165,11 @@ fun Machine.InputScreen(
             OutlinedButton(
                 onClick = {
                     // Restore original state
-                    currentInput = StringBuilder(originalInput)
-                    remainingInput = StringBuilder(originalInput)
-                    fullInput = originalInput
-                    savedInputs.clear()
-                    savedInputs.addAll(originalSavedInputs.map { StringBuilder(it.toString()) })
-                    if (originalCriteria != null && this@InputScreen is PushdownMachine) {
-                        acceptanceCriteria = originalCriteria
+                    this@InputScreen.savedInputs.clear()
+                    this@InputScreen.savedInputs.addAll(savedInputs.map { StringBuilder(it.toString()) })
+                    if (criteria != null && this@InputScreen is PushdownMachine) {
+                        acceptanceCriteria = criteria
                     }
-                    setInitialStateAsCurrent()
                     onDismiss()
                 },
                 modifier = Modifier.weight(1f).height(48.dp),
@@ -195,7 +181,7 @@ fun Machine.InputScreen(
                 text = stringResource(R.string.confirm_button),
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    setInitialStateAsCurrent()
+                    loadInput(newFullInput.value)
                     onConfirm()
                 },
             )
@@ -213,7 +199,7 @@ fun Machine.InputScreen(
                         .clip(MaterialTheme.shapes.medium)
                         .background(MaterialTheme.colorScheme.surfaceContainer),
             ) {
-                if (savedInputs.isEmpty()) {
+                if (this@InputScreen.savedInputs.isEmpty()) {
                     Box(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentAlignment = Alignment.Center,
@@ -231,7 +217,7 @@ fun Machine.InputScreen(
                         contentPadding =
                             PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
                     ) {
-                        items(savedInputs.toList()) { savedInput ->
+                        items(this@InputScreen.savedInputs.toList()) { savedInput ->
                             val savedText = savedInput.toString()
                             var isAccepted by remember(savedText) { mutableStateOf<Boolean?>(null) }
                             LaunchedEffect(savedText) {
@@ -256,16 +242,12 @@ fun Machine.InputScreen(
                                 textColor = textColor,
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                                 onClick = {
-                                    this@InputScreen.currentInput = StringBuilder(savedInput.toString())
-                                    remainingInput = StringBuilder(savedInput.toString())
-                                    fullInput = this@InputScreen.currentInput.toString()
-                                    setInitialStateAsCurrent()
-                                    recomposeKey++
+                                    newFullInput.value = savedInput.toString()
                                 },
                                 trailingContent = {
                                     IconButton(
                                         onClick = {
-                                            savedInputs.remove(savedInput)
+                                            this@InputScreen.savedInputs.remove(savedInput)
                                             recomposeKey++
                                         },
                                     ) {

@@ -25,7 +25,7 @@ import kotlin.math.roundToInt
 @Composable
 fun Machine.TransitionAnimation(
     transitionRefs: List<TransitionRef>,
-    arrowPaths: List<ArrowPath?>,
+    transitionPaths: List<TransitionPath?>,
     offsetXCanvas: Float,
     offsetYCanvas: Float,
     duration: Int = 500,
@@ -66,10 +66,10 @@ fun Machine.TransitionAnimation(
                         transition.fromState == ref.fromStateIndex && transition.toState == ref.toStateIndex
                     }
                 if (matchingIndex < 0) return@mapNotNull null
-                val arrowPath =
-                    arrowPaths.getOrNull(matchingIndex) ?: return@mapNotNull null
+                val transitionPath =
+                    transitionPaths.getOrNull(matchingIndex) ?: return@mapNotNull null
 
-                val path = arrowPath.bodyPath
+                val path = transitionPath.arrowBody
                 AnimEntry(path, radiusBig, radiusSmall)
             }
 

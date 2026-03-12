@@ -60,7 +60,7 @@ import com.sfag.automata.ui.edit.TransitionList
 import com.sfag.automata.ui.machine.DialogRequest
 import com.sfag.automata.ui.machine.MachineView
 import com.sfag.automata.ui.machine.TransitionAnimation
-import com.sfag.automata.ui.machine.computePaths
+import com.sfag.automata.ui.machine.computeTransitionPaths
 import com.sfag.automata.ui.tree.TreeView
 import com.sfag.main.config.EXTRA_OPEN_FILE_PICKER
 import com.sfag.main.config.JFF_OPEN_MIME_TYPES
@@ -324,10 +324,6 @@ fun AutomataScreen(
                                     } else {
                                         simulationOutcome = null
                                         animationOverlay.value = null
-                                        machine.currentInput.clear()
-                                        machine.currentInput.append(machine.fullInput)
-                                        machine.remainingInput =
-                                            StringBuilder(machine.fullInput)
                                         machine.setInitialStateAsCurrent()
                                         recomposeKey.intValue++
                                         currentMode.value = Mode.SIMULATOR
@@ -383,14 +379,14 @@ fun AutomataScreen(
                                             val capturedPositions = viewModel.statePositions.toMap()
                                             animationOverlay.value = {
                                                 val animDensity = LocalDensity.current
-                                                val arrowPaths =
-                                                    machine.computePaths(
+                                                val transitionPaths =
+                                                    machine.computeTransitionPaths(
                                                         capturedPositions,
                                                         animDensity,
                                                     )
                                                 machine.TransitionAnimation(
                                                     transitionRefs = simulation.transitionRefs,
-                                                    arrowPaths = arrowPaths,
+                                                    transitionPaths = transitionPaths,
                                                     offsetXCanvas = viewModel.offsetXCanvas,
                                                     offsetYCanvas = viewModel.offsetYCanvas,
                                                     onAnimationsEnd = {

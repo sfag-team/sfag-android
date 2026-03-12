@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.State
 import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.automata.ui.common.TRANSITION_HEAD_SIZE
 import com.sfag.automata.ui.common.FONT_SCALE_3_CHAR
 import com.sfag.automata.ui.common.FONT_SCALE_4_CHAR
 import com.sfag.automata.ui.common.FONT_SCALE_5_PLUS
@@ -56,8 +57,6 @@ internal fun Machine.StateNodes(
             val cx = canvasSizePx / 2f
             val cy = canvasSizePx / 2f
             val arrowTip = cx - (NODE_RADIUS + NODE_RADIUS * 0.25f / 2f)
-            val headLength = NODE_RADIUS * 0.5f
-            val headHalf = headLength * 0.55f
             val arrowStart = arrowTip - NODE_RADIUS * 1.5f
             val linePath =
                 Path().apply {
@@ -67,8 +66,9 @@ internal fun Machine.StateNodes(
             val headPath =
                 Path().apply {
                     moveTo(arrowTip, cy)
-                    lineTo(arrowTip - headLength, cy - headHalf)
-                    lineTo(arrowTip - headLength, cy + headHalf)
+                    val halfBase = TRANSITION_HEAD_SIZE / kotlin.math.sqrt(3f)
+                    lineTo(arrowTip - TRANSITION_HEAD_SIZE, cy - halfBase)
+                    lineTo(arrowTip - TRANSITION_HEAD_SIZE, cy + halfBase)
                     close()
                 }
             linePath to headPath
@@ -160,33 +160,24 @@ internal fun Machine.StateNodes(
                     drawCircle(
                         color = borderColor,
                         radius = NODE_RADIUS,
-                        style = Stroke(width = NODE_RADIUS * 0.25f),
+                        style = Stroke(width = NODE_RADIUS * 0.125f),
                     )
                     drawCircle(
                         color = fillColor,
-                        radius = if (state.isCurrent) NODE_RADIUS - 1 else NODE_RADIUS,
+                        radius = NODE_RADIUS - NODE_RADIUS * 0.0625f,
                     )
                     if (state.final) {
                         drawCircle(
                             color = borderColor,
                             radius = NODE_RADIUS * 0.75f,
-                            style = Stroke(width = NODE_RADIUS * 0.125f),
-                        )
-                        drawCircle(
-                            color = fillColor,
-                            radius =
-                                if (state.isCurrent) {
-                                    NODE_RADIUS * 0.75f - 2
-                                } else {
-                                    NODE_RADIUS * 0.75f - 1
-                                },
+                            style = Stroke(width = NODE_RADIUS * 0.0625f),
                         )
                     }
                     if (state.initial) {
                         drawPath(
                             path = initialArrowPaths.first,
                             color = borderColor,
-                            style = Stroke(width = NODE_RADIUS * 0.125f, cap = StrokeCap.Round),
+                            style = Stroke(width = NODE_RADIUS * 0.0625f, cap = StrokeCap.Round),
                         )
                         drawPath(path = initialArrowPaths.second, color = borderColor)
                     }

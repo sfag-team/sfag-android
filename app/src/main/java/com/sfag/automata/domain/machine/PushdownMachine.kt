@@ -114,7 +114,7 @@ class PushdownMachine(
             val anyAccepting =
                 currentConfigs.any { config ->
                     val state = getStateByIndexOrNull(config.stateIndex) ?: return@any false
-                    config.inputOffset >= currentInput.length &&
+                    config.inputOffset >= remainingInput.length &&
                         when (acceptanceCriteria) {
                             AcceptanceCriteria.BY_FINAL_STATE -> state.final
                             AcceptanceCriteria.BY_EMPTY_STACK -> config.stack.isEmpty()
@@ -175,11 +175,8 @@ class PushdownMachine(
     }
 
     private fun consumeInput(length: Int) {
-        if (length > 0) {
-            currentInput.delete(0, length)
-            if (remainingInput.isNotEmpty()) {
-                remainingInput.delete(0, minOf(length, remainingInput.length))
-            }
+        if (length > 0 && remainingInput.isNotEmpty()) {
+            remainingInput.delete(0, minOf(length, remainingInput.length))
         }
     }
 
@@ -196,8 +193,8 @@ class PushdownMachine(
                         AcceptanceCriteria.BY_EMPTY_STACK -> { _, s -> s.isEmpty() }
                     }
                 currentConfigs.firstOrNull { config ->
-                    val remaining = currentInput.substring(
-                        minOf(config.inputOffset, currentInput.length),
+                    val remaining = remainingInput.substring(
+                        minOf(config.inputOffset, remainingInput.length),
                     )
                     canReachAcceptingState(
                         StringBuilder(remaining),
@@ -431,8 +428,8 @@ class PushdownMachine(
         inputOffset: Int,
     ): List<PushdownTransition> {
         val remaining =
-            if (inputOffset < currentInput.length) {
-                currentInput.substring(inputOffset)
+            if (inputOffset < remainingInput.length) {
+                remainingInput.substring(inputOffset)
             } else {
                 ""
             }

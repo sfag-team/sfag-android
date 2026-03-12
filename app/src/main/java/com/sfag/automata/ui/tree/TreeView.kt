@@ -1,7 +1,6 @@
 package com.sfag.automata.ui.tree
 
 import android.graphics.Paint
-import android.graphics.Typeface
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -67,22 +66,22 @@ fun Machine.TreeView(
     val colors = MaterialTheme.colorScheme
     val extendedColors = MaterialTheme.extendedColorScheme
 
-    val baseTextSize = 24f * density.fontScale * density.density
+    val baseTextSize = with(density) { MaterialTheme.typography.headlineSmall.fontSize.toPx() }
     val textPaint =
         remember(density) {
             Paint().apply {
                 textAlign = Paint.Align.CENTER
-                typeface = Typeface.create(Typeface.DEFAULT, 400, false)
                 isAntiAlias = true
             }
         }
 
+    val badgeTextSize = with(density) { MaterialTheme.typography.titleLarge.fontSize.toPx() }
     val badgePaint =
         remember(density, colors.onSurface) {
             Paint().apply {
                 textAlign = Paint.Align.CENTER
                 isAntiAlias = true
-                textSize = 22f * density.density
+                textSize = badgeTextSize
                 color = colors.onSurface.toArgb()
             }
         }
@@ -275,12 +274,12 @@ fun Machine.TreeView(
                         color = colors.onSurface,
                         radius = NODE_RADIUS,
                         center = world,
-                        style = Stroke(width = NODE_RADIUS * 0.25f),
+                        style = Stroke(width = NODE_RADIUS * 0.125f),
                         alpha = alpha,
                     )
                     drawCircle(
                         color = fillColor(node),
-                        radius = NODE_RADIUS,
+                        radius = NODE_RADIUS - NODE_RADIUS * 0.0625f,
                         center = world,
                         alpha = alpha,
                     )
