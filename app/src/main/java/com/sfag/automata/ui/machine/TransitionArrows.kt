@@ -9,7 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -25,14 +24,14 @@ import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 private data class GroupedArrow(
-    val path: ArrowPath,
+    val path: TransitionPath,
     val labels: List<String>,
 )
 
-/** Draws arrow body lines and handles tap detection. */
+/** Draws transition arrows: body strokes, arrowheads, and labels in a single canvas. */
 @Composable
-internal fun Machine.ArrowBodies(
-    positions: Map<Int, Offset>,
+internal fun Machine.TransitionArrows(
+    transitionPaths: List<TransitionPath?>,
     modifier: Modifier,
     offsetX: Float,
     offsetY: Float,
@@ -40,7 +39,18 @@ internal fun Machine.ArrowBodies(
     borderColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     val density = LocalDensity.current
-    val arrowPaths = computePaths(positions, density)
+    val scaledTextSize = with(density) { MaterialTheme.typography.titleLarge.fontSize.toPx() }
+    val labelPaint =
+        remember(density, borderColor) {
+            Paint().apply {
+                color = borderColor.toArgb()
+                textSize = scaledTextSize
+                textAlign = Paint.Align.CENTER
+                isAntiAlias = true
+            }
+        }
+
+    val groupedArrows = groupArrows(transitionPaths)
 
     Canvas(
         modifier =
@@ -54,10 +64,10 @@ internal fun Machine.ArrowBodies(
                             detectTapGestures { tapOffset ->
                                 val adjustedX = tapOffset.x - offsetX
                                 val adjustedY = tapOffset.y - offsetY
-                                for ((index, arrowPath) in arrowPaths.withIndex()) {
+                                for ((index, transitionPath) in transitionPaths.withIndex()) {
                                     if (
-                                        arrowPath != null &&
-                                        isArrowHit(arrowPath, adjustedX, adjustedY)
+                                        transitionPath != null &&
+                                        isArrowHit(transitionPath, adjustedX, adjustedY)
                                     ) {
                                         onClickTransition(transitions[index])
                                         break
@@ -68,57 +78,27 @@ internal fun Machine.ArrowBodies(
                     },
                 ).offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) },
     ) {
-        for (arrow in groupArrows(arrowPaths)) {
+        // Body strokes
+        for (arrow in groupedArrows) {
             drawPath(
-                arrow.path.bodyPath,
+                arrow.path.arrowBody,
                 color = borderColor,
-                style = Stroke(width = NODE_RADIUS * 0.125f, cap = StrokeCap.Round),
+                style = Stroke(width = NODE_RADIUS * 0.0625f, cap = StrokeCap.Round),
             )
         }
-    }
-}
 
-/** Draws arrowheads and labels. */
-@Composable
-internal fun Machine.ArrowHeads(
-    positions: Map<Int, Offset>,
-    offsetX: Float,
-    offsetY: Float,
-    borderColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
-    val density = LocalDensity.current
-    val colorOnSurface = MaterialTheme.colorScheme.onSurface
-    val arrowPaths = computePaths(positions, density)
-
-    val scaledTextSize = 22f * density.density
-    val labelPaint =
-        remember(density, colorOnSurface) {
-            Paint().apply {
-                color = colorOnSurface.toArgb()
-                textSize = scaledTextSize
-                textAlign = Paint.Align.CENTER
-                isAntiAlias = true
-            }
-        }
-
-    val groupedArrows = groupArrows(arrowPaths)
-
-    Canvas(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) },
-    ) {
+        // Arrowheads
         for (arrow in groupedArrows) {
-            drawPath(arrow.path.headPath, color = borderColor)
+            drawPath(arrow.path.arrowHead, color = borderColor)
         }
 
+        // Labels
         val lineHeight = scaledTextSize * 1.25f
         val selfLoopClearance = scaledTextSize * 0.25f + NODE_RADIUS * 0.125f
-        val normalClearance = scaledTextSize * 0.5f + NODE_RADIUS * 0.125f
+        val regularClearance = scaledTextSize * 0.5f + NODE_RADIUS * 0.125f
 
         for (arrow in groupedArrows) {
-            val labelClearance = if (arrow.path.isSelfLoop) selfLoopClearance else normalClearance
+            val labelClearance = if (arrow.path.isSelfLoop) selfLoopClearance else regularClearance
             val count = arrow.labels.size
 
             val maxTextWidth = arrow.labels.maxOf { labelPaint.measureText(it) }
@@ -153,23 +133,23 @@ internal fun Machine.ArrowHeads(
     }
 }
 
-private fun Machine.groupArrows(arrowPaths: List<ArrowPath?>): List<GroupedArrow> {
+private fun Machine.groupArrows(transitionPaths: List<TransitionPath?>): List<GroupedArrow> {
     val grouped =
         transitions.withIndex().groupBy { (_, transition) ->
             Pair(transition.fromState, transition.toState)
         }
     return grouped.mapNotNull { (_, indexedTransitions) ->
         val firstIndex = indexedTransitions.first().index
-        val arrowPath = arrowPaths.getOrNull(firstIndex) ?: return@mapNotNull null
+        val transitionPath = transitionPaths.getOrNull(firstIndex) ?: return@mapNotNull null
         GroupedArrow(
-            path = arrowPath,
+            path = transitionPath,
             labels = indexedTransitions.map { (_, transition) -> transition.displayLabel() },
         )
     }
 }
 
 private fun isArrowHit(
-    arrowPath: ArrowPath,
+    transitionPath: TransitionPath,
     tapX: Float,
     tapY: Float,
     threshold: Float = 40f,
@@ -177,12 +157,12 @@ private fun isArrowHit(
     val thresholdSq = threshold * threshold
     val samples = 8
     for (i in 0..samples) {
-        val position = getCurrentPositionByPath(arrowPath.bodyPath, i.toFloat() / samples)
+        val position = getCurrentPositionByPath(transitionPath.arrowBody, i.toFloat() / samples)
         val dx = tapX - position.x
         val dy = tapY - position.y
         if (dx * dx + dy * dy < thresholdSq) return true
     }
-    val dx = tapX - arrowPath.textPosition.x
-    val dy = tapY - arrowPath.textPosition.y
+    val dx = tapX - transitionPath.textPosition.x
+    val dy = tapY - transitionPath.textPosition.y
     return dx * dx + dy * dy < thresholdSq
 }

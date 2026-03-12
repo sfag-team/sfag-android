@@ -10,14 +10,19 @@ val TREE_CANVAS_HEIGHT = 320.dp
 // Bar cell size
 val CELL_SIZE = 48.dp
 
-// Node base size
+// Node dimensions
 const val NODE_RADIUS = 72f
 
-// Text scaling factors for node labels by character count
+// Node labels scaling factors by character count
 const val FONT_SCALE_3_CHAR = 0.8f
 const val FONT_SCALE_4_CHAR = 0.65f
 const val FONT_SCALE_5_PLUS = 0.55f
 
-// Derivation tree layout - distance between node centers
+// Transition dimensions
+const val TRANSITION_CURVATURE = 0.125f
+const val TRANSITION_HEAD_SIZE = NODE_RADIUS * 0.5f
+const val TRANSITION_LABEL_OFFSET = NODE_RADIUS * 1.75f
+
+// Distance between derivation tree node centers
 const val TREE_NODE_HORIZONTAL_SPACING = 80f
 const val TREE_NODE_VERTICAL_SPACING = 80f

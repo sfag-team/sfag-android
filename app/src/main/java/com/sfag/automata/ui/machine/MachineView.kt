@@ -267,8 +267,9 @@ fun Machine.MachineView(
                             val dragModifier = Modifier
 
                             key(recomposeKey, localRecomposeKey) {
-                                ArrowBodies(
-                                    positions = positions,
+                                val transitionPaths = computeTransitionPaths(positions, density)
+                                TransitionArrows(
+                                    transitionPaths = transitionPaths,
                                     modifier = dragModifier,
                                     offsetX = offsetX,
                                     offsetY = offsetY,
@@ -336,26 +337,17 @@ fun Machine.MachineView(
                                         onRecompose()
                                     },
                                 )
-                                ArrowHeads(
-                                    positions = positions,
-                                    offsetX = offsetX,
-                                    offsetY = offsetY,
-                                )
                             }
                         }
                     } else {
+                        val transitionPaths = computeTransitionPaths(positions, density)
                         key(recomposeKey) {
-                            ArrowBodies(
-                                positions = positions,
+                            TransitionArrows(
+                                transitionPaths = transitionPaths,
                                 modifier = Modifier,
                                 offsetX = offsetX,
                                 offsetY = offsetY,
                                 onClickTransition = null,
-                            )
-                            ArrowHeads(
-                                positions = positions,
-                                offsetX = offsetX,
-                                offsetY = offsetY,
                             )
                         }
                         animationOverlay?.invoke()
