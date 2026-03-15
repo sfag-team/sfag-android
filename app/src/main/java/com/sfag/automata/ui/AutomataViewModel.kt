@@ -18,72 +18,96 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AutomataViewModel
-    @Inject
-    internal constructor(
-        private val storage: Storage,
-    ) : ViewModel() {
-        // The single current machine - observed by the Activity to key the composition.
-        var currentMachine by mutableStateOf<Machine?>(null)
-            private set
+@Inject
+internal constructor(
+    private val storage: Storage,
+) : ViewModel() {
 
-        // Layout state - persists across simulation/edit mode switches
-        val statePositions: SnapshotStateMap<Int, Offset> = mutableStateMapOf()
-        var offsetXCanvas by mutableFloatStateOf(0f)
-        var offsetYCanvas by mutableFloatStateOf(0f)
-        var scaleCanvas by mutableFloatStateOf(0.5f)
-        var machineAutoCenter by mutableStateOf(false)
+    // The single current machine - observed by the Activity to key the composition.
+    var currentMachine by mutableStateOf<Machine?>(null)
+        private set
 
-        /** Sets the active machine, initializes positions, and resets view to default scale + center. */
-        fun setCurrentMachine(
-            machine: Machine,
-            positions: Map<Int, Point2D> = emptyMap(),
-        ) {
-            currentMachine = machine
-            initPositions(positions)
-            scaleCanvas = 0.5f
-            machineAutoCenter = true
-        }
+    // Layout state - persists across simulation/edit mode switches
+    val statePositions: SnapshotStateMap<Int, Offset> = mutableStateMapOf()
+    var offsetXCanvas by mutableFloatStateOf(0f)
+    var offsetYCanvas by mutableFloatStateOf(0f)
+    var scaleCanvas by mutableFloatStateOf(0.5f)
+    var machineAutoCenter by mutableStateOf(false)
 
-        /** Persists the current machine to the fixed auto-save slot. */
-        fun autoSave(machine: Machine) {
-            storage.saveMachine(machine, getPositions(), offsetXCanvas, offsetYCanvas, scaleCanvas)
-        }
+    // ⭐ NEW: Track unsaved changes
+    var hasUnsavedChanges by mutableStateOf(false)
+        private set
 
-        /** Loads the auto-saved machine. Returns true on success. */
-        fun loadMachine(): Boolean {
-            val (machine, positions, canvas) = storage.loadMachine() ?: return false
-            currentMachine = machine
-            initPositions(positions)
-            offsetXCanvas = canvas.first
-            offsetYCanvas = canvas.second
-            scaleCanvas = canvas.third
-            return true
-        }
+    fun markDirty() {
+        hasUnsavedChanges = true
+    }
 
-        fun advanceSimulation(): Simulation = currentMachine?.advanceSimulation() ?: Simulation.Ended(SimulationOutcome.ACTIVE)
+    fun markSaved() {
+        hasUnsavedChanges = false
+    }
 
-        /** Called when positions are loaded from storage or parsed from JFF. */
-        fun initPositions(positions: Map<Int, Point2D>) {
-            statePositions.clear()
-            positions.forEach { (index, point2D) -> statePositions[index] = Offset(point2D.x, point2D.y) }
-        }
+    /** Sets the active machine, initializes positions, and resets view to default scale + center. */
+    fun setCurrentMachine(
+        machine: Machine,
+        positions: Map<Int, Point2D> = emptyMap(),
+    ) {
+        currentMachine = machine
+        initPositions(positions)
+        scaleCanvas = 0.5f
+        machineAutoCenter = true
+        markDirty() // new machine = unsaved
+    }
 
-        /** Returns current positions for JFF export/save. */
-        fun getPositions(): Map<Int, Point2D> = statePositions.mapValues { (_, offset) -> Point2D(offset.x, offset.y) }
+    /** Persists the current machine to the fixed auto-save slot. */
+    fun autoSave(machine: Machine) {
+        storage.saveMachine(machine, getPositions(), offsetXCanvas, offsetYCanvas, scaleCanvas)
+        markSaved()
+    }
 
-        /** Updates a single state's position (called on drag). */
-        fun updateStatePosition(
-            stateIndex: Int,
-            delta: Offset,
-        ) {
-            statePositions[stateIndex]?.let { statePositions[stateIndex] = it + delta }
-        }
+    /** Loads the auto-saved machine. Returns true on success. */
+    fun loadMachine(): Boolean {
+        val (machine, positions, canvas) = storage.loadMachine() ?: return false
+        currentMachine = machine
+        initPositions(positions)
+        offsetXCanvas = canvas.first
+        offsetYCanvas = canvas.second
+        scaleCanvas = canvas.third
+        markSaved()
+        return true
+    }
 
-        /** Assigns a position to a newly created state. */
-        fun addStatePosition(
-            stateIndex: Int,
-            offset: Offset,
-        ) {
-            statePositions[stateIndex] = offset
+    fun advanceSimulation(): Simulation =
+        currentMachine?.advanceSimulation() ?: Simulation.Ended(SimulationOutcome.ACTIVE)
+
+    /** Called when positions are loaded from storage or parsed from JFF. */
+    fun initPositions(positions: Map<Int, Point2D>) {
+        statePositions.clear()
+        positions.forEach { (index, point2D) ->
+            statePositions[index] = Offset(point2D.x, point2D.y)
         }
     }
+
+    /** Returns current positions for JFF export/save. */
+    fun getPositions(): Map<Int, Point2D> =
+        statePositions.mapValues { (_, offset) -> Point2D(offset.x, offset.y) }
+
+    /** Updates a single state's position (called on drag). */
+    fun updateStatePosition(
+        stateIndex: Int,
+        delta: Offset,
+    ) {
+        statePositions[stateIndex]?.let {
+            statePositions[stateIndex] = it + delta
+            markDirty()
+        }
+    }
+
+    /** Assigns a position to a newly created state. */
+    fun addStatePosition(
+        stateIndex: Int,
+        offset: Offset,
+    ) {
+        statePositions[stateIndex] = offset
+        markDirty()
+    }
+}

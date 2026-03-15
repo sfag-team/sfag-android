@@ -290,8 +290,10 @@ fun Machine.MachineView(
                                                             it.toState == transition.toState
                                                     }
                                                 toRemove.forEach { removeTransition(it) }
+                                                viewModel.markDirty()
                                                 localRecomposeKey++
                                                 onRecompose()
+
                                             }
                                             MachineEditMode.MOVE,
                                             MachineEditMode.ADD_STATES,
@@ -318,6 +320,7 @@ fun Machine.MachineView(
                                             MachineEditMode.REMOVE -> {
                                                 removeState(state)
                                                 viewModel.statePositions.remove(state.index)
+                                                viewModel.markDirty()
                                                 localRecomposeKey++
                                             }
                                             MachineEditMode.SELECT -> {
@@ -331,6 +334,7 @@ fun Machine.MachineView(
                                     },
                                     onDragState = { stateIndex, delta ->
                                         viewModel.updateStatePosition(stateIndex, delta)
+                                        viewModel.markDirty()
                                     },
                                     onRecompose = {
                                         localRecomposeKey++
@@ -412,14 +416,16 @@ fun Machine.MachineView(
                             tapOffset = request.tapOffset,
                             onAddPosition = { stateIndex, offset ->
                                 viewModel.addStatePosition(stateIndex, offset)
+                                viewModel.markDirty()
                             },
-                        ) {
+                            ) {
                             dialogRequest.value = null
                             localRecomposeKey++
                             onRecompose()
                         }
                     is DialogRequest.ForTransition ->
                         TransitionDialog(request.fromState, request.toState, request.transitionName) {
+                            viewModel.markDirty()
                             dialogRequest.value = null
                             localRecomposeKey++
                             onRecompose()

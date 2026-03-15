@@ -129,6 +129,9 @@ fun AutomataScreen(
         }
 
         val currentMode = remember { mutableStateOf(Mode.SIMULATOR) }
+        var showUnsavedDialog by remember { mutableStateOf(false) }
+        var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+        var isBackAction by remember { mutableStateOf(false) }
         var simulationOutcome by remember { mutableStateOf<SimulationOutcome?>(null) }
         val animationOverlay = remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
         val dialogRequest = remember { mutableStateOf<DialogRequest?>(null) }
@@ -156,29 +159,32 @@ fun AutomataScreen(
                     activity.contentResolver.openInputStream(it)?.use { stream ->
                         val jff = Jff.parse(stream)
                         val newMachine = jff.toMachine("untitled")
-                        viewModel.autoSave(machine)
+                        viewModel.markDirty()
                         viewModel.setCurrentMachine(newMachine, jff.positions)
                     }
                 }
             }
 
         BackHandler {
+            // 1) Ak sú neuložené zmeny → zobraz alert
+            if (viewModel.hasUnsavedChanges) {
+                isBackAction = true
+                showUnsavedDialog = true
+                return@BackHandler
+            }
+
+            // 2) Inak pôvodná logika
             when (currentMode.value) {
                 Mode.SIMULATOR -> {
                     viewModel.autoSave(machine)
                     navBack()
                 }
-
-                Mode.SIMULATION_STEP -> {
-                    // Ignore back during animation
-                }
-
+                Mode.SIMULATION_STEP -> {}
                 Mode.INPUT_EDITOR -> {
                     machine.setInitialStateAsCurrent()
                     viewModel.autoSave(machine)
                     currentMode.value = Mode.SIMULATOR
                 }
-
                 Mode.MACHINE_EDITOR -> {
                     machine.setInitialStateAsCurrent()
                     recomposeKey.intValue++
@@ -187,6 +193,7 @@ fun AutomataScreen(
                 }
             }
         }
+
 
         LaunchedEffect(snackbarMsg) {
             snackbarMsg?.let {
@@ -254,7 +261,15 @@ fun AutomataScreen(
                                     text = stringResource(R.string.create_new),
                                     modifier = Modifier.weight(1f),
                                 ) {
-                                    activeDialog = ActiveDialog.NewMachine
+                                    if (viewModel.hasUnsavedChanges) {
+                                        // zobrazíme alert, ale s iným účelom
+                                        showUnsavedDialog = true
+                                        isBackAction = false
+                                        // pridáme špeciálny mód: po potvrdení alertu otvoríme NEW dialog
+                                        pendingAction = { activeDialog = ActiveDialog.NewMachine }
+                                    } else {
+                                        activeDialog = ActiveDialog.NewMachine
+                                    }
                                 }
                             }
 
@@ -444,7 +459,7 @@ fun AutomataScreen(
                         onDismiss = { activeDialog = null },
                         onConfirm = {
                             machine.name = editingName
-                            viewModel.autoSave(machine)
+                            viewModel.markDirty()
                             activeDialog = null
                         },
                     ) {
@@ -463,12 +478,49 @@ fun AutomataScreen(
                     NewMachineWindow { newMachine ->
                         activeDialog = null
                         newMachine?.let {
-                            viewModel.autoSave(machine)
+                            viewModel.markDirty()
                             viewModel.setCurrentMachine(it)
                         }
                     }
                 null -> {}
             }
+            if (showUnsavedDialog) {
+                DefaultDialog(
+                    title = stringResource(R.string.unsaved_changes),
+                    onDismiss = {
+                        // Zahodiť zmeny
+                        viewModel.markSaved()
+                        showUnsavedDialog = false
+
+                        if (isBackAction) {
+                            navBack()
+                        } else {
+                            pendingAction?.invoke()
+                        }
+
+                        pendingAction = null
+                    },
+                    onConfirm = {
+                        // Uložiť zmeny
+                        viewModel.autoSave(machine)
+                        showUnsavedDialog = false
+
+                        if (isBackAction) {
+                            navBack()
+                        } else {
+                            pendingAction?.invoke()
+                        }
+
+                        pendingAction = null
+                    }
+                )
+                {
+                    androidx.compose.material3.Text(
+                        text = stringResource(R.string.unsaved_changes_message)
+                    )
+                }
+            }
+
         }
     }
 }
@@ -494,6 +546,7 @@ private fun BottomScreenPart(
                     onRemoveState = { state ->
                         viewModel.statePositions.remove(state.index)
                         machine.removeState(state)
+                        viewModel.markDirty()
                         recomposeKey.intValue++
                     },
                 )
@@ -507,6 +560,7 @@ private fun BottomScreenPart(
                     },
                     onRemoveTransition = { transition ->
                         machine.removeTransition(transition)
+                        viewModel.markDirty()
                         recomposeKey.intValue++
                     },
                 )

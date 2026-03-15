@@ -91,4 +91,7 @@
     <string name="tree_derivation">Tree derivation</string>
     <string name="untitled_name">untitled</string>
     <string name="valid_result">Valid</string>
+    <string name="unsaved_changes">Unsaved changes</string>
+    <string name="unsaved_changes_message">You have unsaved changes. Would you like to save them before leaving?</string>
+
 </resources>
