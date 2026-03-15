@@ -37,6 +37,22 @@ class AutomataViewModel
         var scaleCanvas by mutableFloatStateOf(1f)
         var machineAutoCenter by mutableStateOf(false)
 
+        // Pending example to load after user confirms replacing saved machine
+        var pendingExampleUri by mutableStateOf<String?>(null)
+        var pendingExampleName by mutableStateOf<String?>(null)
+
+        // Track unsaved changes
+        var hasUnsavedChanges by mutableStateOf(false)
+            private set
+
+        fun markDirty() {
+            hasUnsavedChanges = true
+        }
+
+        fun markSaved() {
+            hasUnsavedChanges = false
+        }
+
         /**
          * Sets the active machine and resets view to default scale + center.
          * JFLAP coordinates (96 DPI) are scaled to dp (160 DPI) via JFLAP_TO_DP.
@@ -49,21 +65,24 @@ class AutomataViewModel
             loadPositions(positions)
             scaleCanvas = INITIAL_ZOOM
             machineAutoCenter = true
+            markSaved()
         }
 
         /** Persists the current machine to the fixed auto-save slot. */
         fun autoSave(machine: Machine) {
-            storage.saveMachine(machine, getPositions(), offsetXCanvas, offsetYCanvas, scaleCanvas)
+            storage.saveMachine(machine, getPositions(), offsetXCanvas, offsetYCanvas, scaleCanvas, hasUnsavedChanges)
+            markSaved()
         }
 
         /** Loads the auto-saved machine. Returns true on success. */
         fun loadMachine(): Boolean {
-            val (machine, positions, canvas) = storage.loadMachine() ?: return false
-            currentMachine = machine
-            loadPositions(positions)
-            offsetXCanvas = canvas.first
-            offsetYCanvas = canvas.second
-            scaleCanvas = canvas.third
+            val stored = storage.loadMachine() ?: return false
+            currentMachine = stored.machine
+            loadPositions(stored.positions)
+            offsetXCanvas = stored.offsetX
+            offsetYCanvas = stored.offsetY
+            scaleCanvas = stored.scale
+            if (stored.dirty) markDirty() else markSaved()
             return true
         }
 
@@ -88,7 +107,10 @@ class AutomataViewModel
             stateIndex: Int,
             delta: Offset,
         ) {
-            statePositions[stateIndex]?.let { statePositions[stateIndex] = it + delta }
+            statePositions[stateIndex]?.let {
+                statePositions[stateIndex] = it + delta
+                markDirty()
+            }
         }
 
         /** Assigns a position to a newly created state. */
@@ -97,5 +119,6 @@ class AutomataViewModel
             offset: Offset,
         ) {
             statePositions[stateIndex] = offset
+            markDirty()
         }
     }

@@ -9,6 +9,16 @@ import java.io.File
 import javax.inject.Inject
 
 private const val CANVAS_TAG = "__canvas:"
+private const val DIRTY_TAG = "__dirty:"
+
+internal data class StoredMachine(
+    val machine: Machine,
+    val positions: Map<Int, Point2D>,
+    val offsetX: Float,
+    val offsetY: Float,
+    val scale: Float,
+    val dirty: Boolean,
+)
 
 /** File-based storage for automata using .jff files */
 internal class Storage
@@ -31,22 +41,20 @@ internal class Storage
             offsetX: Float,
             offsetY: Float,
             scale: Float,
+            dirty: Boolean,
         ) {
             File(storageDir, "__current.jff").writeText(machine.exportToJff(positions))
             val metadata =
                 buildString {
                     appendLine(machine.name)
                     machine.savedInputs.forEach { appendLine(it.toString()) }
-                    append("$CANVAS_TAG$offsetX,$offsetY,$scale")
+                    appendLine("$CANVAS_TAG$offsetX,$offsetY,$scale")
+                    appendLine("$DIRTY_TAG$dirty")
                 }
             File(storageDir, "__current.meta").writeText(metadata)
         }
 
-        /**
-         * Load the auto-saved current machine. Returns the machine, positions, and canvas offset,
-         * or null if no saved machine exists.
-         */
-        fun loadMachine(): Triple<Machine, Map<Int, Point2D>, Triple<Float, Float, Float>>? {
+        fun loadMachine(): StoredMachine? {
             val jffFile = File(storageDir, "__current.jff")
             if (!jffFile.exists()) return null
 
@@ -55,24 +63,22 @@ internal class Storage
             val lines = if (metaFile.exists()) metaFile.readLines() else emptyList()
             val name = lines.firstOrNull() ?: "untitled"
 
-            val canvasLine = lines.lastOrNull { it.startsWith(CANVAS_TAG) }
-            val canvas =
-                canvasLine?.removePrefix(CANVAS_TAG)?.split(",")?.let { parts ->
-                    Triple(
-                        parts.getOrNull(0)?.toFloatOrNull() ?: 0f,
-                        parts.getOrNull(1)?.toFloatOrNull() ?: 0f,
-                        parts.getOrNull(2)?.toFloatOrNull() ?: INITIAL_ZOOM,
-                    )
-                } ?: Triple(0f, 0f, INITIAL_ZOOM)
+            val canvasParts = lines.lastOrNull { it.startsWith(CANVAS_TAG) }
+                ?.removePrefix(CANVAS_TAG)?.split(",")
+            val offsetX = canvasParts?.getOrNull(0)?.toFloatOrNull() ?: 0f
+            val offsetY = canvasParts?.getOrNull(1)?.toFloatOrNull() ?: 0f
+            val scale = canvasParts?.getOrNull(2)?.toFloatOrNull() ?: INITIAL_ZOOM
+
+            val dirtyLine = lines.lastOrNull { it.startsWith(DIRTY_TAG) }
+            val dirty = dirtyLine?.removePrefix(DIRTY_TAG)?.toBooleanStrictOrNull() ?: false
 
             val savedInputs =
                 lines
                     .drop(1)
-                    .filter { it.isNotEmpty() && !it.startsWith(CANVAS_TAG) }
+                    .filter { it.isNotEmpty() && !it.startsWith(CANVAS_TAG) && !it.startsWith(DIRTY_TAG) }
                     .map { StringBuilder(it) }
                     .toMutableList()
 
-            val machine = jff.toMachine(name, savedInputs)
-            return Triple(machine, jff.positions, canvas)
+            return StoredMachine(jff.toMachine(name, savedInputs), jff.positions, offsetX, offsetY, scale, dirty)
         }
     }

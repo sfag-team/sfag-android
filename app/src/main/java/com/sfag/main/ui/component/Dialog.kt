@@ -28,7 +28,7 @@ fun DefaultDialog(
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier,
     confirmLabel: String = stringResource(R.string.confirm_button),
-    dismissLabel: String = stringResource(R.string.dismiss_button),
+    cancelLabel: String = stringResource(R.string.cancel_button),
     enabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -58,7 +58,7 @@ fun DefaultDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.medium) {
-                        Text(dismissLabel)
+                        Text(cancelLabel)
                     }
                     Button(
                         onClick = onConfirm,

@@ -18,7 +18,7 @@
     <string name="create_new">Nový</string>
     <string name="derivation_completed">Odvodenie dokončené</string>
     <string name="derivation_string">Slovo</string>
-    <string name="dismiss_button">Zrušiť</string>
+    <string name="cancel_button">Zrušiť</string>
     <string name="duplicate_state_name">Stav s týmto názvom už existuje</string>
     <string name="edit_grammar">Upraviť gramatiku</string>
     <string name="edit_rule">Upraviť pravidlo</string>
@@ -71,6 +71,7 @@
     <string name="reset_simulation">Resetovať</string>
     <string name="right_side">Pravá strana</string>
     <string name="rules_p">Pravidlá P:</string>
+    <string name="save_changes">Uložiť</string>
     <string name="see_derivation">Zobraziť odvodenie</string>
     <string name="select_tool">Vybrať</string>
     <string name="share_file">Zdieľať</string>
@@ -89,6 +90,8 @@
     <string name="to_state">do stavu</string>
     <string name="transition_name">názov prechodu</string>
     <string name="tree_derivation">Stromové odvodenie</string>
+    <string name="unsaved_changes">Neuložené zmeny</string>
+    <string name="unsaved_changes_message">Máte neuložené zmeny. Chcete ich uložiť pred pokračovaním?</string>
     <string name="untitled_name">bez názvu</string>
     <string name="valid_result">Platné</string>
 

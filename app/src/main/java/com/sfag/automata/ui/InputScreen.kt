@@ -175,7 +175,7 @@ fun Machine.InputScreen(
                 modifier = Modifier.weight(1f).height(48.dp),
                 shape = MaterialTheme.shapes.medium,
             ) {
-                Text(stringResource(R.string.dismiss_button))
+                Text(stringResource(R.string.cancel_button))
             }
             DefaultButton(
                 text = stringResource(R.string.confirm_button),

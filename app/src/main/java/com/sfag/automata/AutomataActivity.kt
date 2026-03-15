@@ -41,12 +41,15 @@ class AutomataActivity : AppCompatActivity() {
         if (savedInstanceState == null) {
             // Fresh launch — load from intent or storage
             intent.getStringExtra(EXTRA_EXAMPLE_URI)?.let { uri ->
-                val jff = assets.open(uri).use { Jff.parse(it) }
                 val exampleName = intent.getStringExtra(EXTRA_EXAMPLE_NAME) ?: "untitled"
-                viewModel.setCurrentMachine(
-                    jff.toMachine(exampleName),
-                    jff.positions,
-                )
+                if (viewModel.loadMachine() && viewModel.hasUnsavedChanges) {
+                    // Saved machine has real user changes - defer example load until user confirms
+                    viewModel.pendingExampleUri = uri
+                    viewModel.pendingExampleName = exampleName
+                } else {
+                    val jff = assets.open(uri).use { Jff.parse(it) }
+                    viewModel.setCurrentMachine(jff.toMachine(exampleName), jff.positions)
+                }
             }
                 ?: intent.getStringExtra(EXTRA_NEW_MACHINE_TYPE)?.let { machineType ->
                     val machineName = intent.getStringExtra(EXTRA_NEW_MACHINE_NAME) ?: "untitled"

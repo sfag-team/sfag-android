@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
@@ -129,6 +130,9 @@ fun AutomataScreen(
         }
 
         val currentMode = remember { mutableStateOf(Mode.SIMULATOR) }
+        var showUnsavedDialog by remember { mutableStateOf(viewModel.pendingExampleUri != null) }
+        var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+        var isBackAction by remember { mutableStateOf(false) }
         var simulationOutcome by remember { mutableStateOf<SimulationOutcome?>(null) }
         val animationOverlay = remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
         val dialogRequest = remember { mutableStateOf<DialogRequest?>(null) }
@@ -148,6 +152,14 @@ fun AutomataScreen(
                         )
                     }
                 }
+                // Load pending example after export (Save + open example flow)
+                viewModel.pendingExampleUri?.let { exampleUri ->
+                    val jff = activity.assets.open(exampleUri).use { Jff.parse(it) }
+                    val exampleName = viewModel.pendingExampleName ?: "untitled"
+                    viewModel.pendingExampleUri = null
+                    viewModel.pendingExampleName = null
+                    viewModel.setCurrentMachine(jff.toMachine(exampleName), jff.positions)
+                }
             }
 
         val importLauncher =
@@ -156,8 +168,8 @@ fun AutomataScreen(
                     activity.contentResolver.openInputStream(it)?.use { stream ->
                         val jff = Jff.parse(stream)
                         val newMachine = jff.toMachine("untitled")
-                        viewModel.autoSave(machine)
                         viewModel.setCurrentMachine(newMachine, jff.positions)
+                        viewModel.markDirty()
                     }
                 }
             }
@@ -165,20 +177,20 @@ fun AutomataScreen(
         BackHandler {
             when (currentMode.value) {
                 Mode.SIMULATOR -> {
-                    viewModel.autoSave(machine)
-                    navBack()
+                    if (viewModel.hasUnsavedChanges) {
+                        showUnsavedDialog = true
+                        isBackAction = true
+                    } else {
+                        viewModel.autoSave(machine)
+                        navBack()
+                    }
                 }
-
-                Mode.SIMULATION_STEP -> {
-                    // Ignore back during animation
-                }
-
+                Mode.SIMULATION_STEP -> {}
                 Mode.INPUT_EDITOR -> {
                     machine.setInitialStateAsCurrent()
                     viewModel.autoSave(machine)
                     currentMode.value = Mode.SIMULATOR
                 }
-
                 Mode.MACHINE_EDITOR -> {
                     machine.setInitialStateAsCurrent()
                     recomposeKey.intValue++
@@ -254,7 +266,13 @@ fun AutomataScreen(
                                     text = stringResource(R.string.create_new),
                                     modifier = Modifier.weight(1f),
                                 ) {
-                                    activeDialog = ActiveDialog.NewMachine
+                                    if (viewModel.hasUnsavedChanges) {
+                                        showUnsavedDialog = true
+                                        isBackAction = false
+                                        pendingAction = { activeDialog = ActiveDialog.NewMachine }
+                                    } else {
+                                        activeDialog = ActiveDialog.NewMachine
+                                    }
                                 }
                             }
 
@@ -444,7 +462,7 @@ fun AutomataScreen(
                         onDismiss = { activeDialog = null },
                         onConfirm = {
                             machine.name = editingName
-                            viewModel.autoSave(machine)
+                            viewModel.markDirty()
                             activeDialog = null
                         },
                     ) {
@@ -463,12 +481,55 @@ fun AutomataScreen(
                     NewMachineWindow { newMachine ->
                         activeDialog = null
                         newMachine?.let {
-                            viewModel.autoSave(machine)
                             viewModel.setCurrentMachine(it)
+                            viewModel.markDirty()
                         }
                     }
                 null -> {}
             }
+            if (showUnsavedDialog) {
+                val hasPendingExample = viewModel.pendingExampleUri != null
+                val proceed = {
+                    showUnsavedDialog = false
+                    if (hasPendingExample) {
+                        val exampleUri = viewModel.pendingExampleUri!!
+                        val exampleName = viewModel.pendingExampleName ?: "untitled"
+                        viewModel.pendingExampleUri = null
+                        viewModel.pendingExampleName = null
+                        val jff = activity.assets.open(exampleUri).use { Jff.parse(it) }
+                        viewModel.setCurrentMachine(jff.toMachine(exampleName), jff.positions)
+                    } else if (isBackAction) {
+                        navBack()
+                    } else {
+                        pendingAction?.invoke()
+                    }
+                    pendingAction = null
+                }
+                DefaultDialog(
+                    title = stringResource(R.string.unsaved_changes),
+                    cancelLabel = stringResource(R.string.cancel_button),
+                    confirmLabel = stringResource(R.string.save_changes),
+                    onDismiss = {
+                        viewModel.markSaved()
+                        proceed()
+                    },
+                    onConfirm = {
+                        if (hasPendingExample) {
+                            // Export to user storage, then load example in export callback
+                            exportLauncher.launch(
+                                "${machine.name.ifEmpty { "untitled" }}.jff",
+                            )
+                            showUnsavedDialog = false
+                        } else {
+                            viewModel.autoSave(machine)
+                            proceed()
+                        }
+                    },
+                ) {
+                    Text(text = stringResource(R.string.unsaved_changes_message))
+                }
+            }
+
         }
     }
 }
@@ -494,6 +555,7 @@ private fun BottomScreenPart(
                     onRemoveState = { state ->
                         viewModel.statePositions.remove(state.index)
                         machine.removeState(state)
+                        viewModel.markDirty()
                         recomposeKey.intValue++
                     },
                 )
@@ -507,6 +569,7 @@ private fun BottomScreenPart(
                     },
                     onRemoveTransition = { transition ->
                         machine.removeTransition(transition)
+                        viewModel.markDirty()
                         recomposeKey.intValue++
                     },
                 )

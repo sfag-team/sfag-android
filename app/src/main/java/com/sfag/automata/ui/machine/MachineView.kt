@@ -290,6 +290,7 @@ fun Machine.MachineView(
                                                     viewModel.statePositions.remove(
                                                         hitState.index,
                                                     )
+                                                    viewModel.markDirty()
                                                     localRecomposeKey++
                                                 }
                                                 MachineEditMode.DRAG,
@@ -333,6 +334,7 @@ fun Machine.MachineView(
                                                                     it.toState ==
                                                                     transition.toState
                                                             }.forEach { removeTransition(it) }
+                                                        viewModel.markDirty()
                                                         localRecomposeKey++
                                                         onRecompose()
                                                     }
@@ -493,12 +495,14 @@ fun Machine.MachineView(
                                 viewModel.addStatePosition(stateIndex, offset)
                             },
                         ) {
+                            viewModel.markDirty()
                             dialogRequest.value = null
                             localRecomposeKey++
                             onRecompose()
                         }
                     is DialogRequest.ForTransition ->
                         TransitionDialog(request.fromState, request.toState, request.transitionName) {
+                            viewModel.markDirty()
                             dialogRequest.value = null
                             localRecomposeKey++
                             onRecompose()
