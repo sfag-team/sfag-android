@@ -19,7 +19,7 @@ android {
         targetSdk = 36
 
         // Major * 10000 + Minor * 100 + Patch
-        versionCode = 20202
+        versionCode = 20203
         versionName = "2.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -46,6 +46,7 @@ android {
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -57,6 +58,7 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.google.material)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)

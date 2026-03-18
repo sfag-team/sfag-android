@@ -1,7 +1,7 @@
 package com.sfag.automata.ui.machine
 
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.shrinkVertically
@@ -92,7 +92,7 @@ fun Machine.MachineView(
     onRecompose: () -> Unit,
     onClickName: (() -> Unit)?,
 ) {
-    val activity = LocalActivity.current as? ComponentActivity ?: return
+    val activity = LocalActivity.current as? AppCompatActivity ?: return
     val viewModel: AutomataViewModel = hiltViewModel(activity)
     val density = LocalDensity.current
 

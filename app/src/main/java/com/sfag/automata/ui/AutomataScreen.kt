@@ -1,10 +1,10 @@
 package com.sfag.automata.ui
 
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.slideInVertically
@@ -93,7 +93,7 @@ fun AutomataScreen(
     modifier: Modifier = Modifier,
     navBack: () -> Unit,
 ) {
-    val activity = LocalActivity.current as? ComponentActivity ?: return
+    val activity = LocalActivity.current as? AppCompatActivity ?: return
     val viewModel: AutomataViewModel = hiltViewModel(activity)
     val noInitialStateMsg = stringResource(R.string.no_initial_state)
 

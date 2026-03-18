@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- windowBackground must match surfaceContainerLowestLight in Color.kt -->
-    <style name="Theme.AutoGram" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="Theme.AutoGram" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="android:windowBackground">#FFFFFF</item>
     </style>
 

@@ -2,12 +2,12 @@ package com.sfag.grammar
 
 import android.net.Uri
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -53,7 +53,7 @@ private enum class Mode {
 }
 
 @AndroidEntryPoint
-class GrammarActivity : ComponentActivity() {
+class GrammarActivity : AppCompatActivity() {
     private val viewModel: GrammarViewModel by viewModels()
 
     override fun onStop() {

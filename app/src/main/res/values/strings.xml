@@ -91,4 +91,26 @@
     <string name="tree_derivation">Tree derivation</string>
     <string name="untitled_name">untitled</string>
     <string name="valid_result">Valid</string>
+
+    <!-- About Screen -->
+    <string name="about_description">AutoGram simulator is an application that helps to understand working with formal languages of the Chomsky hierarchy. The application includes simulators for finite and pushdown automata and a grammar simulator.</string>
+    <string name="about_automata_features">The simulator allows for finite/pushdown automata:</string>
+    <string name="feature_edit_automata">edit the state diagram, states, and transitions</string>
+    <string name="feature_determinism">determine if the automaton is deterministic or non-deterministic</string>
+    <string name="feature_formal_definition">summarize the formal definition of the automaton</string>
+    <string name="feature_visualize_derivation">visualize the derivation of the input word in the diagram</string>
+    <string name="feature_multi_input_short">evaluate the acceptance of multiple words</string>
+    <string name="about_grammar_features">The simulator allows for grammars:</string>
+    <string name="feature_edit_grammar">edit grammar rules</string>
+    <string name="feature_grammar_type">determine the type of grammar</string>
+    <string name="feature_formal_grammar">summarize the formal definition of the grammar</string>
+    <string name="feature_visualize_grammar">visualize the derivation of the input word</string>
+    <string name="feature_multi_grammar">evaluate if multiple input words were derived</string>
+    <string name="authors_label">Authors:</string>
+    <string name="supervisor_label">Supervisor:</string>
+    <string name="university_label">FEI STU Bratislava</string>
+    <string name="version_label">AutoGram simulator v2.2 ©2026</string>
+    <string name="select_language">Select language</string>
+    <string name="language_slovak">Slovak</string>
+    <string name="language_english">English</string>
 </resources>

@@ -1,9 +1,9 @@
 package com.sfag.automata
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme.colorScheme
@@ -27,7 +27,7 @@ import com.sfag.main.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class AutomataActivity : ComponentActivity() {
+class AutomataActivity : AppCompatActivity() {
     private val viewModel: AutomataViewModel by viewModels()
 
     override fun onStop() {
