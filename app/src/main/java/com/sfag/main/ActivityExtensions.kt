@@ -13,6 +13,8 @@ fun AppCompatActivity.configureScreenOrientation() {
         statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
         navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
     )
-    // TODO: Allow rotation on large screens (≥600dp) in the future.
-    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    // Lock portrait on phones, let tablets rotate freely
+    if (resources.configuration.smallestScreenWidthDp < 600) {
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    }
 }

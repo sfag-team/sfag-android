@@ -23,6 +23,7 @@ import com.sfag.main.config.EXTRA_NEW_MACHINE_NAME
 import com.sfag.main.config.EXTRA_NEW_MACHINE_TYPE
 import com.sfag.main.configureScreenOrientation
 import com.sfag.main.ui.component.DefaultSnackbarHost
+import com.sfag.main.ui.component.PortraitPillarbox
 import com.sfag.main.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -75,16 +76,18 @@ class AutomataActivity : AppCompatActivity() {
 
         setContent {
             AppTheme {
-                val snackbarHostState = remember { SnackbarHostState() }
-                Scaffold(
-                    containerColor = colorScheme.surfaceContainerLowest,
-                    snackbarHost = { DefaultSnackbarHost(snackbarHostState) },
-                ) { innerPadding ->
-                    AutomataScreen(
-                        modifier = Modifier.fillMaxSize().padding(innerPadding),
-                        snackbarHostState = snackbarHostState,
-                        navBack = { finish() },
-                    )
+                PortraitPillarbox {
+                    val snackbarHostState = remember { SnackbarHostState() }
+                    Scaffold(
+                        containerColor = colorScheme.surfaceContainerLowest,
+                        snackbarHost = { DefaultSnackbarHost(snackbarHostState) }
+                    ) { innerPadding ->
+                        AutomataScreen(
+                            modifier = Modifier.fillMaxSize().padding(innerPadding),
+                            snackbarHostState = snackbarHostState,
+                            navBack = { finish() }
+                        )
+                    }
                 }
             }
         }

@@ -48,60 +48,32 @@ class Tree {
     }
 
     fun markAcceptedPaths(acceptedNodeIds: Set<Int>) {
-        val root = root ?: return
-        markAcceptedRecursive(root, acceptedNodeIds)
-    }
-
-    private fun markAcceptedRecursive(
-        node: TreeNode,
-        acceptedIds: Set<Int>,
-    ): Boolean {
-        if (node.children.isEmpty()) {
-            if (node.id in acceptedIds) {
+        fun walk(node: TreeNode): Boolean {
+            if (node.children.isEmpty() && node.id in acceptedNodeIds) {
                 node.status = SimulationOutcome.ACCEPTED
                 return true
             }
-            return false
+            return node.children.any { walk(it) }
         }
-        var anyAccepted = false
-        for (child in node.children) {
-            if (markAcceptedRecursive(child, acceptedIds)) {
-                anyAccepted = true
-            }
-        }
-        return anyAccepted
+        root?.let { walk(it) }
     }
 
     fun markRemainingAsRejected() {
-        val root = root ?: return
-        markRejectedRecursive(root)
-    }
-
-    private fun markRejectedRecursive(node: TreeNode) {
-        if (node.status == SimulationOutcome.ACTIVE && node.children.isEmpty()) {
-            node.status = SimulationOutcome.REJECTED
+        fun walk(node: TreeNode) {
+            if (node.status == SimulationOutcome.ACTIVE && node.children.isEmpty()) {
+                node.status = SimulationOutcome.REJECTED
+            }
+            node.children.forEach { walk(it) }
         }
-        for (child in node.children) {
-            markRejectedRecursive(child)
-        }
+        root?.let { walk(it) }
     }
 
     fun findNode(id: Int): TreeNode? {
-        val root = root ?: return null
-        return findNodeRecursive(root, id)
-    }
-
-    private fun findNodeRecursive(
-        node: TreeNode,
-        id: Int,
-    ): TreeNode? {
-        if (node.id == id) return node
-        for (child in node.children) {
-            findNodeRecursive(child, id)?.let {
-                return it
-            }
+        fun walk(node: TreeNode): TreeNode? {
+            if (node.id == id) return node
+            return node.children.firstNotNullOfOrNull { walk(it) }
         }
-        return null
+        return root?.let { walk(it) }
     }
 
     fun getActiveNodes(): List<TreeNode> = activeNodes.toList()

@@ -113,8 +113,6 @@
     <string name="feature_multi_grammar">zhodnotiť či viacero vstupných slov bolo odvodených</string>
     <string name="authors_label">Autori:</string>
     <string name="supervisor_label">Vedúca:</string>
-    <string name="university_label">FEI STU Bratislava</string>
-    <string name="version_label">AutoGram simulator v2.2 ©2026</string>
     <string name="select_language">Vybrať jazyk</string>
     <string name="language_slovak">Slovenčina</string>
     <string name="language_english">Angličtina</string>

@@ -43,6 +43,7 @@ import com.sfag.main.configureScreenOrientation
 import com.sfag.main.ui.component.DefaultSnackbarHost
 import com.sfag.main.ui.component.ExportFile
 import com.sfag.main.ui.component.ImportFile
+import com.sfag.main.ui.component.PortraitPillarbox
 import com.sfag.main.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -69,82 +70,81 @@ class GrammarActivity : AppCompatActivity() {
 
         setContent {
             AppTheme {
-                val inputsViewModel: MultiInputViewModel =
-                    androidx.hilt.lifecycle.viewmodel.compose
-                        .hiltViewModel()
-                val currentMode = remember { mutableStateOf(Mode.GRAMMAR_EDITOR) }
-                val selectedInput = remember { mutableStateOf<String?>(null) }
-                LaunchedEffect(assetPath) {
-                    if (assetPath != null) {
-                        val inputStream = assets.open(assetPath)
-                        viewModel.loadFromXmlStream(inputStream)
-                    }
-                }
-                val snackbarHostState = remember { SnackbarHostState() }
-                val importLauncher =
-                    rememberLauncherForActivityResult(
-                        contract = ActivityResultContracts.OpenDocument(),
-                    ) { uri: Uri? ->
-                        uri?.let { viewModel.loadFromXmlUri(this@GrammarActivity, it) }
-                    }
-                val exportLauncher =
-                    rememberLauncherForActivityResult(
-                        contract = ActivityResultContracts.CreateDocument(JFF_SAVE_MIME_TYPE),
-                    ) { uri: Uri? ->
-                        uri?.let {
-                            contentResolver.openOutputStream(it)?.use { stream ->
-                                stream.write(
-                                    viewModel
-                                        .getIndividualRules()
-                                        .exportToJff()
-                                        .toByteArray(Charsets.UTF_8),
-                                )
-                            }
+                PortraitPillarbox {
+                    val inputsViewModel: MultiInputViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+                    val currentMode = remember { mutableStateOf(Mode.GRAMMAR_EDITOR) }
+                    val selectedInput = remember { mutableStateOf<String?>(null) }
+                    LaunchedEffect(assetPath) {
+                        if (assetPath != null) {
+                            assets.open(assetPath).use { viewModel.loadFromXmlStream(it) }
                         }
                     }
-                BackHandler {
-                    when (currentMode.value) {
-                        Mode.GRAMMAR_EDITOR -> finish()
-                        Mode.SINGLE_INPUT,
-                        Mode.MULTI_INPUT,
-                        -> currentMode.value = Mode.GRAMMAR_EDITOR
+                    val snackbarHostState = remember { SnackbarHostState() }
+                    val importLauncher =
+                        rememberLauncherForActivityResult(
+                            contract = ActivityResultContracts.OpenDocument(),
+                        ) { uri: Uri? ->
+                            uri?.let { viewModel.loadFromXmlUri(this@GrammarActivity, it) }
+                        }
+                    val exportLauncher =
+                        rememberLauncherForActivityResult(
+                            contract = ActivityResultContracts.CreateDocument(JFF_SAVE_MIME_TYPE),
+                        ) { uri: Uri? ->
+                            uri?.let {
+                                contentResolver.openOutputStream(it)?.use { stream ->
+                                    stream.write(
+                                        viewModel
+                                            .getIndividualRules()
+                                            .exportToJff()
+                                            .toByteArray(Charsets.UTF_8)
+                                    )
+                                }
+                            }
+                        }
+                    BackHandler {
+                        when (currentMode.value) {
+                            Mode.GRAMMAR_EDITOR -> finish()
+                            Mode.SINGLE_INPUT,
+                            Mode.MULTI_INPUT,
+                            -> currentMode.value = Mode.GRAMMAR_EDITOR
+                        }
                     }
-                }
-                Scaffold(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                    topBar = {
-                        TopNavigationBar(
-                            currentMode = currentMode,
-                            grammarViewModel = viewModel,
-                            onImport = { importLauncher.launch(JFF_OPEN_MIME_TYPES) },
-                            onExport = { exportLauncher.launch("grammar.jff") },
-                        )
-                    },
-                    snackbarHost = { DefaultSnackbarHost(snackbarHostState) },
-                ) { padding ->
-                    when (currentMode.value) {
-                        Mode.GRAMMAR_EDITOR ->
-                            GrammarScreen(
-                                viewModel,
-                                snackbarHostState,
-                                modifier = Modifier.padding(padding),
+                    Scaffold(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                        topBar = {
+                            TopNavigationBar(
+                                currentMode = currentMode,
+                                grammarViewModel = viewModel,
+                                onImport = { importLauncher.launch(JFF_OPEN_MIME_TYPES) },
+                                onExport = { exportLauncher.launch("grammar.jff") }
                             )
-                        Mode.SINGLE_INPUT ->
-                            SingleInputScreen(
-                                viewModel,
-                                initialInput = selectedInput.value,
-                                modifier = Modifier.padding(padding),
-                            )
-                        Mode.MULTI_INPUT ->
-                            MultiInputScreen(
-                                viewModel,
-                                inputsViewModel,
-                                onTestInput = { input ->
-                                    selectedInput.value = input
-                                    currentMode.value = Mode.SINGLE_INPUT
-                                },
-                                modifier = Modifier.padding(padding),
-                            )
+                        },
+                        snackbarHost = { DefaultSnackbarHost(snackbarHostState) }
+                    ) { padding ->
+                        when (currentMode.value) {
+                            Mode.GRAMMAR_EDITOR ->
+                                GrammarScreen(
+                                    viewModel,
+                                    snackbarHostState,
+                                    modifier = Modifier.padding(padding)
+                                )
+                            Mode.SINGLE_INPUT ->
+                                SingleInputScreen(
+                                    viewModel,
+                                    initialInput = selectedInput.value,
+                                    modifier = Modifier.padding(padding)
+                                )
+                            Mode.MULTI_INPUT ->
+                                MultiInputScreen(
+                                    viewModel,
+                                    inputsViewModel,
+                                    onTestInput = { input ->
+                                        selectedInput.value = input
+                                        currentMode.value = Mode.SINGLE_INPUT
+                                    },
+                                    modifier = Modifier.padding(padding)
+                                )
+                        }
                     }
                 }
             }

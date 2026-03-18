@@ -43,6 +43,7 @@ import com.sfag.main.ui.HomeScreen
 import com.sfag.main.ui.component.DefaultButton
 import com.sfag.main.ui.component.DefaultTextField
 import com.sfag.main.ui.component.ItemSpecificationIcon
+import com.sfag.main.ui.component.PortraitPillarbox
 import com.sfag.main.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
@@ -65,74 +66,76 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             AppTheme {
-                val navController = rememberNavController()
-                Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest) { innerPadding ->
-                    Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                        NavHost(
-                            navController = navController,
-                            startDestination = Destinations.HOME.route,
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            composable(route = Destinations.HOME.route) {
-                                var isNewMachineDialogShown by remember { mutableStateOf(false) }
-                                HomeScreen(
-                                    navToAutomata = {
-                                        if (hasSavedMachine()) {
-                                            navToAutomataActivity(null)
-                                        } else {
-                                            isNewMachineDialogShown = true
+                PortraitPillarbox {
+                    val navController = rememberNavController()
+                    Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest) { innerPadding ->
+                        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                            NavHost(
+                                navController = navController,
+                                startDestination = Destinations.HOME.route,
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                composable(route = Destinations.HOME.route) {
+                                    var isNewMachineDialogShown by remember { mutableStateOf(false) }
+                                    HomeScreen(
+                                        navToAutomata = {
+                                            if (hasSavedMachine()) {
+                                                navToAutomataActivity(null)
+                                            } else {
+                                                isNewMachineDialogShown = true
+                                            }
+                                        },
+                                        navToGrammar = { navToGrammarActivity(null) },
+                                        navToExamplesScreen = {
+                                            navController.navigate(Destinations.EXAMPLES.route)
+                                        },
+                                        navToAbout = { navController.navigate(Destinations.ABOUT.route) }
+                                    )
+                                    if (isNewMachineDialogShown) {
+                                        NewMachineDialog(
+                                            onDismiss = { isNewMachineDialogShown = false },
+                                            onImport = {
+                                                isNewMachineDialogShown = false
+                                                navToAutomataActivity(null, importMode = true)
+                                            },
+                                            onConfirm = { type, name ->
+                                                isNewMachineDialogShown = false
+                                                navToNewAutomataActivity(type, name)
+                                            }
+                                        )
+                                    }
+                                }
+                                composable(route = Destinations.EXAMPLES.route) {
+                                    ExamplesScreen(
+                                        navBack = {
+                                            navController.navigate(Destinations.HOME.route) {
+                                                popUpTo(Destinations.HOME.route) {
+                                                    inclusive = true
+                                                }
+                                            }
+                                        },
+                                        navToGrammar = { grammarUri, name ->
+                                            navController.navigate(Destinations.HOME.route) {
+                                                popUpTo(Destinations.HOME.route) {
+                                                    inclusive = true
+                                                }
+                                            }
+                                            navToGrammarActivity(grammarUri, name)
+                                        },
+                                        navToAutomata = { automataUri, name ->
+                                            navController.navigate(Destinations.HOME.route) {
+                                                popUpTo(Destinations.HOME.route) {
+                                                    inclusive = true
+                                                }
+                                            }
+                                            navToAutomataActivity(automataUri, name)
                                         }
-                                    },
-                                    navToGrammar = { navToGrammarActivity(null) },
-                                    navToExamplesScreen = {
-                                        navController.navigate(Destinations.EXAMPLES.route)
-                                    },
-                                    navToAbout = { navController.navigate(Destinations.ABOUT.route) },
-                                )
-                                if (isNewMachineDialogShown) {
-                                    NewMachineDialog(
-                                        onDismiss = { isNewMachineDialogShown = false },
-                                        onImport = {
-                                            isNewMachineDialogShown = false
-                                            navToAutomataActivity(null, importMode = true)
-                                        },
-                                        onConfirm = { type, name ->
-                                            isNewMachineDialogShown = false
-                                            navToNewAutomataActivity(type, name)
-                                        },
                                     )
                                 }
-                            }
-                            composable(route = Destinations.EXAMPLES.route) {
-                                ExamplesScreen(
-                                    navBack = {
-                                        navController.navigate(Destinations.HOME.route) {
-                                            popUpTo(Destinations.HOME.route) {
-                                                inclusive = true
-                                            }
-                                        }
-                                    },
-                                    navToGrammar = { grammarUri, name ->
-                                        navController.navigate(Destinations.HOME.route) {
-                                            popUpTo(Destinations.HOME.route) {
-                                                inclusive = true
-                                            }
-                                        }
-                                        navToGrammarActivity(grammarUri, name)
-                                    },
-                                    navToAutomata = { automataUri, name ->
-                                        navController.navigate(Destinations.HOME.route) {
-                                            popUpTo(Destinations.HOME.route) {
-                                                inclusive = true
-                                            }
-                                        }
-                                        navToAutomataActivity(automataUri, name)
-                                    },
-                                )
-                            }
-                            composable(route = Destinations.ABOUT.route) {
-                                AboutScreen(navBack = { navController.navigate(Destinations.HOME.route) })
+                                composable(route = Destinations.ABOUT.route) {
+                                    AboutScreen(navBack = { navController.navigate(Destinations.HOME.route) })
+                                }
                             }
                         }
                     }

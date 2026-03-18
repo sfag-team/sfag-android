@@ -272,7 +272,7 @@ private fun DrawScope.drawTree(
     }
 
     nodes.forEach { node ->
-        val nodePos = pos[node]!!
+        val nodePos = pos[node] ?: return@forEach
 
         if (
             node.children.isNotEmpty() &&
@@ -285,21 +285,20 @@ private fun DrawScope.drawTree(
                 .parents
                 .first() == node
         ) {
-            drawRoundRect(
-                color = groupingRectColor,
-                topLeft = Offset(nodePos.x - GROUPING_RECT_PADDING - nodeRadius, nodePos.y - GROUPING_RECT_PADDING - nodeRadius),
-                size =
-                    Size(
-                        pos[node.children
-                                .first()
-                                .parents
-                                .last()]!!
-                        .x + nodeRadius + GROUPING_RECT_PADDING -
-                            (nodePos.x - GROUPING_RECT_PADDING - nodeRadius),
-                        nodePos.y + nodeRadius + GROUPING_RECT_PADDING - (nodePos.y - GROUPING_RECT_PADDING - nodeRadius)
-                    ),
-                cornerRadius = CornerRadius(nodeRadius, nodeRadius)
-            )
+            val lastParentPos = pos[node.children.first().parents.last()]
+            if (lastParentPos != null) {
+                drawRoundRect(
+                    color = groupingRectColor,
+                    topLeft = Offset(nodePos.x - GROUPING_RECT_PADDING - nodeRadius, nodePos.y - GROUPING_RECT_PADDING - nodeRadius),
+                    size =
+                        Size(
+                            lastParentPos.x + nodeRadius + GROUPING_RECT_PADDING -
+                                (nodePos.x - GROUPING_RECT_PADDING - nodeRadius),
+                            nodePos.y + nodeRadius + GROUPING_RECT_PADDING - (nodePos.y - GROUPING_RECT_PADDING - nodeRadius)
+                        ),
+                    cornerRadius = CornerRadius(nodeRadius, nodeRadius)
+                )
+            }
         }
 
         val color =
@@ -355,29 +354,26 @@ internal suspend fun focusNodeAnimated(
     val targetNode = allNodes.find { it.step == currentStep }
 
     if (targetNode != null) {
+        val nodePos = pos[targetNode] ?: return
         val targetX =
             if (currentStep != 0 && targetNode.parents.size >= 2) {
-                (pos[targetNode.parents.first()]!!.x + pos[targetNode.parents.last()]!!.x) / 2
-            } else if (currentStep != 0) {
-                (
-                    pos[targetNode.parents
-                            .first()
-                            .children
-                            .first()]!!.x +
-                        pos[targetNode.parents
-                                .first()
-                                .children
-                                .last()]!!.x
-                ) / 2
+                val firstPos = pos[targetNode.parents.first()] ?: nodePos
+                val lastPos = pos[targetNode.parents.last()] ?: nodePos
+                (firstPos.x + lastPos.x) / 2
+            } else if (currentStep != 0 && targetNode.parents.isNotEmpty()) {
+                val parent = targetNode.parents.first()
+                val firstChildPos = pos[parent.children.first()] ?: nodePos
+                val lastChildPos = pos[parent.children.last()] ?: nodePos
+                (firstChildPos.x + lastChildPos.x) / 2
             } else {
-                pos[targetNode]!!.x
+                nodePos.x
             }
 
         val targetY =
             if (currentStep != 0 && targetNode.parents.isNotEmpty()) {
-                pos[targetNode.parents.first()]!!.y
+                (pos[targetNode.parents.first()] ?: nodePos).y
             } else {
-                pos[targetNode]!!.y
+                nodePos.y
             }
 
         offsetX.animateTo(canvasWidth / 2f - targetX * scale)

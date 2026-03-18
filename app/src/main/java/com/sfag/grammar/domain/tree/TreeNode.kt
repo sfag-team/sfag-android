@@ -15,15 +15,18 @@ class TreeNode(
 
     fun getLeaves(): MutableList<TreeNode> {
         val leaves = LinkedHashSet<TreeNode>()
-
-        fun traverse(node: TreeNode) {
+        val visited = mutableSetOf<TreeNode>()
+        val stack = ArrayDeque<TreeNode>()
+        stack.addLast(this)
+        while (stack.isNotEmpty()) {
+            val node = stack.removeLast()
+            if (!visited.add(node)) continue
             if (node.children.isEmpty()) {
                 leaves.add(node)
             } else {
-                node.children.forEach(::traverse)
+                node.children.toList().asReversed().forEach { stack.addLast(it) }
             }
         }
-        traverse(this)
         return leaves.toMutableList()
     }
 

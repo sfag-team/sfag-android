@@ -113,8 +113,6 @@
     <string name="feature_multi_grammar">evaluate if multiple input words were derived</string>
     <string name="authors_label">Authors:</string>
     <string name="supervisor_label">Supervisor:</string>
-    <string name="university_label">FEI STU Bratislava</string>
-    <string name="version_label">AutoGram simulator v2.2 ©2026</string>
     <string name="select_language">Select language</string>
     <string name="language_slovak">Slovak</string>
     <string name="language_english">English</string>

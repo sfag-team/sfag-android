@@ -488,11 +488,10 @@ fun AutomataScreen(
                 null -> {}
             }
             if (showUnsavedDialog) {
-                val hasPendingExample = viewModel.pendingExampleUri != null
                 val proceed = {
                     showUnsavedDialog = false
-                    if (hasPendingExample) {
-                        val exampleUri = viewModel.pendingExampleUri!!
+                    val exampleUri = viewModel.pendingExampleUri
+                    if (exampleUri != null) {
                         val exampleName = viewModel.pendingExampleName ?: "untitled"
                         viewModel.pendingExampleUri = null
                         viewModel.pendingExampleName = null
@@ -514,7 +513,7 @@ fun AutomataScreen(
                         proceed()
                     },
                     onConfirm = {
-                        if (hasPendingExample) {
+                        if (viewModel.pendingExampleUri != null) {
                             // Export to user storage, then load example in export callback
                             exportLauncher.launch(
                                 "${machine.name.ifEmpty { "untitled" }}.jff",

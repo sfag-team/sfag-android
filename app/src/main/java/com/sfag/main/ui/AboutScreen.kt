@@ -140,8 +140,8 @@ fun AboutScreen(navBack: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(stringResource(R.string.university_label), style = MaterialTheme.typography.labelMedium)
-            Text(stringResource(R.string.version_label), style = MaterialTheme.typography.labelSmall)
+            Text("FEI STU Bratislava", style = MaterialTheme.typography.labelMedium)
+            Text("AutoGram simulator v2.3 ©2026", style = MaterialTheme.typography.labelSmall)
         }
     }
 

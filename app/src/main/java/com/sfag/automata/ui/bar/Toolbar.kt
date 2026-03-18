@@ -37,7 +37,7 @@ internal fun Toolbar(
         verticalAlignment = CenterVertically,
     ) {
         ToolIcon(R.drawable.select, R.string.select_tool, MachineEditMode.SELECT, activeTool, onSelectTool)
-        ToolIcon(R.drawable.move, R.string.move_tool, MachineEditMode.DRAG, activeTool, onSelectTool)
+        ToolIcon(R.drawable.move, R.string.move_tool, MachineEditMode.MOVE, activeTool, onSelectTool)
         ToolIcon(
             R.drawable.add_states,
             R.string.add_state,

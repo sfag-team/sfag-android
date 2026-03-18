@@ -7,7 +7,8 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
@@ -184,38 +185,11 @@ fun Machine.MachineView(
                     }
             }
 
-            val gestureModifier =
-                Modifier.pointerInput(Unit) {
-                    detectTransformGestures { centroid, pan, zoom, _ ->
-                        val oldScale = scale
-                        scale = (scale * zoom).coerceIn(MIN_ZOOM, MAX_ZOOM)
-                        offsetX += centroid.x * (1f / scale - 1f / oldScale) + pan.x / scale
-                        offsetY += centroid.y * (1f / scale - 1f / oldScale) + pan.y / scale
-                        // Clamp so at least one node stays partially visible
-                        val bounds = machineBounds
-                        val pxPerDp = density.density
-                        if (bounds != null) {
-                            offsetX =
-                                offsetX.coerceIn(
-                                    -(bounds.right + NODE_RADIUS) * pxPerDp,
-                                    size.width.toFloat() / scale - bounds.left * pxPerDp,
-                                )
-                            offsetY =
-                                offsetY.coerceIn(
-                                    -(bounds.bottom + NODE_RADIUS) * pxPerDp,
-                                    size.height.toFloat() / scale - bounds.top * pxPerDp,
-                                )
-                        }
-                        viewModel.offsetXCanvas = offsetX
-                        viewModel.offsetYCanvas = offsetY
-                        viewModel.scaleCanvas = scale
-                    }
-                }
-
             Box(
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        // Tool gestures (taps for most tools, node drag + pan/zoom for MOVE)
                         .pointerInput(activeTool, isEditing) {
                             if (!isEditing) return@pointerInput
                             when (activeTool) {
@@ -293,7 +267,7 @@ fun Machine.MachineView(
                                                     viewModel.markDirty()
                                                     localRecomposeKey++
                                                 }
-                                                MachineEditMode.DRAG,
+                                                MachineEditMode.MOVE,
                                                 MachineEditMode.ADD_STATE,
                                                 MachineEditMode.ADD_TRANSITION,
                                                 -> {}
@@ -304,6 +278,7 @@ fun Machine.MachineView(
                                         // Check transitions (path hitbox)
                                         val paths = transitionPathsState.value
                                         for ((index, path) in paths.withIndex()) {
+                                            if (index >= transitions.size) break
                                             if (
                                                 path != null &&
                                                 isPathHit(
@@ -338,7 +313,7 @@ fun Machine.MachineView(
                                                         localRecomposeKey++
                                                         onRecompose()
                                                     }
-                                                    MachineEditMode.DRAG,
+                                                    MachineEditMode.MOVE,
                                                     MachineEditMode.ADD_STATE,
                                                     MachineEditMode.ADD_TRANSITION,
                                                     -> {}
@@ -347,54 +322,82 @@ fun Machine.MachineView(
                                             }
                                         }
                                     }
-                                MachineEditMode.DRAG -> {
-                                    var dragTargetIndex: Int? = null
-                                    detectDragGestures(
-                                        onDragStart = { startOffset ->
-                                            val pxPerDp = density.density
-                                            val tapPxX = startOffset.x / scale - offsetX
-                                            val tapPxY = startOffset.y / scale - offsetY
-                                            val positions = viewModel.statePositions
-                                            dragTargetIndex =
-                                                states.firstOrNull { state ->
-                                                    val position =
-                                                        positions[state.index]
-                                                            ?: return@firstOrNull false
-                                                    val cx =
-                                                        (position.x + NODE_RADIUS / 2) * pxPerDp
-                                                    val cy =
-                                                        (position.y + NODE_RADIUS / 2) * pxPerDp
-                                                    val dx = tapPxX - cx
-                                                    val dy = tapPxY - cy
-                                                    dx * dx + dy * dy <
-                                                        NODE_RADIUS * NODE_RADIUS
-                                                }?.index
-                                        },
-                                        onDrag = { change, dragAmount ->
-                                            val target =
-                                                dragTargetIndex
-                                                    ?: return@detectDragGestures
-                                            change.consume()
-                                            val pxPerDp = density.density
-                                            viewModel.updateStatePosition(
-                                                target,
-                                                Offset(
-                                                    dragAmount.x / (scale * pxPerDp),
-                                                    dragAmount.y / (scale * pxPerDp),
-                                                ),
-                                            )
-                                        },
-                                        onDragEnd = {
-                                            if (dragTargetIndex != null) {
-                                                dragTargetIndex = null
-                                                localRecomposeKey++
-                                                onRecompose()
-                                            }
-                                        },
-                                    )
-                                }
+                                MachineEditMode.MOVE ->
+                                    awaitEachGesture {
+                                        val down = awaitFirstDown(requireUnconsumed = false)
+                                        val pxPerDp = density.density
+                                        val tapPxX = down.position.x / scale - offsetX
+                                        val tapPxY = down.position.y / scale - offsetY
+                                        val positions = viewModel.statePositions
+                                        val hitIndex =
+                                            states.firstOrNull { state ->
+                                                val position =
+                                                    positions[state.index]
+                                                        ?: return@firstOrNull false
+                                                val cx =
+                                                    (position.x + NODE_RADIUS / 2) * pxPerDp
+                                                val cy =
+                                                    (position.y + NODE_RADIUS / 2) * pxPerDp
+                                                val dx = tapPxX - cx
+                                                val dy = tapPxY - cy
+                                                dx * dx + dy * dy <
+                                                    NODE_RADIUS * NODE_RADIUS
+                                            }?.index
+
+                                        if (hitIndex != null) {
+                                            down.consume()
+                                            do {
+                                                val event = awaitPointerEvent()
+                                                event.changes.forEach { change ->
+                                                    val delta =
+                                                        change.position - change.previousPosition
+                                                    change.consume()
+                                                    viewModel.updateStatePosition(
+                                                        hitIndex,
+                                                        Offset(
+                                                            delta.x / (scale * pxPerDp),
+                                                            delta.y / (scale * pxPerDp),
+                                                        ),
+                                                    )
+                                                }
+                                            } while (event.changes.any { it.pressed })
+                                            localRecomposeKey++
+                                            onRecompose()
+                                        }
+                                        // No node hit - fall through, detectTransformGestures handles pan/zoom
+                                    }
                             }
-                        }.then(gestureModifier),
+                        }
+                        // Canvas pan+zoom (all modes - skips consumed events from MOVE node drag)
+                        .pointerInput(Unit) {
+                            detectTransformGestures { centroid, pan, zoom, _ ->
+                                val oldScale = scale
+                                scale = (scale * zoom).coerceIn(MIN_ZOOM, MAX_ZOOM)
+                                offsetX +=
+                                    centroid.x * (1f / scale - 1f / oldScale) + pan.x / scale
+                                offsetY +=
+                                    centroid.y * (1f / scale - 1f / oldScale) + pan.y / scale
+                                val bounds = machineBounds
+                                val pxPerDp = density.density
+                                if (bounds != null) {
+                                    offsetX =
+                                        offsetX.coerceIn(
+                                            -(bounds.right + NODE_RADIUS) * pxPerDp,
+                                            size.width.toFloat() / scale -
+                                                bounds.left * pxPerDp,
+                                        )
+                                    offsetY =
+                                        offsetY.coerceIn(
+                                            -(bounds.bottom + NODE_RADIUS) * pxPerDp,
+                                            size.height.toFloat() / scale -
+                                                bounds.top * pxPerDp,
+                                        )
+                                }
+                                viewModel.offsetXCanvas = offsetX
+                                viewModel.offsetYCanvas = offsetY
+                                viewModel.scaleCanvas = scale
+                            }
+                        }
             ) {
                 Box(
                     modifier =
