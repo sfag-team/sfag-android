@@ -98,6 +98,8 @@
     <!-- About Screen -->
     <string name="about_description">AutoGram simulátor je aplikácia umožňujúca pochopiť prácu s formálnymi jazykmi Chomského hierarchie jazykov. V aplikácii možno pracovať so simulátorom konečných a zásobníkových automatov a simulátorom gramatík.</string>
     <string name="about_automata_features">Simulátor umožňuje pre konečný/zásobníkový automat:</string>
+    <string name="about_automata_tab">Automaty</string>
+    <string name="about_grammar_tab">Gramatiky</string>
     <string name="feature_edit_automata">editovať stavový diagram automatu, stavy, prechody</string>
     <string name="feature_determinism">určí či je automat deterministický alebo nedeterministický</string>
     <string name="feature_formal_definition">sumarizuje formálny zápis automatu</string>

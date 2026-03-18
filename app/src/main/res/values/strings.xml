@@ -98,6 +98,8 @@
     <!-- About Screen -->
     <string name="about_description">AutoGram simulator is an application that helps to understand working with formal languages of the Chomsky hierarchy. The application includes simulators for finite and pushdown automata and a grammar simulator.</string>
     <string name="about_automata_features">The simulator allows for finite/pushdown automata:</string>
+    <string name="about_automata_tab">Automata</string>
+    <string name="about_grammar_tab">Grammars</string>
     <string name="feature_edit_automata">edit the state diagram, states, and transitions</string>
     <string name="feature_determinism">determine if the automaton is deterministic or non-deterministic</string>
     <string name="feature_formal_definition">summarize the formal definition of the automaton</string>
