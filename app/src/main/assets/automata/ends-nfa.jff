@@ -3,21 +3,21 @@
     <type>fa</type>
     <automaton>
         <state id="1" name="q0">
-            <x>38.10</x>
-            <y>388.86</y>
+            <x>25.4</x>
+            <y>259.24</y>
             <initial/>
         </state>
         <state id="2" name="q1">
-            <x>212.61</x>
-            <y>299.84</y>
+            <x>141.73999</x>
+            <y>199.89003</y>
         </state>
         <state id="3" name="q2">
-            <x>196.95</x>
-            <y>474.07</y>
+            <x>131.3</x>
+            <y>316.04996</y>
         </state>
         <state id="4" name="q3">
-            <x>389.66</x>
-            <y>381.14</y>
+            <x>259.77002</x>
+            <y>254.09003</y>
             <final/>
         </state>
         <transition>

@@ -2,7 +2,6 @@ package com.sfag.automata.ui.machine
 
 import android.graphics.Paint
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material3.MaterialTheme
@@ -10,18 +9,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import com.sfag.automata.domain.machine.Machine
-import com.sfag.automata.domain.machine.Transition
+import com.sfag.automata.ui.common.NODE_OUTLINE
 import com.sfag.automata.ui.common.NODE_RADIUS
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
+
+private const val ARROW_HEAD_SIZE = NODE_RADIUS * 0.5f
 
 private data class GroupedArrow(
     val path: TransitionPath,
@@ -35,7 +37,6 @@ internal fun Machine.TransitionArrows(
     modifier: Modifier,
     offsetX: Float,
     offsetY: Float,
-    onClickTransition: ((Transition) -> Unit)?,
     borderColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     val density = LocalDensity.current
@@ -56,46 +57,27 @@ internal fun Machine.TransitionArrows(
         modifier =
             Modifier
                 .fillMaxSize()
-                .then(
-                    if (onClickTransition == null) {
-                        modifier
-                    } else {
-                        modifier.pointerInput(Unit) {
-                            detectTapGestures { tapOffset ->
-                                val adjustedX = tapOffset.x - offsetX
-                                val adjustedY = tapOffset.y - offsetY
-                                for ((index, transitionPath) in transitionPaths.withIndex()) {
-                                    if (
-                                        transitionPath != null &&
-                                        isArrowHit(transitionPath, adjustedX, adjustedY)
-                                    ) {
-                                        onClickTransition(transitions[index])
-                                        break
-                                    }
-                                }
-                            }
-                        }
-                    },
-                ).offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) },
+                .then(modifier)
+                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) },
     ) {
         // Body strokes
         for (arrow in groupedArrows) {
             drawPath(
                 arrow.path.arrowBody,
                 color = borderColor,
-                style = Stroke(width = NODE_RADIUS * 0.0625f, cap = StrokeCap.Round),
+                style = Stroke(width = NODE_OUTLINE / 2, cap = StrokeCap.Round),
             )
         }
 
         // Arrowheads
         for (arrow in groupedArrows) {
-            drawPath(arrow.path.arrowHead, color = borderColor)
+            drawPath(buildArrowHead(arrow.path), color = borderColor)
         }
 
         // Labels
         val lineHeight = scaledTextSize * 1.25f
-        val selfLoopClearance = scaledTextSize * 0.25f + NODE_RADIUS * 0.125f
-        val regularClearance = scaledTextSize * 0.5f + NODE_RADIUS * 0.125f
+        val selfLoopClearance = scaledTextSize * 0.25f + NODE_OUTLINE
+        val regularClearance = scaledTextSize * 0.5f + NODE_OUTLINE
 
         for (arrow in groupedArrows) {
             val labelClearance = if (arrow.path.isSelfLoop) selfLoopClearance else regularClearance
@@ -133,6 +115,30 @@ internal fun Machine.TransitionArrows(
     }
 }
 
+/** Samples the path at ARROW_HEAD_SIZE back from the tip to get direction, then builds equilateral head. */
+private fun buildArrowHead(path: TransitionPath): Path {
+    val pathMeasure = android.graphics.PathMeasure(path.arrowBody.asAndroidPath(), false)
+    val length = pathMeasure.length
+    val point = FloatArray(2)
+    pathMeasure.getPosTan((length - ARROW_HEAD_SIZE).coerceAtLeast(0f), point, null)
+    val dx = path.tipX - point[0]
+    val dy = path.tipY - point[1]
+    val dirLen = sqrt(dx * dx + dy * dy).coerceAtLeast(0.001f)
+    val dirX = dx / dirLen
+    val dirY = dy / dirLen
+    val baseX = path.tipX - dirX * ARROW_HEAD_SIZE
+    val baseY = path.tipY - dirY * ARROW_HEAD_SIZE
+    val halfBase = ARROW_HEAD_SIZE / sqrt(3f)
+    val perpX = -dirY * halfBase
+    val perpY = dirX * halfBase
+    return Path().apply {
+        moveTo(path.tipX, path.tipY)
+        lineTo(baseX - perpX, baseY - perpY)
+        lineTo(baseX + perpX, baseY + perpY)
+        close()
+    }
+}
+
 private fun Machine.groupArrows(transitionPaths: List<TransitionPath?>): List<GroupedArrow> {
     val grouped =
         transitions.withIndex().groupBy { (_, transition) ->
@@ -148,21 +154,3 @@ private fun Machine.groupArrows(transitionPaths: List<TransitionPath?>): List<Gr
     }
 }
 
-private fun isArrowHit(
-    transitionPath: TransitionPath,
-    tapX: Float,
-    tapY: Float,
-    threshold: Float = 40f,
-): Boolean {
-    val thresholdSq = threshold * threshold
-    val samples = 8
-    for (i in 0..samples) {
-        val position = getCurrentPositionByPath(transitionPath.arrowBody, i.toFloat() / samples)
-        val dx = tapX - position.x
-        val dy = tapY - position.y
-        if (dx * dx + dy * dy < thresholdSq) return true
-    }
-    val dx = tapX - transitionPath.textPosition.x
-    val dy = tapY - transitionPath.textPosition.y
-    return dx * dx + dy * dy < thresholdSq
-}

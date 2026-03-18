@@ -35,8 +35,8 @@ import com.sfag.R
 import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.TuringMachine
-import com.sfag.automata.ui.common.BAR_HEIGHT
-import com.sfag.automata.ui.common.CELL_SIZE
+import com.sfag.automata.ui.machine.cellPadding
+import com.sfag.automata.ui.machine.cellSize
 
 /**
  * Unified tape bar for all machine types.
@@ -65,25 +65,24 @@ fun Tape(
     infiniteLeft: Boolean = false,
     blankChar: Char = ' ',
 ) {
-    val tapeCellPadding = (BAR_HEIGHT - CELL_SIZE) / 2
     val density = LocalDensity.current
     val cellStepPx =
-        remember(density) { with(density) { (CELL_SIZE + tapeCellPadding).roundToPx() } }
+        remember(density) { with(density) { (cellSize + cellPadding).roundToPx() } }
 
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(BAR_HEIGHT)
-                .padding(horizontal = tapeCellPadding),
+                .height(cellSize + cellPadding * 2)
+                .padding(horizontal = cellPadding),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(tapeCellPadding),
+        horizontalArrangement = Arrangement.spacedBy(cellPadding),
     ) {
         if (onEdit != null) {
             Box(
                 modifier =
                     Modifier
-                        .size(CELL_SIZE)
+                        .size(cellSize)
                         .clip(MaterialTheme.shapes.small)
                         .background(MaterialTheme.colorScheme.secondaryContainer)
                         .clickable { onEdit() },
@@ -101,7 +100,7 @@ fun Tape(
         }
 
         BoxWithConstraints(modifier = Modifier.weight(1f)) {
-            val visibleCells = ((maxWidth / (CELL_SIZE + tapeCellPadding)).toInt()) + 2
+            val visibleCells = ((maxWidth / (cellSize + cellPadding)).toInt()) + 2
             val rightPad =
                 if (infiniteRight) (visibleCells - symbols.size + 1).coerceAtLeast(3) else 0
             val leftPad = if (infiniteLeft) 3 else 0
@@ -113,7 +112,7 @@ fun Tape(
             // scrollOffset = -(halfCells * step) aims for the center of the viewport.
             // Natural clamping creates symmetric left/right drift at tape edges.
             val halfCells =
-                ((maxWidth / (CELL_SIZE + tapeCellPadding)).toInt() / 2).coerceAtLeast(1)
+                ((maxWidth / (cellSize + cellPadding)).toInt() / 2).coerceAtLeast(1)
 
             LaunchedEffect(adjustedHead, halfCells) {
                 if (displaySymbols.isNotEmpty() && adjustedHead in displaySymbols.indices) {
@@ -127,8 +126,8 @@ fun Tape(
             LazyRow(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(end = tapeCellPadding),
-                horizontalArrangement = Arrangement.spacedBy(tapeCellPadding),
+                contentPadding = PaddingValues(end = cellPadding),
+                horizontalArrangement = Arrangement.spacedBy(cellPadding),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 itemsIndexed(displaySymbols) { index, symbol ->
@@ -204,7 +203,7 @@ internal fun Cell(
     isHead: Boolean = false,
     isConsumed: Boolean = false,
     headColor: Color = MaterialTheme.colorScheme.primary,
-    size: Dp = CELL_SIZE,
+    size: Dp = cellSize,
 ) {
     val bgColor =
         when {

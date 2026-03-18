@@ -7,12 +7,14 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -53,14 +55,16 @@ import com.sfag.automata.ui.AutomataViewModel
 import com.sfag.automata.ui.bar.Stack
 import com.sfag.automata.ui.bar.Tape
 import com.sfag.automata.ui.bar.Toolbar
-import com.sfag.automata.ui.common.BAR_HEIGHT
-import com.sfag.automata.ui.common.MACHINE_CANVAS_HEIGHT
 import com.sfag.automata.ui.common.NODE_RADIUS
 import com.sfag.automata.ui.edit.StateDialog
 import com.sfag.automata.ui.edit.TransitionDialog
-import com.sfag.main.config.MANUAL_MAX_ZOOM
-import com.sfag.main.config.MANUAL_MIN_ZOOM
-import kotlin.math.sqrt
+import com.sfag.main.config.MAX_ZOOM
+import com.sfag.main.config.MIN_ZOOM
+
+private const val TAP_RADIUS = NODE_RADIUS * 0.5f
+
+internal val cellSize = 48.dp
+internal val cellPadding = 4.dp
 
 /** Dialog request shared between MachineView and the bottom panel lists. */
 sealed interface DialogRequest {
@@ -98,6 +102,9 @@ fun Machine.MachineView(
     // Recomposition trigger
     var localRecomposeKey by remember { mutableIntStateOf(0) }
 
+    // Transition paths state for hit testing from the outer pointerInput
+    val transitionPathsState = remember { mutableStateOf<List<TransitionPath?>>(emptyList()) }
+
     val tapeListState = rememberLazyListState()
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -126,7 +133,7 @@ fun Machine.MachineView(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(MACHINE_CANVAS_HEIGHT)
+                    .aspectRatio(1f)
                     .padding(1.dp)
                     .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.surfaceContainerLowest),
@@ -181,7 +188,7 @@ fun Machine.MachineView(
                 Modifier.pointerInput(Unit) {
                     detectTransformGestures { centroid, pan, zoom, _ ->
                         val oldScale = scale
-                        scale = (scale * zoom).coerceIn(MANUAL_MIN_ZOOM, MANUAL_MAX_ZOOM)
+                        scale = (scale * zoom).coerceIn(MIN_ZOOM, MAX_ZOOM)
                         offsetX += centroid.x * (1f / scale - 1f / oldScale) + pan.x / scale
                         offsetY += centroid.y * (1f / scale - 1f / oldScale) + pan.y / scale
                         // Clamp so at least one node stays partially visible
@@ -212,7 +219,7 @@ fun Machine.MachineView(
                         .pointerInput(activeTool, isEditing) {
                             if (!isEditing) return@pointerInput
                             when (activeTool) {
-                                MachineEditMode.ADD_STATES ->
+                                MachineEditMode.ADD_STATE ->
                                     detectTapGestures { gestureOffset ->
                                         val tapOffset =
                                             Offset(
@@ -224,7 +231,7 @@ fun Machine.MachineView(
                                         dialogRequest.value =
                                             DialogRequest.ForState(tapOffset, null)
                                     }
-                                MachineEditMode.ADD_TRANSITIONS ->
+                                MachineEditMode.ADD_TRANSITION ->
                                     detectTapGestures { gestureOffset ->
                                         val tapXDp =
                                             gestureOffset.x / (scale * density.density) -
@@ -237,7 +244,7 @@ fun Machine.MachineView(
                                             positions.minByOrNull { (_, offset) ->
                                                 val dx = offset.x + NODE_RADIUS / 2 - tapXDp
                                                 val dy = offset.y + NODE_RADIUS / 2 - tapYDp
-                                                sqrt(dx * dx + dy * dy)
+                                                dx * dx + dy * dy
                                             }
                                         closestStateEntry?.let { (stateIndex, _) ->
                                             val state = getStateByIndex(stateIndex)
@@ -246,9 +253,144 @@ fun Machine.MachineView(
                                         }
                                     }
                                 MachineEditMode.SELECT,
-                                MachineEditMode.MOVE,
                                 MachineEditMode.REMOVE,
-                                -> {}
+                                ->
+                                    detectTapGestures { gestureOffset ->
+                                        val pxPerDp = density.density
+                                        val tapPxX = gestureOffset.x / scale - offsetX
+                                        val tapPxY = gestureOffset.y / scale - offsetY
+                                        val positions = viewModel.statePositions
+
+                                        // Check nodes first (circular hitbox)
+                                        val hitState =
+                                            states.firstOrNull { state ->
+                                                val position =
+                                                    positions[state.index]
+                                                        ?: return@firstOrNull false
+                                                val cx =
+                                                    (position.x + NODE_RADIUS / 2) * pxPerDp
+                                                val cy =
+                                                    (position.y + NODE_RADIUS / 2) * pxPerDp
+                                                val dx = tapPxX - cx
+                                                val dy = tapPxY - cy
+                                                dx * dx + dy * dy <
+                                                    NODE_RADIUS * NODE_RADIUS
+                                            }
+
+                                        if (hitState != null) {
+                                            when (activeTool) {
+                                                MachineEditMode.SELECT ->
+                                                    dialogRequest.value =
+                                                        DialogRequest.ForState(
+                                                            Offset.Zero,
+                                                            hitState,
+                                                        )
+                                                MachineEditMode.REMOVE -> {
+                                                    removeState(hitState)
+                                                    viewModel.statePositions.remove(
+                                                        hitState.index,
+                                                    )
+                                                    localRecomposeKey++
+                                                }
+                                                MachineEditMode.DRAG,
+                                                MachineEditMode.ADD_STATE,
+                                                MachineEditMode.ADD_TRANSITION,
+                                                -> {}
+                                            }
+                                            return@detectTapGestures
+                                        }
+
+                                        // Check transitions (path hitbox)
+                                        val paths = transitionPathsState.value
+                                        for ((index, path) in paths.withIndex()) {
+                                            if (
+                                                path != null &&
+                                                isPathHit(
+                                                    path.arrowBody,
+                                                    tapPxX,
+                                                    tapPxY,
+                                                    TAP_RADIUS,
+                                                )
+                                            ) {
+                                                val transition = transitions[index]
+                                                when (activeTool) {
+                                                    MachineEditMode.SELECT ->
+                                                        dialogRequest.value =
+                                                            DialogRequest.ForTransition(
+                                                                getStateByIndex(
+                                                                    transition.fromState,
+                                                                ),
+                                                                getStateByIndex(
+                                                                    transition.toState,
+                                                                ),
+                                                                transition.name,
+                                                            )
+                                                    MachineEditMode.REMOVE -> {
+                                                        transitions
+                                                            .filter {
+                                                                it.fromState ==
+                                                                    transition.fromState &&
+                                                                    it.toState ==
+                                                                    transition.toState
+                                                            }.forEach { removeTransition(it) }
+                                                        localRecomposeKey++
+                                                        onRecompose()
+                                                    }
+                                                    MachineEditMode.DRAG,
+                                                    MachineEditMode.ADD_STATE,
+                                                    MachineEditMode.ADD_TRANSITION,
+                                                    -> {}
+                                                }
+                                                break
+                                            }
+                                        }
+                                    }
+                                MachineEditMode.DRAG -> {
+                                    var dragTargetIndex: Int? = null
+                                    detectDragGestures(
+                                        onDragStart = { startOffset ->
+                                            val pxPerDp = density.density
+                                            val tapPxX = startOffset.x / scale - offsetX
+                                            val tapPxY = startOffset.y / scale - offsetY
+                                            val positions = viewModel.statePositions
+                                            dragTargetIndex =
+                                                states.firstOrNull { state ->
+                                                    val position =
+                                                        positions[state.index]
+                                                            ?: return@firstOrNull false
+                                                    val cx =
+                                                        (position.x + NODE_RADIUS / 2) * pxPerDp
+                                                    val cy =
+                                                        (position.y + NODE_RADIUS / 2) * pxPerDp
+                                                    val dx = tapPxX - cx
+                                                    val dy = tapPxY - cy
+                                                    dx * dx + dy * dy <
+                                                        NODE_RADIUS * NODE_RADIUS
+                                                }?.index
+                                        },
+                                        onDrag = { change, dragAmount ->
+                                            val target =
+                                                dragTargetIndex
+                                                    ?: return@detectDragGestures
+                                            change.consume()
+                                            val pxPerDp = density.density
+                                            viewModel.updateStatePosition(
+                                                target,
+                                                Offset(
+                                                    dragAmount.x / (scale * pxPerDp),
+                                                    dragAmount.y / (scale * pxPerDp),
+                                                ),
+                                            )
+                                        },
+                                        onDragEnd = {
+                                            if (dragTargetIndex != null) {
+                                                dragTargetIndex = null
+                                                localRecomposeKey++
+                                                onRecompose()
+                                            }
+                                        },
+                                    )
+                                }
                             }
                         }.then(gestureModifier),
             ) {
@@ -264,102 +406,39 @@ fun Machine.MachineView(
 
                     if (isEditing) {
                         key(activeTool) {
-                            val dragModifier = Modifier
-
                             key(recomposeKey, localRecomposeKey) {
-                                val transitionPaths = computeTransitionPaths(positions, density)
+                                val transitionPaths = computeTransitionPaths(positions, density.density)
+                                SideEffect { transitionPathsState.value = transitionPaths }
                                 TransitionArrows(
                                     transitionPaths = transitionPaths,
-                                    modifier = dragModifier,
+                                    modifier = Modifier,
                                     offsetX = offsetX,
                                     offsetY = offsetY,
-                                    onClickTransition =
-                                        when (activeTool) {
-                                            MachineEditMode.SELECT -> { transition ->
-                                                dialogRequest.value =
-                                                    DialogRequest.ForTransition(
-                                                        getStateByIndex(transition.fromState),
-                                                        getStateByIndex(transition.toState),
-                                                        transition.name,
-                                                    )
-                                            }
-                                            MachineEditMode.REMOVE -> { transition ->
-                                                val toRemove =
-                                                    transitions.filter {
-                                                        it.fromState == transition.fromState &&
-                                                            it.toState == transition.toState
-                                                    }
-                                                toRemove.forEach { removeTransition(it) }
-                                                localRecomposeKey++
-                                                onRecompose()
-                                            }
-                                            MachineEditMode.MOVE,
-                                            MachineEditMode.ADD_STATES,
-                                            MachineEditMode.ADD_TRANSITIONS,
-                                            -> null
-                                        },
                                 )
                                 StateNodes(
                                     positions = positions,
-                                    modifier = dragModifier,
-                                    activeTool = activeTool,
                                     offsetX = offsetX,
                                     offsetY = offsetY,
-                                    onClickState = { state ->
-                                        when (activeTool) {
-                                            MachineEditMode.ADD_TRANSITIONS -> {
-                                                dialogRequest.value =
-                                                    DialogRequest.ForTransition(
-                                                        state,
-                                                        state,
-                                                        null,
-                                                    )
-                                            }
-                                            MachineEditMode.REMOVE -> {
-                                                removeState(state)
-                                                viewModel.statePositions.remove(state.index)
-                                                localRecomposeKey++
-                                            }
-                                            MachineEditMode.SELECT -> {
-                                                dialogRequest.value =
-                                                    DialogRequest.ForState(Offset.Zero, state)
-                                            }
-                                            MachineEditMode.MOVE,
-                                            MachineEditMode.ADD_STATES,
-                                            -> {}
-                                        }
-                                    },
-                                    onDragState = { stateIndex, delta ->
-                                        viewModel.updateStatePosition(stateIndex, delta)
-                                    },
-                                    onRecompose = {
-                                        localRecomposeKey++
-                                        onRecompose()
-                                    },
                                 )
                             }
                         }
                     } else {
-                        val transitionPaths = computeTransitionPaths(positions, density)
+                        val transitionPaths = computeTransitionPaths(positions, density.density)
                         key(recomposeKey) {
                             TransitionArrows(
                                 transitionPaths = transitionPaths,
                                 modifier = Modifier,
                                 offsetX = offsetX,
                                 offsetY = offsetY,
-                                onClickTransition = null,
                             )
                         }
                         animationOverlay?.invoke()
                         key(recomposeKey) {
                             StateNodes(
                                 positions = positions,
-                                modifier = Modifier,
-                                activeTool = null,
                                 offsetX = offsetX,
                                 offsetY = offsetY,
                                 simulationOutcome = simulationOutcome,
-                                onClickState = {},
                             )
                         }
                     }
@@ -435,7 +514,7 @@ fun Machine.MachineView(
                 visible = !isEditing,
                 exit = shrinkVertically(shrinkTowards = Alignment.Top),
             ) {
-                Box(modifier = Modifier.fillMaxWidth().height(BAR_HEIGHT)) {
+                Box(modifier = Modifier.fillMaxWidth().height(cellSize + cellPadding * 2)) {
                     key(recomposeKey) { Stack() }
                 }
             }

@@ -2,6 +2,7 @@ package com.sfag.automata.data
 
 import android.content.Context
 import com.sfag.automata.domain.machine.Machine
+import com.sfag.main.config.INITIAL_ZOOM
 import com.sfag.main.data.Point2D
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -60,9 +61,9 @@ internal class Storage
                     Triple(
                         parts.getOrNull(0)?.toFloatOrNull() ?: 0f,
                         parts.getOrNull(1)?.toFloatOrNull() ?: 0f,
-                        parts.getOrNull(2)?.toFloatOrNull() ?: 0.5f,
+                        parts.getOrNull(2)?.toFloatOrNull() ?: INITIAL_ZOOM,
                     )
-                } ?: Triple(0f, 0f, 0.5f)
+                } ?: Triple(0f, 0f, INITIAL_ZOOM)
 
             val savedInputs =
                 lines

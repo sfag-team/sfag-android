@@ -3,8 +3,8 @@
     <type>fa</type>
     <automaton>
         <state id="1" name="q1">
-            <x>224.32</x>
-            <y>373.45</y>
+            <x>149.54993</x>
+            <y>248.96999</y>
             <initial/>
             <final/>
         </state>

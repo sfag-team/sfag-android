@@ -22,7 +22,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.nativeCanvas
@@ -36,14 +35,16 @@ import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.tree.TreeNode
-import com.sfag.automata.ui.common.FONT_SCALE_3_CHAR
-import com.sfag.automata.ui.common.FONT_SCALE_4_CHAR
-import com.sfag.automata.ui.common.FONT_SCALE_5_PLUS
+import com.sfag.automata.ui.common.NODE_OUTLINE
 import com.sfag.automata.ui.common.NODE_RADIUS
-import com.sfag.automata.ui.common.TREE_CANVAS_HEIGHT
-import com.sfag.main.config.MANUAL_MAX_ZOOM
-import com.sfag.main.config.MANUAL_MIN_ZOOM
+import com.sfag.automata.ui.common.drawNode
+import com.sfag.main.config.INITIAL_ZOOM
+import com.sfag.main.config.MAX_ZOOM
+import com.sfag.main.config.MIN_ZOOM
 import com.sfag.main.ui.theme.extendedColorScheme
+
+private val CANVAS_HEIGHT = 300.dp
+private const val DEAD_NODE_ALPHA = 0.38f
 
 @Composable
 fun Machine.TreeView(
@@ -66,7 +67,7 @@ fun Machine.TreeView(
     val colors = MaterialTheme.colorScheme
     val extendedColors = MaterialTheme.extendedColorScheme
 
-    val baseTextSize = with(density) { MaterialTheme.typography.headlineSmall.fontSize.toPx() }
+    val baseTextSize = with(density) { MaterialTheme.typography.titleLarge.fontSize.toPx() }
     val textPaint =
         remember(density) {
             Paint().apply {
@@ -99,7 +100,7 @@ fun Machine.TreeView(
             }
         }
 
-    var scale by remember { mutableFloatStateOf(0.5f) }
+    var scale by remember { mutableFloatStateOf(INITIAL_ZOOM) }
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
     var userHasDragged by remember { mutableStateOf(false) }
@@ -134,7 +135,7 @@ fun Machine.TreeView(
         if (canvasWidthPx <= 0f) return@LaunchedEffect
 
         val gen = tree.getCurrentGeneration()
-        val viewHeightPx = with(density) { TREE_CANVAS_HEIGHT.toPx() }
+        val viewHeightPx = with(density) { CANVAS_HEIGHT.toPx() }
 
         // Reset detected - clear drag flag so auto-center runs
         if (gen < lastCenteredGen.intValue) userHasDragged = false
@@ -167,7 +168,7 @@ fun Machine.TreeView(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(TREE_CANVAS_HEIGHT)
+                .height(CANVAS_HEIGHT)
                 .onSizeChanged {
                     canvasWidthPx = it.width.toFloat()
                     canvasHeightPx = it.height.toFloat()
@@ -185,8 +186,7 @@ fun Machine.TreeView(
                             val nodePositionPx = positionsPx[node.id] ?: continue
                             val dx = treeX - nodePositionPx.x
                             val dy = treeY - nodePositionPx.y
-                            val hitRadius = NODE_RADIUS * 1.125f
-                            if (dx * dx + dy * dy <= hitRadius * hitRadius) {
+                            if (dx * dx + dy * dy <= NODE_RADIUS * NODE_RADIUS) {
                                 onSelectNode(node.id)
                                 return@detectTapGestures
                             }
@@ -195,7 +195,7 @@ fun Machine.TreeView(
                 }.pointerInput(Unit) {
                     detectTransformGestures { centroid, pan, zoom, _ ->
                         val oldScale = scale
-                        scale = (scale * zoom).coerceIn(MANUAL_MIN_ZOOM, MANUAL_MAX_ZOOM)
+                        scale = (scale * zoom).coerceIn(MIN_ZOOM, MAX_ZOOM)
                         offsetX += (centroid.x - offsetX) * (1 - scale / oldScale) + pan.x
                         offsetY += (centroid.y - offsetY) * (1 - scale / oldScale) + pan.y
                         // Clamp so at least one node stays partially visible
@@ -219,7 +219,7 @@ fun Machine.TreeView(
         // Leaf nodes: active = primary, accepted = green, rejected = red
         // Dead-end nodes use same colors but dimmed via alpha
         // Interior nodes stay neutral (surface fill)
-        val deadAlpha = 0.38f
+        val deadAlpha = DEAD_NODE_ALPHA
 
         fun fillColor(node: TreeNode): Color =
             when (node.status) {
@@ -255,7 +255,7 @@ fun Machine.TreeView(
                             color = colors.onSurface,
                             start = Offset(parentWorld.x + NODE_RADIUS, parentWorld.y),
                             end = Offset(childWorld.x - NODE_RADIUS, childWorld.y),
-                            strokeWidth = NODE_RADIUS * 0.125f,
+                            strokeWidth = NODE_OUTLINE,
                             alpha = nodeAlpha(child),
                         )
                         drawEdges(child)
@@ -270,36 +270,17 @@ fun Machine.TreeView(
                 fun drawNodes(node: TreeNode) {
                     val world = positionsPx[node.id] ?: return
                     val alpha = nodeAlpha(node)
-                    drawCircle(
-                        color = colors.onSurface,
-                        radius = NODE_RADIUS,
+
+                    drawNode(
                         center = world,
-                        style = Stroke(width = NODE_RADIUS * 0.125f),
+                        outlineColor = colors.onSurface,
+                        fillColor = fillColor(node),
+                        textArgb = textColor(node),
+                        name = node.stateName ?: "",
+                        textPaint = textPaint,
+                        baseTextSize = baseTextSize,
                         alpha = alpha,
                     )
-                    drawCircle(
-                        color = fillColor(node),
-                        radius = NODE_RADIUS - NODE_RADIUS * 0.0625f,
-                        center = world,
-                        alpha = alpha,
-                    )
-                    node.stateName?.let { name ->
-                        textPaint.color = textColor(node)
-                        textPaint.alpha = (alpha * 255).toInt()
-                        textPaint.textSize =
-                            baseTextSize * when {
-                                name.length <= 2 -> 1f
-                                name.length == 3 -> FONT_SCALE_3_CHAR
-                                name.length == 4 -> FONT_SCALE_4_CHAR
-                                else -> FONT_SCALE_5_PLUS
-                            }
-                        drawContext.canvas.nativeCanvas.drawText(
-                            name,
-                            world.x,
-                            world.y + textPaint.textSize / 3f,
-                            textPaint,
-                        )
-                    }
 
                     // Draw "S" badge outside the top-right of the selected node
                     if (selectedId != null && node.id == selectedId) {

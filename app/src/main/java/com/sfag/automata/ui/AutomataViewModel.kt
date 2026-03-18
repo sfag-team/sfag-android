@@ -12,9 +12,13 @@ import com.sfag.automata.data.Storage
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.main.config.INITIAL_ZOOM
 import com.sfag.main.data.Point2D
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+
+// JFLAP coordinate conversion (96 DPI desktop to 160 DPI Android dp) - protocol constant
+private const val JFLAP_TO_DP = 160f / 96f
 
 @HiltViewModel
 class AutomataViewModel
@@ -30,17 +34,20 @@ class AutomataViewModel
         val statePositions: SnapshotStateMap<Int, Offset> = mutableStateMapOf()
         var offsetXCanvas by mutableFloatStateOf(0f)
         var offsetYCanvas by mutableFloatStateOf(0f)
-        var scaleCanvas by mutableFloatStateOf(0.5f)
+        var scaleCanvas by mutableFloatStateOf(1f)
         var machineAutoCenter by mutableStateOf(false)
 
-        /** Sets the active machine, initializes positions, and resets view to default scale + center. */
+        /**
+         * Sets the active machine and resets view to default scale + center.
+         * JFLAP coordinates (96 DPI) are scaled to dp (160 DPI) via JFLAP_TO_DP.
+         */
         fun setCurrentMachine(
             machine: Machine,
             positions: Map<Int, Point2D> = emptyMap(),
         ) {
             currentMachine = machine
-            initPositions(positions)
-            scaleCanvas = 0.5f
+            loadPositions(positions)
+            scaleCanvas = INITIAL_ZOOM
             machineAutoCenter = true
         }
 
@@ -53,7 +60,7 @@ class AutomataViewModel
         fun loadMachine(): Boolean {
             val (machine, positions, canvas) = storage.loadMachine() ?: return false
             currentMachine = machine
-            initPositions(positions)
+            loadPositions(positions)
             offsetXCanvas = canvas.first
             offsetYCanvas = canvas.second
             scaleCanvas = canvas.third
@@ -62,14 +69,19 @@ class AutomataViewModel
 
         fun advanceSimulation(): Simulation = currentMachine?.advanceSimulation() ?: Simulation.Ended(SimulationOutcome.ACTIVE)
 
-        /** Called when positions are loaded from storage or parsed from JFF. */
-        fun initPositions(positions: Map<Int, Point2D>) {
+        /** Converts JFLAP positions to dp and loads them into statePositions. */
+        private fun loadPositions(positions: Map<Int, Point2D>) {
             statePositions.clear()
-            positions.forEach { (index, point2D) -> statePositions[index] = Offset(point2D.x, point2D.y) }
+            positions.forEach { (index, point2D) ->
+                statePositions[index] = Offset(point2D.x * JFLAP_TO_DP, point2D.y * JFLAP_TO_DP)
+            }
         }
 
-        /** Returns current positions for JFF export/save. */
-        fun getPositions(): Map<Int, Point2D> = statePositions.mapValues { (_, offset) -> Point2D(offset.x, offset.y) }
+        /** Returns current positions as JFLAP units for JFF export/save (dp -> JFLAP). */
+        fun getPositions(): Map<Int, Point2D> =
+            statePositions.mapValues { (_, offset) ->
+                Point2D(offset.x / JFLAP_TO_DP, offset.y / JFLAP_TO_DP)
+            }
 
         /** Updates a single state's position (called on drag). */
         fun updateStatePosition(

@@ -41,7 +41,7 @@ fun Machine.StateList(
         ) {
             Text(stringResource(R.string.machine_state), style = MaterialTheme.typography.titleLarge)
             LazyColumn(
-                modifier = Modifier.fillMaxWidth().height(160.dp),
+                modifier = Modifier.fillMaxWidth().height(rowHeight * 3 + 8.dp * 2),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(states) { state ->

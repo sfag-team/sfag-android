@@ -18,8 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.sfag.R
-import com.sfag.automata.ui.common.BAR_HEIGHT
-import com.sfag.automata.ui.common.CELL_SIZE
+import com.sfag.automata.ui.machine.cellPadding
+import com.sfag.automata.ui.machine.cellSize
 import com.sfag.automata.ui.machine.MachineEditMode
 
 @Composable
@@ -27,29 +27,28 @@ internal fun Toolbar(
     activeTool: MachineEditMode,
     onSelectTool: (MachineEditMode) -> Unit,
 ) {
-    val cellPadding = (BAR_HEIGHT - CELL_SIZE) / 2
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(BAR_HEIGHT)
+                .height(cellSize + cellPadding * 2)
                 .padding(horizontal = cellPadding),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = CenterVertically,
     ) {
         ToolIcon(R.drawable.select, R.string.select_tool, MachineEditMode.SELECT, activeTool, onSelectTool)
-        ToolIcon(R.drawable.move, R.string.move_tool, MachineEditMode.MOVE, activeTool, onSelectTool)
+        ToolIcon(R.drawable.move, R.string.move_tool, MachineEditMode.DRAG, activeTool, onSelectTool)
         ToolIcon(
             R.drawable.add_states,
             R.string.add_state,
-            MachineEditMode.ADD_STATES,
+            MachineEditMode.ADD_STATE,
             activeTool,
             onSelectTool,
         )
         ToolIcon(
             R.drawable.add_transitions,
             R.string.add_transition,
-            MachineEditMode.ADD_TRANSITIONS,
+            MachineEditMode.ADD_TRANSITION,
             activeTool,
             onSelectTool,
         )
@@ -71,12 +70,12 @@ private fun ToolIcon(
         contentDescription = stringResource(label),
         modifier =
             Modifier
-                .size(CELL_SIZE)
+                .size(cellSize)
                 .clip(MaterialTheme.shapes.small)
                 .background(
                     if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                 ).clickable { onSelectTool(tool) }
-                .padding((BAR_HEIGHT - CELL_SIZE) / 2),
+                .padding(cellPadding),
         tint =
             if (isSelected) {
                 MaterialTheme.colorScheme.onPrimary

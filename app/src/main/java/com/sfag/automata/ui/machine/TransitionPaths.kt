@@ -4,14 +4,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidPath
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.dp
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.Transition
 import com.sfag.automata.ui.common.NODE_RADIUS
-import com.sfag.automata.ui.common.TRANSITION_CURVATURE
-import com.sfag.automata.ui.common.TRANSITION_HEAD_SIZE
-import com.sfag.automata.ui.common.TRANSITION_LABEL_OFFSET
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -19,10 +14,18 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
+private const val PATH_CURVATURE = 0.125f
+private const val LABEL_OFFSET = NODE_RADIUS * 1.75f
+
+// Precomputed geometry constants (avoids runtime sqrt on constant values)
+private const val LOOP_ATTACH = NODE_RADIUS * 0.7071068f // NODE_RADIUS / sqrt(2)
+private const val LOOP_CENTER = 1.4641016f // 5.25 / (5 - sqrt(2))
+
 /** Precomputed path for a single transition's visual representation. */
 data class TransitionPath(
     val arrowBody: Path,
-    val arrowHead: Path,
+    val tipX: Float,
+    val tipY: Float,
     /** For regular: bezier control position. For self-loop: arc peak (outermost position). */
     val controlPoint: Offset,
     /** Text label anchor: near the curve, offset outward from the chord. */
@@ -51,14 +54,12 @@ private class MutableGeometry(
 /** Converts a dp position (top-left of state box) to screen-pixel center of the node. */
 private fun toScreenCenter(
     position: Offset,
-    density: Density,
+    pxPerDp: Float,
 ): Offset =
-    with(density) {
-        Offset(
-            (position.x + NODE_RADIUS / 2f).dp.toPx(),
-            (position.y + NODE_RADIUS / 2f).dp.toPx(),
-        )
-    }
+    Offset(
+        (position.x + NODE_RADIUS / 2f) * pxPerDp,
+        (position.y + NODE_RADIUS / 2f) * pxPerDp,
+    )
 
 /**
  * Computes transition paths for all transitions. Returns a list indexed by transition index;
@@ -66,9 +67,8 @@ private fun toScreenCenter(
  */
 fun Machine.computeTransitionPaths(
     positions: Map<Int, Offset>,
-    density: Density,
+    pxPerDp: Float,
 ): List<TransitionPath?> {
-    val halfSpread = NODE_RADIUS / sqrt(2f)
     val result = arrayOfNulls<TransitionPath>(transitions.size)
 
     // Pass 1: build geometry for each transition
@@ -77,8 +77,8 @@ fun Machine.computeTransitionPaths(
     for ((index, transition) in transitions.withIndex()) {
         val startPosition = positions[transition.fromState] ?: continue
         val endPosition = positions[transition.toState] ?: continue
-        val startCenter = toScreenCenter(startPosition, density)
-        val endCenter = toScreenCenter(endPosition, density)
+        val startCenter = toScreenCenter(startPosition, pxPerDp)
+        val endCenter = toScreenCenter(endPosition, pxPerDp)
 
         if (transition.fromState == transition.toState) {
             val connectedStates =
@@ -106,10 +106,10 @@ fun Machine.computeTransitionPaths(
                 MutableGeometry(
                     transitionIndex = index,
                     transition = transition,
-                    startX = startCenter.x + halfSpread,
-                    startY = startCenter.y + loopSign * halfSpread,
-                    endX = startCenter.x - halfSpread,
-                    endY = startCenter.y + loopSign * halfSpread,
+                    startX = startCenter.x + LOOP_ATTACH,
+                    startY = startCenter.y + loopSign * LOOP_ATTACH,
+                    endX = startCenter.x - LOOP_ATTACH,
+                    endY = startCenter.y + loopSign * LOOP_ATTACH,
                     controlX = startCenter.x,
                     controlY = startCenter.y + loopSign * NODE_RADIUS * 2.5f,
                     nodeCenterX = startCenter.x,
@@ -139,8 +139,8 @@ fun Machine.computeTransitionPaths(
                     startY = startCenter.y + NODE_RADIUS * chordDirY,
                     endX = endCenter.x - NODE_RADIUS * chordDirX,
                     endY = endCenter.y - NODE_RADIUS * chordDirY,
-                    controlX = midX + TRANSITION_CURVATURE * chordDirY * chordLen,
-                    controlY = midY + TRANSITION_CURVATURE * -chordDirX * chordLen,
+                    controlX = midX + PATH_CURVATURE * chordDirY * chordLen,
+                    controlY = midY + PATH_CURVATURE * -chordDirX * chordLen,
                     nodeCenterX = startCenter.x,
                     nodeCenterY = startCenter.y,
                     perpX = chordDirY,
@@ -154,7 +154,7 @@ fun Machine.computeTransitionPaths(
     val regularGeometries = geometries.filter { !it.isSelfLoop }
     for (state in states) {
         val position = positions[state.index] ?: continue
-        val nodeCenter = toScreenCenter(position, density)
+        val nodeCenter = toScreenCenter(position, pxPerDp)
         spreadConnections(
             regularGeometries.filter { it.transition.toState == state.index },
             nodeCenter,
@@ -179,7 +179,7 @@ fun Machine.computeTransitionPaths(
     for (geometry in geometries) {
         result[geometry.transitionIndex] =
             if (geometry.isSelfLoop) {
-                buildSelfLoopPath(geometry, halfSpread)
+                buildSelfLoopPath(geometry)
             } else {
                 buildRegularPath(geometry)
             }
@@ -196,20 +196,16 @@ private fun MutableGeometry.recomputeControlPoint() {
     perpY = -dx / dist
     val midX = (startX + endX) / 2f
     val midY = (startY + endY) / 2f
-    controlX = midX + TRANSITION_CURVATURE * perpX * dist
-    controlY = midY + TRANSITION_CURVATURE * perpY * dist
+    controlX = midX + PATH_CURVATURE * perpX * dist
+    controlY = midY + PATH_CURVATURE * perpY * dist
 }
 
-private fun buildSelfLoopPath(
-    geometry: MutableGeometry,
-    halfSpread: Float,
-): TransitionPath {
-    val arcCenterFactor = 5.25f / (5f - sqrt(2f))
-    val arcRadius = (2.5f - arcCenterFactor) * NODE_RADIUS
-    val arcCenterY = geometry.nodeCenterY + geometry.loopSign * arcCenterFactor * NODE_RADIUS
+private fun buildSelfLoopPath(geometry: MutableGeometry): TransitionPath {
+    val arcRadius = (2.5f - LOOP_CENTER) * NODE_RADIUS
+    val arcCenterY = geometry.nodeCenterY + geometry.loopSign * LOOP_CENTER * NODE_RADIUS
 
-    val attachDy = abs(halfSpread - arcCenterFactor * NODE_RADIUS)
-    val attachAngle = (atan2(attachDy.toDouble(), halfSpread.toDouble()) * 180.0 / PI).toFloat()
+    val attachDy = abs(LOOP_ATTACH - LOOP_CENTER * NODE_RADIUS)
+    val attachAngle = (atan2(attachDy.toDouble(), LOOP_ATTACH.toDouble()) * 180.0 / PI).toFloat()
     val startAngle = -geometry.loopSign * attachAngle
     val sweepAngle = geometry.loopSign * (180f + 2f * attachAngle)
 
@@ -224,15 +220,14 @@ private fun buildSelfLoopPath(
         arcTo(oval, startAngle, sweepAngle, forceMoveTo = true)
     }
 
-    val arrowHead = buildArrowHeadFromPath(arrowBody, geometry.endX, geometry.endY)
-
     return TransitionPath(
         arrowBody = arrowBody,
-        arrowHead = arrowHead,
+        tipX = geometry.endX,
+        tipY = geometry.endY,
         controlPoint = Offset(geometry.controlX, geometry.controlY),
         textPosition = Offset(
             geometry.controlX,
-            geometry.controlY + geometry.loopSign * TRANSITION_LABEL_OFFSET,
+            geometry.controlY + geometry.loopSign * LABEL_OFFSET,
         ),
         isSelfLoop = true,
     )
@@ -247,45 +242,40 @@ private fun buildRegularPath(geometry: MutableGeometry): TransitionPath {
         )
     }
 
-    val arrowHead = buildArrowHeadFromPath(arrowBody, geometry.endX, geometry.endY)
-
     val bezierMidX = 0.25f * geometry.startX + 0.5f * geometry.controlX + 0.25f * geometry.endX
     val bezierMidY = 0.25f * geometry.startY + 0.5f * geometry.controlY + 0.25f * geometry.endY
 
     return TransitionPath(
         arrowBody = arrowBody,
-        arrowHead = arrowHead,
+        tipX = geometry.endX,
+        tipY = geometry.endY,
         controlPoint = Offset(geometry.controlX, geometry.controlY),
         textPosition = Offset(
-            bezierMidX + geometry.perpX * TRANSITION_LABEL_OFFSET,
-            bezierMidY + geometry.perpY * TRANSITION_LABEL_OFFSET,
+            bezierMidX + geometry.perpX * LABEL_OFFSET,
+            bezierMidY + geometry.perpY * LABEL_OFFSET,
         ),
         isSelfLoop = false,
     )
 }
 
-/** Samples the path at HEAD_SIZE back from the end to get direction, then builds equilateral head. */
-private fun buildArrowHeadFromPath(path: Path, tipX: Float, tipY: Float): Path {
+/** Checks if (tapX, tapY) is within [threshold] pixels of any point on [path]. */
+internal fun isPathHit(path: Path, tapX: Float, tapY: Float, threshold: Float): Boolean {
+    val thresholdSq = threshold * threshold
     val pathMeasure = android.graphics.PathMeasure(path.asAndroidPath(), false)
     val length = pathMeasure.length
     val point = FloatArray(2)
-    pathMeasure.getPosTan((length - TRANSITION_HEAD_SIZE).coerceAtLeast(0f), point, null)
-    val dx = tipX - point[0]
-    val dy = tipY - point[1]
-    val dirLen = sqrt(dx * dx + dy * dy).coerceAtLeast(0.001f)
-    val dirX = dx / dirLen
-    val dirY = dy / dirLen
-    val baseX = tipX - dirX * TRANSITION_HEAD_SIZE
-    val baseY = tipY - dirY * TRANSITION_HEAD_SIZE
-    val halfBase = TRANSITION_HEAD_SIZE / sqrt(3f)
-    val perpX = -dirY * halfBase
-    val perpY = dirX * halfBase
-    return Path().apply {
-        moveTo(tipX, tipY)
-        lineTo(baseX - perpX, baseY - perpY)
-        lineTo(baseX + perpX, baseY + perpY)
-        close()
+    var distance = 0f
+    while (distance <= length) {
+        pathMeasure.getPosTan(distance, point, null)
+        val dx = tapX - point[0]
+        val dy = tapY - point[1]
+        if (dx * dx + dy * dy < thresholdSq) return true
+        distance += threshold
     }
+    pathMeasure.getPosTan(length, point, null)
+    val dx = tapX - point[0]
+    val dy = tapY - point[1]
+    return dx * dx + dy * dy < thresholdSq
 }
 
 /**

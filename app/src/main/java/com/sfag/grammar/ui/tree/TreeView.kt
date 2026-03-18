@@ -40,8 +40,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.withSave
 import com.sfag.grammar.domain.grammar.GrammarType
 import com.sfag.grammar.domain.tree.TreeNode
-import com.sfag.main.config.MANUAL_MAX_ZOOM
-import com.sfag.main.config.MANUAL_MIN_ZOOM
+import com.sfag.main.config.MAX_ZOOM
+import com.sfag.main.config.MIN_ZOOM
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
@@ -188,7 +188,7 @@ fun TreeView(
                     coroutineScope {
                         detectTransformGestures { _, pan, zoom, _ ->
                             scale.value =
-                                (scale.value * zoom).coerceIn(MANUAL_MIN_ZOOM, MANUAL_MAX_ZOOM)
+                                (scale.value * zoom).coerceIn(MIN_ZOOM, MAX_ZOOM)
                             var newX = offsetX.value + pan.x
                             var newY = offsetY.value + pan.y
                             val bounds = treeBounds

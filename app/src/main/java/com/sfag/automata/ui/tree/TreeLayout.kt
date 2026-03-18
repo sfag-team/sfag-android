@@ -3,8 +3,7 @@ package com.sfag.automata.ui.tree
 import androidx.compose.ui.geometry.Offset
 import com.sfag.automata.domain.tree.Tree
 import com.sfag.automata.domain.tree.TreeNode
-import com.sfag.automata.ui.common.TREE_NODE_HORIZONTAL_SPACING
-import com.sfag.automata.ui.common.TREE_NODE_VERTICAL_SPACING
+import com.sfag.automata.ui.common.NODE_RADIUS
 
 internal fun calculateLayout(tree: Tree): Map<Int, Offset> {
     val root = tree.root ?: return emptyMap()
@@ -12,10 +11,10 @@ internal fun calculateLayout(tree: Tree): Map<Int, Offset> {
     var leafIndex = 0
 
     fun layoutNode(node: TreeNode): Pair<Float, Float> {
-        val x = node.depth * TREE_NODE_HORIZONTAL_SPACING
+        val x = node.depth * NODE_RADIUS
 
         if (node.children.isEmpty()) {
-            val y = leafIndex * TREE_NODE_VERTICAL_SPACING
+            val y = leafIndex * NODE_RADIUS
             leafIndex++
             positions[node.id] = Offset(x, y)
             return y to y

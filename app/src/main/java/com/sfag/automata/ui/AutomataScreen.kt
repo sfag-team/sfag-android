@@ -382,7 +382,7 @@ fun AutomataScreen(
                                                 val transitionPaths =
                                                     machine.computeTransitionPaths(
                                                         capturedPositions,
-                                                        animDensity,
+                                                        animDensity.density,
                                                     )
                                                 machine.TransitionAnimation(
                                                     transitionRefs = simulation.transitionRefs,

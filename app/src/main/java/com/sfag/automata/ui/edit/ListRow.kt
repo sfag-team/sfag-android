@@ -22,6 +22,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.sfag.R
 
+internal val rowHeight = 48.dp
+
 @Composable
 internal fun ListRow(
     text: String,
@@ -32,7 +34,7 @@ internal fun ListRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(48.dp)
+                .height(rowHeight)
                 .clip(MaterialTheme.shapes.small)
                 .background(MaterialTheme.colorScheme.secondaryContainer)
                 .clickable { onClick() },

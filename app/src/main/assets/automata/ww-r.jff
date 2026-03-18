@@ -3,17 +3,17 @@
     <type>pda</type>
     <automaton>
         <state id="1" name="q0">
-            <x>42.74</x>
-            <y>354.76</y>
+            <x>28.490038</x>
+            <y>236.50998</y>
             <initial/>
         </state>
         <state id="2" name="q1">
-            <x>239.58</x>
-            <y>355.62</y>
+            <x>159.72008</x>
+            <y>237.08003</y>
         </state>
         <state id="3" name="q2">
-            <x>415.11</x>
-            <y>364.02</y>
+            <x>276.7401</x>
+            <y>242.68007</y>
             <final/>
         </state>
         <transition>
