@@ -9,7 +9,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -189,136 +188,224 @@ fun Machine.MachineView(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        // Tool gestures (taps for most tools, node drag + pan/zoom for MOVE)
+                        // Canvas pan+zoom (outer = gets events second in Main pass)
+                        .pointerInput(Unit) {
+                            detectTransformGestures { centroid, pan, zoom, _ ->
+                                val oldScale = scale
+                                scale = (scale * zoom).coerceIn(MIN_ZOOM, MAX_ZOOM)
+                                offsetX +=
+                                    centroid.x * (1f / scale - 1f / oldScale) + pan.x / scale
+                                offsetY +=
+                                    centroid.y * (1f / scale - 1f / oldScale) + pan.y / scale
+                                val bounds = machineBounds
+                                val pxPerDp = density.density
+                                if (bounds != null) {
+                                    offsetX =
+                                        offsetX.coerceIn(
+                                            -(bounds.right + NODE_RADIUS) * pxPerDp,
+                                            size.width.toFloat() / scale -
+                                                bounds.left * pxPerDp,
+                                        )
+                                    offsetY =
+                                        offsetY.coerceIn(
+                                            -(bounds.bottom + NODE_RADIUS) * pxPerDp,
+                                            size.height.toFloat() / scale -
+                                                bounds.top * pxPerDp,
+                                        )
+                                }
+                                viewModel.offsetXCanvas = offsetX
+                                viewModel.offsetYCanvas = offsetY
+                                viewModel.scaleCanvas = scale
+                            }
+                        }
+                        // Tool gestures (inner = gets events first in Main pass)
                         .pointerInput(activeTool, isEditing) {
                             if (!isEditing) return@pointerInput
                             when (activeTool) {
-                                MachineEditMode.ADD_STATE ->
-                                    detectTapGestures { gestureOffset ->
-                                        val tapOffset =
-                                            Offset(
-                                                gestureOffset.x / (scale * density.density) -
-                                                    offsetX / density.density,
-                                                gestureOffset.y / (scale * density.density) -
-                                                    offsetY / density.density,
-                                            )
-                                        dialogRequest.value =
-                                            DialogRequest.ForState(tapOffset, null)
-                                    }
-                                MachineEditMode.ADD_TRANSITION ->
-                                    detectTapGestures { gestureOffset ->
-                                        val tapXDp =
-                                            gestureOffset.x / (scale * density.density) -
-                                                offsetX / density.density
-                                        val tapYDp =
-                                            gestureOffset.y / (scale * density.density) -
-                                                offsetY / density.density
-                                        val positions = viewModel.statePositions
-                                        val closestStateEntry =
-                                            positions.minByOrNull { (_, offset) ->
-                                                val dx = offset.x + NODE_RADIUS / 2 - tapXDp
-                                                val dy = offset.y + NODE_RADIUS / 2 - tapYDp
-                                                dx * dx + dy * dy
-                                            }
-                                        closestStateEntry?.let { (stateIndex, _) ->
-                                            val state = getStateByIndex(stateIndex)
-                                            dialogRequest.value =
-                                                DialogRequest.ForTransition(state, state, null)
-                                        }
-                                    }
+                                MachineEditMode.ADD_STATE,
+                                MachineEditMode.ADD_TRANSITION,
                                 MachineEditMode.SELECT,
                                 MachineEditMode.REMOVE,
                                 ->
-                                    detectTapGestures { gestureOffset ->
-                                        val pxPerDp = density.density
-                                        val tapPxX = gestureOffset.x / scale - offsetX
-                                        val tapPxY = gestureOffset.y / scale - offsetY
-                                        val positions = viewModel.statePositions
-
-                                        // Check nodes first (circular hitbox)
-                                        val hitState =
-                                            states.firstOrNull { state ->
-                                                val position =
-                                                    positions[state.index]
-                                                        ?: return@firstOrNull false
-                                                val cx =
-                                                    (position.x + NODE_RADIUS / 2) * pxPerDp
-                                                val cy =
-                                                    (position.y + NODE_RADIUS / 2) * pxPerDp
-                                                val dx = tapPxX - cx
-                                                val dy = tapPxY - cy
-                                                dx * dx + dy * dy <
-                                                    NODE_RADIUS * NODE_RADIUS
-                                            }
-
-                                        if (hitState != null) {
-                                            when (activeTool) {
-                                                MachineEditMode.SELECT ->
-                                                    dialogRequest.value =
-                                                        DialogRequest.ForState(
-                                                            Offset.Zero,
-                                                            hitState,
-                                                        )
-                                                MachineEditMode.REMOVE -> {
-                                                    removeState(hitState)
-                                                    viewModel.statePositions.remove(
-                                                        hitState.index,
-                                                    )
-                                                    viewModel.markDirty()
-                                                    localRecomposeKey++
-                                                }
-                                                MachineEditMode.MOVE,
-                                                MachineEditMode.ADD_STATE,
-                                                MachineEditMode.ADD_TRANSITION,
-                                                -> {}
-                                            }
-                                            return@detectTapGestures
-                                        }
-
-                                        // Check transitions (path hitbox)
-                                        val paths = transitionPathsState.value
-                                        for ((index, path) in paths.withIndex()) {
-                                            if (index >= transitions.size) break
-                                            if (
-                                                path != null &&
-                                                isPathHit(
-                                                    path.arrowBody,
-                                                    tapPxX,
-                                                    tapPxY,
-                                                    TAP_RADIUS,
-                                                )
-                                            ) {
-                                                val transition = transitions[index]
-                                                when (activeTool) {
-                                                    MachineEditMode.SELECT ->
-                                                        dialogRequest.value =
-                                                            DialogRequest.ForTransition(
-                                                                getStateByIndex(
-                                                                    transition.fromState,
-                                                                ),
-                                                                getStateByIndex(
-                                                                    transition.toState,
-                                                                ),
-                                                                transition.name,
-                                                            )
-                                                    MachineEditMode.REMOVE -> {
-                                                        transitions
-                                                            .filter {
-                                                                it.fromState ==
-                                                                    transition.fromState &&
-                                                                    it.toState ==
-                                                                    transition.toState
-                                                            }.forEach { removeTransition(it) }
-                                                        viewModel.markDirty()
-                                                        localRecomposeKey++
-                                                        onRecompose()
-                                                    }
-                                                    MachineEditMode.MOVE,
-                                                    MachineEditMode.ADD_STATE,
-                                                    MachineEditMode.ADD_TRANSITION,
-                                                    -> {}
+                                    awaitEachGesture {
+                                        val down = awaitFirstDown()
+                                        // Don't consume down - let detectTransformGestures pan/zoom
+                                        val touchSlop = viewConfiguration.touchSlop
+                                        var tapped = false
+                                        while (true) {
+                                            val event = awaitPointerEvent()
+                                            // Multi-touch (pinch zoom) - not a tap
+                                            if (event.changes.size > 1) break
+                                            val change = event.changes.firstOrNull() ?: break
+                                            if (!change.pressed) {
+                                                if (
+                                                    (change.position - down.position)
+                                                        .getDistance() <= touchSlop
+                                                ) {
+                                                    change.consume()
+                                                    tapped = true
                                                 }
                                                 break
+                                            }
+                                            if (
+                                                (change.position - down.position)
+                                                    .getDistance() > touchSlop
+                                            ) {
+                                                break
+                                            }
+                                        }
+                                        if (tapped) {
+                                            val gestureOffset = down.position
+                                            when (activeTool) {
+                                                MachineEditMode.ADD_STATE -> {
+                                                    val tapOffset =
+                                                        Offset(
+                                                            gestureOffset.x /
+                                                                (scale * density.density) -
+                                                                offsetX / density.density,
+                                                            gestureOffset.y /
+                                                                (scale * density.density) -
+                                                                offsetY / density.density,
+                                                        )
+                                                    dialogRequest.value =
+                                                        DialogRequest.ForState(tapOffset, null)
+                                                }
+                                                MachineEditMode.ADD_TRANSITION -> {
+                                                    val tapXDp =
+                                                        gestureOffset.x /
+                                                            (scale * density.density) -
+                                                            offsetX / density.density
+                                                    val tapYDp =
+                                                        gestureOffset.y /
+                                                            (scale * density.density) -
+                                                            offsetY / density.density
+                                                    val positions = viewModel.statePositions
+                                                    val closestStateEntry =
+                                                        positions.minByOrNull { (_, offset) ->
+                                                            val dx =
+                                                                offset.x + NODE_RADIUS / 2 -
+                                                                    tapXDp
+                                                            val dy =
+                                                                offset.y + NODE_RADIUS / 2 -
+                                                                    tapYDp
+                                                            dx * dx + dy * dy
+                                                        }
+                                                    closestStateEntry?.let { (stateIndex, _) ->
+                                                        val state = getStateByIndex(stateIndex)
+                                                        dialogRequest.value =
+                                                            DialogRequest.ForTransition(
+                                                                state,
+                                                                state,
+                                                                null,
+                                                            )
+                                                    }
+                                                }
+                                                MachineEditMode.SELECT,
+                                                MachineEditMode.REMOVE,
+                                                -> {
+                                                    val pxPerDp = density.density
+                                                    val tapPxX =
+                                                        gestureOffset.x / scale - offsetX
+                                                    val tapPxY =
+                                                        gestureOffset.y / scale - offsetY
+                                                    val positions = viewModel.statePositions
+
+                                                    // Check nodes first (circular hitbox)
+                                                    val hitState =
+                                                        states.firstOrNull { state ->
+                                                            val position =
+                                                                positions[state.index]
+                                                                    ?: return@firstOrNull false
+                                                            val cx =
+                                                                (position.x + NODE_RADIUS / 2) *
+                                                                    pxPerDp
+                                                            val cy =
+                                                                (position.y + NODE_RADIUS / 2) *
+                                                                    pxPerDp
+                                                            val dx = tapPxX - cx
+                                                            val dy = tapPxY - cy
+                                                            dx * dx + dy * dy <
+                                                                NODE_RADIUS * NODE_RADIUS
+                                                        }
+
+                                                    if (hitState != null) {
+                                                        when (activeTool) {
+                                                            MachineEditMode.SELECT ->
+                                                                dialogRequest.value =
+                                                                    DialogRequest.ForState(
+                                                                        Offset.Zero,
+                                                                        hitState,
+                                                                    )
+                                                            MachineEditMode.REMOVE -> {
+                                                                removeState(hitState)
+                                                                viewModel.statePositions.remove(
+                                                                    hitState.index,
+                                                                )
+                                                                viewModel.markDirty()
+                                                                localRecomposeKey++
+                                                            }
+                                                            MachineEditMode.MOVE,
+                                                            MachineEditMode.ADD_STATE,
+                                                            MachineEditMode.ADD_TRANSITION,
+                                                            -> {}
+                                                        }
+                                                        return@awaitEachGesture
+                                                    }
+
+                                                    // Check transitions (path hitbox)
+                                                    val paths = transitionPathsState.value
+                                                    for ((index, path) in paths.withIndex()) {
+                                                        if (index >= transitions.size) break
+                                                        if (
+                                                            path != null &&
+                                                            isPathHit(
+                                                                path.arrowBody,
+                                                                tapPxX,
+                                                                tapPxY,
+                                                                TAP_RADIUS,
+                                                            )
+                                                        ) {
+                                                            val transition = transitions[index]
+                                                            when (activeTool) {
+                                                                MachineEditMode.SELECT ->
+                                                                    dialogRequest.value =
+                                                                        DialogRequest.ForTransition(
+                                                                            getStateByIndex(
+                                                                                transition
+                                                                                    .fromState,
+                                                                            ),
+                                                                            getStateByIndex(
+                                                                                transition
+                                                                                    .toState,
+                                                                            ),
+                                                                            transition.name,
+                                                                        )
+                                                                MachineEditMode.REMOVE -> {
+                                                                    transitions
+                                                                        .filter {
+                                                                            it.fromState ==
+                                                                                transition
+                                                                                    .fromState &&
+                                                                                it.toState ==
+                                                                                transition
+                                                                                    .toState
+                                                                        }.forEach {
+                                                                            removeTransition(it)
+                                                                        }
+                                                                    viewModel.markDirty()
+                                                                    localRecomposeKey++
+                                                                    onRecompose()
+                                                                }
+                                                                MachineEditMode.MOVE,
+                                                                MachineEditMode.ADD_STATE,
+                                                                MachineEditMode.ADD_TRANSITION,
+                                                                -> {}
+                                                            }
+                                                            break
+                                                        }
+                                                    }
+                                                }
+                                                MachineEditMode.MOVE -> {}
                                             }
                                         }
                                     }
@@ -366,36 +453,6 @@ fun Machine.MachineView(
                                         }
                                         // No node hit - fall through, detectTransformGestures handles pan/zoom
                                     }
-                            }
-                        }
-                        // Canvas pan+zoom (all modes - skips consumed events from MOVE node drag)
-                        .pointerInput(Unit) {
-                            detectTransformGestures { centroid, pan, zoom, _ ->
-                                val oldScale = scale
-                                scale = (scale * zoom).coerceIn(MIN_ZOOM, MAX_ZOOM)
-                                offsetX +=
-                                    centroid.x * (1f / scale - 1f / oldScale) + pan.x / scale
-                                offsetY +=
-                                    centroid.y * (1f / scale - 1f / oldScale) + pan.y / scale
-                                val bounds = machineBounds
-                                val pxPerDp = density.density
-                                if (bounds != null) {
-                                    offsetX =
-                                        offsetX.coerceIn(
-                                            -(bounds.right + NODE_RADIUS) * pxPerDp,
-                                            size.width.toFloat() / scale -
-                                                bounds.left * pxPerDp,
-                                        )
-                                    offsetY =
-                                        offsetY.coerceIn(
-                                            -(bounds.bottom + NODE_RADIUS) * pxPerDp,
-                                            size.height.toFloat() / scale -
-                                                bounds.top * pxPerDp,
-                                        )
-                                }
-                                viewModel.offsetXCanvas = offsetX
-                                viewModel.offsetYCanvas = offsetY
-                                viewModel.scaleCanvas = scale
                             }
                         }
             ) {
