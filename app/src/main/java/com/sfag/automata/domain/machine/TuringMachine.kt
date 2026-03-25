@@ -3,9 +3,8 @@ package com.sfag.automata.domain.machine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.TransitionRef
+import com.sfag.main.config.MAX_TURING_CONFIGS
 import com.sfag.main.config.Symbols
-
-private const val MAX_SIMULATION_STEPS = 10_000
 
 /**
  * A Turing machine consists of:
@@ -131,14 +130,12 @@ class TuringMachine(
         input: StringBuilder,
         fromInit: Boolean,
     ): Boolean? {
-        val maxSteps = MAX_SIMULATION_STEPS
-
         val simTape = input.toString().toMutableList()
         if (simTape.isEmpty()) simTape.add(blankSymbol)
         var simHead = 0
         var simState = findStartStateIndex(fromInit) ?: return false
 
-        repeat(maxSteps) {
+        repeat(MAX_TURING_CONFIGS) {
             val state = getStateByIndexOrNull(simState) ?: return false
 
             while (simHead >= simTape.size) simTape.add(blankSymbol)

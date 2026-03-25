@@ -3,8 +3,7 @@ package com.sfag.automata.domain.machine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.TransitionRef
-
-private const val MAX_REACHABILITY_CONFIGS = 100_000
+import com.sfag.main.config.MAX_FA_PDA_CONFIGS
 
 enum class AcceptanceCriteria(
     val text: String,
@@ -389,14 +388,13 @@ class PushdownMachine(
         val startIndex = startStateIndex ?: return false
         var paths = mutableListOf(BfsPath(startIndex, 0, stack))
         var configCount = 0
-        val maxConfigs = MAX_REACHABILITY_CONFIGS
 
-        while (paths.isNotEmpty() && configCount < maxConfigs) {
+        while (paths.isNotEmpty() && configCount < MAX_FA_PDA_CONFIGS) {
             val nextPaths = mutableListOf<BfsPath>()
 
             for (path in paths) {
                 configCount++
-                if (configCount > maxConfigs) break
+                if (configCount > MAX_FA_PDA_CONFIGS) break
 
                 val state = getStateByIndexOrNull(path.stateIndex) ?: continue
                 if (path.inputIndex == input.length && isAccepted(state, path.stack)) {

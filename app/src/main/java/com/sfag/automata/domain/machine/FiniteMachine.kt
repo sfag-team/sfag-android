@@ -3,8 +3,7 @@ package com.sfag.automata.domain.machine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.TransitionRef
-
-private const val MAX_REACHABILITY_CONFIGS = 100_000
+import com.sfag.main.config.MAX_FA_PDA_CONFIGS
 
 data class FaConfig(val stateIndex: Int, val inputOffset: Int = 0)
 
@@ -206,14 +205,13 @@ class FiniteMachine(
         val startIndex = findStartStateIndex(fromInit) ?: return false
         val visited = mutableSetOf<Pair<Int, Int>>()
         var paths = mutableListOf(BfsPath(startIndex, 0))
-        val maxConfigs = MAX_REACHABILITY_CONFIGS
 
-        while (paths.isNotEmpty() && visited.size < maxConfigs) {
+        while (paths.isNotEmpty() && visited.size < MAX_FA_PDA_CONFIGS) {
             val nextPaths = mutableListOf<BfsPath>()
 
             for (path in paths) {
                 if (!visited.add(path.stateIndex to path.inputIndex)) continue
-                if (visited.size > maxConfigs) break
+                if (visited.size > MAX_FA_PDA_CONFIGS) break
                 val state = getStateByIndexOrNull(path.stateIndex) ?: continue
                 if (path.inputIndex == input.length && state.final) return true
 
