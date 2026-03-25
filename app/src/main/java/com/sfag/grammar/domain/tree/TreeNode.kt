@@ -6,12 +6,12 @@ class TreeNode(
     val parents: MutableSet<TreeNode> = mutableSetOf(),
     val children: MutableSet<TreeNode> = mutableSetOf()
 ) {
+    override fun toString(): String = label.toString()
+
     fun addChild(child: TreeNode) {
         children.add(child)
         child.parents.add(this)
     }
-
-    override fun toString(): String = label.toString()
 
     fun getLeaves(): MutableList<TreeNode> {
         val leaves = LinkedHashSet<TreeNode>()

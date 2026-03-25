@@ -16,10 +16,9 @@ class FiniteMachine(
     override val jffTag = "fa"
     override val typeLabel = "FA"
 
-    // Track multiple current configs for NFA simulation (with per-config input offset)
+    // Track multiple current configs for NFA simulation
     val currentConfigs: MutableSet<FaConfig> = mutableSetOf()
 
-    // Delegates to currentConfigs
     override var currentState: Int?
         get() = currentConfigs.firstOrNull()?.stateIndex
         set(value) {
@@ -33,6 +32,68 @@ class FiniteMachine(
             getStateByIndexOrNull(currentState!!)?.isCurrent = true
         }
         return calculateAllPathsStep()
+    }
+
+    override fun canReachFinalState(
+        input: StringBuilder,
+        fromInit: Boolean,
+    ): Boolean? {
+        data class Config(val stateIndex: Int, val inputIndex: Int)
+
+        val startIndex = findStartStateIndex(fromInit) ?: return false
+        return bfsReachability(
+            initialConfigs = listOf(Config(startIndex, 0)),
+            expand = { config ->
+                val remaining = input.substring(minOf(config.inputIndex, input.length))
+                val possibleTransitions =
+                    if (config.inputIndex < input.length) {
+                        transitions.filter {
+                            it.fromState == config.stateIndex &&
+                                    (it.name.isEmpty() || remaining.startsWith(it.name))
+                        }
+                    } else {
+                        transitions.filter { it.fromState == config.stateIndex && it.name.isEmpty() }
+                    }
+                possibleTransitions.map { Config(it.toState, config.inputIndex + it.name.length) }
+            },
+            isAccepted = { config ->
+                val state = getStateByIndexOrNull(config.stateIndex)
+                config.inputIndex == input.length && state?.final == true
+            },
+            maxConfigs = MAX_FA_PDA_CONFIGS,
+        )
+    }
+
+    override fun removeTransition(transition: Transition) {
+        transitions.remove(transition)
+    }
+
+    override fun addNewState(state: State) {
+        if (state.initial && currentConfigs.isEmpty()) {
+            currentConfigs.add(FaConfig(state.index))
+            state.isCurrent = true
+        }
+        states.add(state)
+    }
+
+    override fun resetSimulation() {
+        super.resetSimulation()
+        currentConfigs.clear()
+        states.firstOrNull { it.initial }?.index?.let { currentConfigs.add(FaConfig(it)) }
+    }
+
+    fun addNewTransition(
+        name: String,
+        fromState: State,
+        toState: State,
+    ) {
+        val alreadyExists =
+            transitions.any { transition ->
+                transition.fromState == fromState.index && transition.toState == toState.index && transition.name == name
+            }
+        if (!alreadyExists) {
+            transitions.add(FiniteTransition(name, fromState.index, toState.index))
+        }
     }
 
     private fun calculateAllPathsStep(): Simulation {
@@ -148,95 +209,6 @@ class FiniteMachine(
                 }
             },
         )
-    }
-
-    private fun consumeInput(length: Int) {
-        if (length > 0 && remainingInput.isNotEmpty()) {
-            remainingInput.delete(0, minOf(length, remainingInput.length))
-        }
-    }
-
-    override fun resetSimulation() {
-        val initialStateIndex = states.firstOrNull { it.initial }?.index
-        for (state in states) {
-            if (state.index != initialStateIndex) {
-                state.isCurrent = false
-            }
-        }
-        currentConfigs.clear()
-        initialStateIndex?.let { currentConfigs.add(FaConfig(it)) }
-    }
-
-    override fun removeTransition(transition: Transition) {
-        transitions.remove(transition)
-    }
-
-    override fun addNewState(state: State) {
-        if (state.initial && currentConfigs.isEmpty()) {
-            currentConfigs.add(FaConfig(state.index))
-            state.isCurrent = true
-        }
-        states.add(state)
-    }
-
-    fun addNewTransition(
-        name: String,
-        fromState: State,
-        toState: State,
-    ) {
-        val alreadyExists =
-            transitions.any { transition ->
-                transition.fromState == fromState.index && transition.toState == toState.index && transition.name == name
-            }
-        if (!alreadyExists) {
-            transitions.add(FiniteTransition(name, fromState.index, toState.index))
-        }
-    }
-
-    override fun canReachFinalState(
-        input: StringBuilder,
-        fromInit: Boolean,
-    ): Boolean? {
-        data class BfsPath(
-            val stateIndex: Int,
-            val inputIndex: Int,
-        )
-
-        val startIndex = findStartStateIndex(fromInit) ?: return false
-        val visited = mutableSetOf<Pair<Int, Int>>()
-        var paths = mutableListOf(BfsPath(startIndex, 0))
-
-        while (paths.isNotEmpty() && visited.size < MAX_FA_PDA_CONFIGS) {
-            val nextPaths = mutableListOf<BfsPath>()
-
-            for (path in paths) {
-                if (!visited.add(path.stateIndex to path.inputIndex)) continue
-                if (visited.size > MAX_FA_PDA_CONFIGS) break
-                val state = getStateByIndexOrNull(path.stateIndex) ?: continue
-                if (path.inputIndex == input.length && state.final) return true
-
-                val remaining = input.substring(path.inputIndex)
-                val possibleTransitions =
-                    if (path.inputIndex < input.length) {
-                        transitions.filter {
-                            it.fromState == path.stateIndex &&
-                                    (it.name.isEmpty() || remaining.startsWith(it.name))
-                        }
-                    } else {
-                        transitions.filter { it.fromState == path.stateIndex && it.name.isEmpty() }
-                    }
-
-                for (transition in possibleTransitions) {
-                    nextPaths.add(
-                        BfsPath(transition.toState, path.inputIndex + transition.name.length),
-                    )
-                }
-            }
-
-            paths = nextPaths
-        }
-
-        return if (paths.isEmpty()) false else null
     }
 
     private fun getMatchingTransitions(fromState: State, inputOffset: Int): List<Transition> {

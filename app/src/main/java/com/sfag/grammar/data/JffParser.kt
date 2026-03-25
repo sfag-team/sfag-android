@@ -3,14 +3,14 @@ package com.sfag.grammar.data
 import android.util.Log
 import com.sfag.grammar.domain.grammar.GrammarRule
 import com.sfag.main.config.Symbols
-import com.sfag.main.data.JffUtils
-import com.sfag.main.data.JffUtils.getChildText
+import com.sfag.main.data.XmlUtils
+import com.sfag.main.data.XmlUtils.getChildText
 import org.w3c.dom.Element
 import java.io.InputStream
 
 object Jff {
     fun parse(inputStream: InputStream): List<GrammarRule> {
-        val doc = JffUtils.parseXml(inputStream)
+        val doc = XmlUtils.parseXml(inputStream)
         doc.documentElement.normalize()
         val nodeList = doc.getElementsByTagName("production")
         val rules = mutableListOf<GrammarRule>()

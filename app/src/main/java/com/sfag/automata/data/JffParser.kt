@@ -13,9 +13,10 @@ import com.sfag.automata.domain.machine.TuringMachine
 import com.sfag.automata.domain.machine.TuringTransition
 import com.sfag.main.config.Symbols
 import com.sfag.main.data.JffUtils
-import com.sfag.main.data.JffUtils.getChildText
-import com.sfag.main.data.JffUtils.hasChild
 import com.sfag.main.data.Point2D
+import com.sfag.main.data.XmlUtils
+import com.sfag.main.data.XmlUtils.getChildText
+import com.sfag.main.data.XmlUtils.hasChild
 import org.w3c.dom.Element
 import java.io.InputStream
 
@@ -33,7 +34,7 @@ internal data class Jff(
             val transitions = mutableListOf<Transition>()
             val positions = mutableMapOf<Int, Point2D>()
 
-            val doc = JffUtils.parseXml(inputStream)
+            val doc = XmlUtils.parseXml(inputStream)
             val root = doc.documentElement
 
             val jffTag = JffUtils.getJffType(doc)

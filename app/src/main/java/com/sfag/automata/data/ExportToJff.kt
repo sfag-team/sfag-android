@@ -6,9 +6,10 @@ import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.TuringMachine
 import com.sfag.main.config.Symbols
 import com.sfag.main.data.JffUtils
-import com.sfag.main.data.JffUtils.escapeXml
-import com.sfag.main.data.JffUtils.xmlTag
 import com.sfag.main.data.Point2D
+import com.sfag.main.data.XmlUtils.escapeXml
+import com.sfag.main.data.XmlUtils.formatFloat
+import com.sfag.main.data.XmlUtils.xmlTag
 
 fun Machine.exportToJff(positions: Map<Int, Point2D>): String =
     JffUtils.jffDocument(jffTag) {
@@ -18,8 +19,8 @@ fun Machine.exportToJff(positions: Map<Int, Point2D>): String =
             val escapedName = escapeXml(state.name)
             val position = positions[state.index] ?: Point2D()
             appendLine("""        <state id="${state.index}" name="$escapedName">""")
-            appendLine("""            <x>${JffUtils.formatFloat(position.x)}</x>""")
-            appendLine("""            <y>${JffUtils.formatFloat(position.y)}</y>""")
+            appendLine("""            <x>${formatFloat(position.x)}</x>""")
+            appendLine("""            <y>${formatFloat(position.y)}</y>""")
             if (state.initial) appendLine("            <initial/>")
             if (state.final) appendLine("            <final/>")
             appendLine("        </state>")

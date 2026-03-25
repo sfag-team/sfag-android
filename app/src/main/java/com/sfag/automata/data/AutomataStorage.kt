@@ -22,7 +22,7 @@ internal data class StoredMachine(
 )
 
 /** File-based storage for automata using .jff files */
-internal class Storage
+internal class AutomataStorage
 @Inject
 constructor(
     @param:ApplicationContext private val context: Context,
@@ -56,7 +56,7 @@ constructor(
             File(storageDir, "__current.meta").writeText(metadata)
             true
         } catch (e: Exception) {
-            Log.e("Storage", "Failed to save machine", e)
+            Log.e("AutomataStorage", "Failed to save machine", e)
             false
         }
 
@@ -99,7 +99,7 @@ constructor(
                 dirty
             )
         } catch (e: Exception) {
-            Log.e("Storage", "Failed to load machine", e)
+            Log.e("AutomataStorage", "Failed to load machine", e)
             null
         }
     }

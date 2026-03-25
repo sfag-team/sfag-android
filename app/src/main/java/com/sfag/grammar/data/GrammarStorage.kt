@@ -8,7 +8,7 @@ import java.io.File
 import javax.inject.Inject
 
 /** File-based storage for grammars using .jff files. */
-internal class Storage
+internal class GrammarStorage
 @Inject
 constructor(
     @param:ApplicationContext private val context: Context,
@@ -28,7 +28,7 @@ constructor(
             File(storageDir, "__current.jff").writeText(rules.exportToJff())
             true
         } catch (e: Exception) {
-            Log.e("Storage", "Failed to save grammar", e)
+            Log.e("GrammarStorage", "Failed to save grammar", e)
             false
         }
 
@@ -41,7 +41,7 @@ constructor(
         return try {
             jffFile.inputStream().use { Jff.parse(it) }.ifEmpty { null }
         } catch (e: Exception) {
-            Log.e("Storage", "Failed to load grammar", e)
+            Log.e("GrammarStorage", "Failed to load grammar", e)
             null
         }
     }

@@ -8,7 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
-import com.sfag.automata.data.Storage
+import com.sfag.automata.data.AutomataStorage
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
@@ -24,7 +24,7 @@ private const val JFLAP_TO_DP = 160f / 96f
 class AutomataViewModel
 @Inject
 internal constructor(
-    private val storage: Storage,
+    private val storage: AutomataStorage,
 ) : ViewModel() {
     // The single current machine - observed by the Activity to key the composition.
     var currentMachine by mutableStateOf<Machine?>(null)
@@ -94,14 +94,6 @@ internal constructor(
     fun advanceSimulation(): Simulation =
         currentMachine?.advanceSimulation() ?: Simulation.Ended(SimulationOutcome.ACTIVE)
 
-    /** Converts JFLAP positions to dp and loads them into statePositions. */
-    private fun loadPositions(positions: Map<Int, Point2D>) {
-        statePositions.clear()
-        positions.forEach { (index, point2D) ->
-            statePositions[index] = Offset(point2D.x * JFLAP_TO_DP, point2D.y * JFLAP_TO_DP)
-        }
-    }
-
     /** Returns current positions as JFLAP units for JFF export/save (dp -> JFLAP). */
     fun getPositions(): Map<Int, Point2D> =
         statePositions.mapValues { (_, offset) ->
@@ -124,5 +116,13 @@ internal constructor(
         offset: Offset,
     ) {
         statePositions[stateIndex] = offset
+    }
+
+    /** Converts JFLAP positions to dp and loads them into statePositions. */
+    private fun loadPositions(positions: Map<Int, Point2D>) {
+        statePositions.clear()
+        positions.forEach { (index, point2D) ->
+            statePositions[index] = Offset(point2D.x * JFLAP_TO_DP, point2D.y * JFLAP_TO_DP)
+        }
     }
 }

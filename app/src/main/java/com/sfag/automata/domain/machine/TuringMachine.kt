@@ -25,7 +25,6 @@ class TuringMachine(
 ) : Machine(name, states, savedInputs = savedInputs) {
     override val jffTag = "turing"
     override val typeLabel = "TM"
-
     override var currentState: Int? = null
 
     override val transitions: List<Transition>
@@ -34,47 +33,6 @@ class TuringMachine(
     // Tape represented as a mutable list that can grow in both directions
     val tape: MutableList<Char> = mutableListOf()
     var headPosition: Int = 0
-
-    override fun removeTransition(transition: Transition) {
-        turingTransitions.remove(transition)
-    }
-
-    private fun readSymbol(): Char {
-        expandTapeIfNeeded()
-        return tape.getOrNull(headPosition) ?: blankSymbol
-    }
-
-    private fun writeSymbol(symbol: Char) {
-        expandTapeIfNeeded()
-        if (headPosition in tape.indices) {
-            tape[headPosition] = symbol
-        }
-    }
-
-    private fun moveHead(direction: TapeDirection) {
-        when (direction) {
-            TapeDirection.LEFT -> {
-                headPosition--
-                if (headPosition < 0) {
-                    tape.add(0, blankSymbol)
-                    headPosition = 0
-                }
-            }
-
-            TapeDirection.RIGHT -> {
-                headPosition++
-                expandTapeIfNeeded()
-            }
-
-            TapeDirection.STAY -> {}
-        }
-    }
-
-    private fun expandTapeIfNeeded() {
-        while (headPosition >= tape.size) {
-            tape.add(blankSymbol)
-        }
-    }
 
     override fun advanceSimulation(): Simulation {
         if (!ensureCurrentState()) return Simulation.Ended(SimulationOutcome.ACTIVE)
@@ -116,7 +74,51 @@ class TuringMachine(
         )
     }
 
+    override fun canReachFinalState(
+        input: StringBuilder,
+        fromInit: Boolean,
+    ): Boolean? {
+        data class Config(val stateIndex: Int, val tape: List<Char>, val headPosition: Int)
+
+        val initialTape = if (input.isEmpty()) listOf(blankSymbol) else input.toList()
+        val startIndex = findStartStateIndex(fromInit) ?: return false
+        return bfsReachability(
+            initialConfigs = listOf(Config(startIndex, initialTape, 0)),
+            expand = { config ->
+                val tape = config.tape.toMutableList()
+                val head = config.headPosition
+                while (head >= tape.size) tape.add(blankSymbol)
+                val symbol = tape.getOrNull(head) ?: blankSymbol
+                turingTransitions
+                    .filter { it.fromState == config.stateIndex && it.name.firstOrNull() == symbol }
+                    .map { transition ->
+                        val newTape = tape.toMutableList()
+                        newTape[head] = transition.writeSymbol
+                        var newHead = head + when (transition.direction) {
+                            TapeDirection.LEFT -> -1
+                            TapeDirection.RIGHT -> 1
+                            TapeDirection.STAY -> 0
+                        }
+                        if (newHead < 0) {
+                            newTape.add(0, blankSymbol)
+                            newHead = 0
+                        }
+                        Config(transition.toState, newTape, newHead)
+                    }
+            },
+            isAccepted = { config ->
+                getStateByIndexOrNull(config.stateIndex)?.final == true
+            },
+            maxConfigs = MAX_TURING_CONFIGS,
+        )
+    }
+
+    override fun removeTransition(transition: Transition) {
+        turingTransitions.remove(transition)
+    }
+
     override fun resetSimulation() {
+        super.resetSimulation()
         tape.clear()
         if (fullInput.isNotEmpty()) {
             tape.addAll(fullInput.toList())
@@ -126,40 +128,40 @@ class TuringMachine(
         headPosition = 0
     }
 
-    override fun canReachFinalState(
-        input: StringBuilder,
-        fromInit: Boolean,
-    ): Boolean? {
-        val simTape = input.toString().toMutableList()
-        if (simTape.isEmpty()) simTape.add(blankSymbol)
-        var simHead = 0
-        var simState = findStartStateIndex(fromInit) ?: return false
+    private fun readSymbol(): Char {
+        expandTapeIfNeeded()
+        return tape.getOrNull(headPosition) ?: blankSymbol
+    }
 
-        repeat(MAX_TURING_CONFIGS) {
-            val state = getStateByIndexOrNull(simState) ?: return false
+    private fun writeSymbol(symbol: Char) {
+        expandTapeIfNeeded()
+        if (headPosition in tape.indices) {
+            tape[headPosition] = symbol
+        }
+    }
 
-            while (simHead >= simTape.size) simTape.add(blankSymbol)
-            while (simHead < 0) {
-                simTape.add(0, blankSymbol)
-                simHead++
+    private fun moveHead(direction: TapeDirection) {
+        when (direction) {
+            TapeDirection.LEFT -> {
+                headPosition--
+                if (headPosition < 0) {
+                    tape.add(0, blankSymbol)
+                    headPosition = 0
+                }
             }
 
-            val symbol = simTape.getOrNull(simHead) ?: blankSymbol
-            val transition =
-                turingTransitions.firstOrNull { transition ->
-                    transition.fromState == simState && transition.name.firstOrNull() == symbol
-                } ?: return state.final
+            TapeDirection.RIGHT -> {
+                headPosition++
+                expandTapeIfNeeded()
+            }
 
-            simTape[simHead] = transition.writeSymbol
-            simHead +=
-                when (transition.direction) {
-                    TapeDirection.LEFT -> -1
-                    TapeDirection.RIGHT -> 1
-                    TapeDirection.STAY -> 0
-                }
-            simState = transition.toState
+            TapeDirection.STAY -> {}
         }
+    }
 
-        return null
+    private fun expandTapeIfNeeded() {
+        while (headPosition >= tape.size) {
+            tape.add(blankSymbol)
+        }
     }
 }
