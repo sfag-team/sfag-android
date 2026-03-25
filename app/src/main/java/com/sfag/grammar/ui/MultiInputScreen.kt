@@ -55,7 +55,11 @@ fun MultiInputScreen(
     val terminals = grammarViewModel.terminals
     val grammarType = grammarViewModel.grammarType
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Text(
             text = stringResource(R.string.test_multiple_inputs),
             style = MaterialTheme.typography.headlineMedium,
@@ -63,7 +67,9 @@ fun MultiInputScreen(
             modifier = Modifier,
         )
         HorizontalDivider(
-            modifier = Modifier.height(4.dp).fillMaxWidth(),
+            modifier = Modifier
+                .height(4.dp)
+                .fillMaxWidth(),
             color = MaterialTheme.colorScheme.primary,
         )
         // Compute fresh every composition (not cached) so indices are never stale
@@ -133,7 +139,9 @@ private fun TableRow(
     }
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextField(
@@ -152,12 +160,14 @@ private fun TableRow(
         when {
             isValid == null && !isInconclusive ->
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+
             isInconclusive ->
                 Text(
                     text = "?",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+
             isValid == true -> {
                 Icon(
                     imageVector = Icons.Default.Check,
@@ -165,9 +175,13 @@ private fun TableRow(
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 IconButton(onClick = { onTestInput(inputText) }) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.see_derivation))
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = stringResource(R.string.see_derivation)
+                    )
                 }
             }
+
             else ->
                 Icon(
                     imageVector = Icons.Default.Close,

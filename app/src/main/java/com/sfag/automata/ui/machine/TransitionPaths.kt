@@ -86,9 +86,11 @@ fun Machine.computeTransitionPaths(
                     .mapNotNull { other ->
                         when {
                             other.fromState == transition.fromState &&
-                                other.toState != transition.fromState -> other.toState
+                                    other.toState != transition.fromState -> other.toState
+
                             other.toState == transition.fromState &&
-                                other.fromState != transition.fromState -> other.fromState
+                                    other.fromState != transition.fromState -> other.fromState
+
                             else -> null
                         }
                     }.distinct()

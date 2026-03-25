@@ -27,12 +27,13 @@ fun DefaultDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier,
-    confirmLabel: String = stringResource(R.string.confirm_button),
+    confirmLabel: String = stringResource(R.string.save_button),
     cancelLabel: String = stringResource(R.string.cancel_button),
+    onDismissRequest: (() -> Unit)? = null,
     enabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = onDismissRequest ?: onDismiss) {
         Surface(
             modifier = modifier,
             shape = MaterialTheme.shapes.extraLarge,

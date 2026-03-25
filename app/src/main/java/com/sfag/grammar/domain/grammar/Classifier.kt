@@ -3,7 +3,8 @@ package com.sfag.grammar.domain.grammar
 import com.sfag.main.config.Symbols
 
 fun classifyGrammar(rules: List<GrammarRule>): GrammarType {
-    val individual = rules.flatMap { rule -> rule.right.split('|').map { GrammarRule(rule.left, it) } }
+    val individual =
+        rules.flatMap { rule -> rule.right.split('|').map { GrammarRule(rule.left, it) } }
     if (individual.isEmpty()) return GrammarType.REGULAR
 
     // Try regular: each rule must pass isRegular, and linearity must be consistent
@@ -14,7 +15,7 @@ fun classifyGrammar(rules: List<GrammarRule>): GrammarType {
             // Epsilon only allowed for start symbol S, and S must not appear in any RHS
             val epsRules = individual.filter { it.right == Symbols.EPSILON }
             val epsValid = epsRules.isEmpty() ||
-                (epsRules.all { it.left == "S" } && individual.none { 'S' in it.right })
+                    (epsRules.all { it.left == "S" } && individual.none { 'S' in it.right })
             if (epsValid) return GrammarType.REGULAR
         }
         // Mixed linearity or invalid epsilon - not regular, fall through to context-free
@@ -49,7 +50,8 @@ private fun isRegular(rule: GrammarRule): Boolean {
     return false
 }
 
-private fun isContextFree(rule: GrammarRule): Boolean = rule.left.length == 1 && rule.left.first().isUpperCase()
+private fun isContextFree(rule: GrammarRule): Boolean =
+    rule.left.length == 1 && rule.left.first().isUpperCase()
 
 private fun isContextSensitive(rule: GrammarRule): Boolean {
     if (rule.right == Symbols.EPSILON && rule.left == "S") return true

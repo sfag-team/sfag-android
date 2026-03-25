@@ -114,7 +114,8 @@ private class SuffixVisualTransformation(
                 object : OffsetMapping {
                     override fun originalToTransformed(offset: Int): Int = offset
 
-                    override fun transformedToOriginal(offset: Int): Int = offset.coerceAtMost(text.length)
+                    override fun transformedToOriginal(offset: Int): Int =
+                        offset.coerceAtMost(text.length)
                 },
         )
     }
@@ -136,7 +137,8 @@ fun ImmutableTextField(
                 .clip(MaterialTheme.shapes.extraSmall)
                 .then(
                     if (backgroundColor != null) Modifier.background(backgroundColor) else Modifier,
-                ).then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+                )
+                .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
                 .padding(start = 16.dp, end = if (trailingContent != null) 4.dp else 16.dp),
         contentAlignment = Alignment.CenterStart,
     ) {

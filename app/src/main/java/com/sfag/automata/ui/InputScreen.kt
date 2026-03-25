@@ -172,13 +172,15 @@ fun Machine.InputScreen(
                     }
                     onDismiss()
                 },
-                modifier = Modifier.weight(1f).height(48.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp),
                 shape = MaterialTheme.shapes.medium,
             ) {
                 Text(stringResource(R.string.cancel_button))
             }
             DefaultButton(
-                text = stringResource(R.string.confirm_button),
+                text = stringResource(R.string.ok_button),
                 modifier = Modifier.weight(1f),
                 onClick = {
                     loadInput(newFullInput.value)
@@ -201,7 +203,9 @@ fun Machine.InputScreen(
             ) {
                 if (this@InputScreen.savedInputs.isEmpty()) {
                     Box(
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
@@ -212,7 +216,9 @@ fun Machine.InputScreen(
                     }
                 } else {
                     LazyColumn(
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding =
                             PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
@@ -240,7 +246,9 @@ fun Machine.InputScreen(
                                 text = savedText.ifEmpty { Symbols.EPSILON },
                                 backgroundColor = bgColor,
                                 textColor = textColor,
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 48.dp),
                                 onClick = {
                                     newFullInput.value = savedInput.toString()
                                 },

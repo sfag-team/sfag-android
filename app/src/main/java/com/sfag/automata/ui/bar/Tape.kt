@@ -149,7 +149,8 @@ fun FiniteMachine.Tape(
     onEdit: () -> Unit,
 ) {
     val symbols = fullInput
-    val headIndex = (symbols.length - remainingInput.length).coerceIn(0, (symbols.length - 1).coerceAtLeast(0))
+    val headIndex =
+        (symbols.length - remainingInput.length).coerceIn(0, (symbols.length - 1).coerceAtLeast(0))
 
     Tape(
         symbols = symbols.toList(),
@@ -168,7 +169,8 @@ fun PushdownMachine.Tape(
     onEdit: () -> Unit,
 ) {
     val symbols = fullInput
-    val headIndex = (symbols.length - remainingInput.length).coerceIn(0, (symbols.length - 1).coerceAtLeast(0))
+    val headIndex =
+        (symbols.length - remainingInput.length).coerceIn(0, (symbols.length - 1).coerceAtLeast(0))
 
     Tape(
         symbols = symbols.toList(),
@@ -229,7 +231,8 @@ internal fun Cell(
                     } else {
                         Modifier
                     },
-                ).background(bgColor),
+                )
+                .background(bgColor),
         contentAlignment = Alignment.Center,
     ) {
         Text(

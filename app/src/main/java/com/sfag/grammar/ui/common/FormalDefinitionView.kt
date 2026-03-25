@@ -18,7 +18,11 @@ fun FormalDefinitionView(
     terminals: Set<Char>,
     grammarType: GrammarType?,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
         Text(
             text = "G = (N, T, P, S)",
             style = MaterialTheme.typography.headlineSmall,

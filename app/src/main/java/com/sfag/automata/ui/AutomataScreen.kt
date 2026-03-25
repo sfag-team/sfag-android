@@ -1,5 +1,7 @@
 package com.sfag.automata.ui
 
+import android.provider.OpenableColumns
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -32,6 +34,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +75,7 @@ import com.sfag.main.ui.component.DefaultDialog
 import com.sfag.main.ui.component.DefaultIconButton
 import com.sfag.main.ui.component.DefaultTextField
 import com.sfag.main.ui.component.ItemSpecificationIcon
+import kotlinx.coroutines.launch
 
 private enum class Mode {
     SIMULATOR,
@@ -82,10 +86,6 @@ private enum class Mode {
 
 private sealed interface ActiveDialog {
     data object NewMachine : ActiveDialog
-
-    data class Rename(
-        val initialName: String,
-    ) : ActiveDialog
 }
 
 @Composable
@@ -97,14 +97,27 @@ fun AutomataScreen(
     val activity = LocalActivity.current as? AppCompatActivity ?: return
     val viewModel: AutomataViewModel = hiltViewModel(activity)
     val noInitialStateMsg = stringResource(R.string.no_initial_state)
+    val importErrorMsg = stringResource(R.string.file_import_error)
+    val scope = rememberCoroutineScope()
 
     val initImportLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri ->
             uri?.let {
-                activity.contentResolver.openInputStream(it)?.use { stream ->
-                    val jff = Jff.parse(stream)
-                    val newMachine = jff.toMachine("untitled")
-                    viewModel.setCurrentMachine(newMachine, jff.positions)
+                try {
+                    val fileName = activity.contentResolver
+                        .query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                        ?.use { cursor ->
+                            if (cursor.moveToFirst()) cursor.getString(0)
+                                ?.removeSuffix(".jff") else null
+                        } ?: "untitled"
+                    activity.contentResolver.openInputStream(it)?.use { stream ->
+                        val jff = Jff.parse(stream)
+                        viewModel.setCurrentMachine(jff.toMachine(fileName), jff.positions)
+                    }
+                } catch (e: Exception) {
+                    Log.e("AutomataScreen", "Failed to import file", e)
+                    scope.launch { snackbarHostState.showSnackbar(importErrorMsg) }
+                    navBack()
                 }
             }
         }
@@ -138,38 +151,60 @@ fun AutomataScreen(
         val dialogRequest = remember { mutableStateOf<DialogRequest?>(null) }
         var snackbarMsg by remember { mutableStateOf<String?>(null) }
         var activeDialog by remember { mutableStateOf<ActiveDialog?>(null) }
+        val exportErrorMsg = stringResource(R.string.file_export_error)
 
         val exportLauncher =
             rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.CreateDocument(JFF_SAVE_MIME_TYPE),
             ) { uri ->
-                uri?.let {
-                    activity.contentResolver.openOutputStream(it)?.use { stream ->
-                        stream.write(
-                            machine
-                                .exportToJff(viewModel.getPositions())
-                                .toByteArray(Charsets.UTF_8),
+                try {
+                    uri?.let {
+                        activity.contentResolver.openOutputStream(it)?.use { stream ->
+                            stream.write(
+                                machine
+                                    .exportToJff(viewModel.getPositions())
+                                    .toByteArray(Charsets.UTF_8),
+                            )
+                        }
+                        activity.contentResolver.query(
+                            it,
+                            arrayOf(OpenableColumns.DISPLAY_NAME),
+                            null,
+                            null,
+                            null
                         )
+                            ?.use { cursor ->
+                                if (cursor.moveToFirst()) {
+                                    val fileName = cursor.getString(0) ?: return@use
+                                    machine.name = fileName.removeSuffix(".jff")
+                                    recomposeKey.intValue++
+                                }
+                            }
+                        viewModel.markSaved()
                     }
-                }
-                // Load pending example after export (Save + open example flow)
-                viewModel.pendingExampleUri?.let { exampleUri ->
-                    val jff = activity.assets.open(exampleUri).use { Jff.parse(it) }
-                    val exampleName = viewModel.pendingExampleName ?: "untitled"
-                    viewModel.pendingExampleUri = null
-                    viewModel.pendingExampleName = null
-                    viewModel.setCurrentMachine(jff.toMachine(exampleName), jff.positions)
+                } catch (e: Exception) {
+                    Log.e("AutomataScreen", "Failed to export file", e)
+                    snackbarMsg = exportErrorMsg
                 }
             }
 
         val importLauncher =
             rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri ->
                 uri?.let {
-                    activity.contentResolver.openInputStream(it)?.use { stream ->
-                        val jff = Jff.parse(stream)
-                        val newMachine = jff.toMachine("untitled")
-                        viewModel.setCurrentMachine(newMachine, jff.positions)
-                        viewModel.markDirty()
+                    try {
+                        val fileName = activity.contentResolver
+                            .query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                            ?.use { cursor ->
+                                if (cursor.moveToFirst()) cursor.getString(0)
+                                    ?.removeSuffix(".jff") else null
+                            } ?: "untitled"
+                        activity.contentResolver.openInputStream(it)?.use { stream ->
+                            val jff = Jff.parse(stream)
+                            viewModel.setCurrentMachine(jff.toMachine(fileName), jff.positions)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AutomataScreen", "Failed to import file", e)
+                        snackbarMsg = importErrorMsg
                     }
                 }
             }
@@ -185,12 +220,14 @@ fun AutomataScreen(
                         navBack()
                     }
                 }
+
                 Mode.SIMULATION_STEP -> {}
                 Mode.INPUT_EDITOR -> {
                     machine.setInitialStateAsCurrent()
                     viewModel.autoSave(machine)
                     currentMode.value = Mode.SIMULATOR
                 }
+
                 Mode.MACHINE_EDITOR -> {
                     machine.setInitialStateAsCurrent()
                     recomposeKey.intValue++
@@ -221,7 +258,9 @@ fun AutomataScreen(
         Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLowest)) {
             if (currentMode.value != Mode.INPUT_EDITOR) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
                     contentPadding = PaddingValues(vertical = 16.dp),
                 ) {
                     item {
@@ -247,11 +286,11 @@ fun AutomataScreen(
                                 }
 
                                 DefaultButton(
-                                    text = stringResource(R.string.export_file),
+                                    text = stringResource(R.string.save_file),
                                     modifier = Modifier.weight(1f),
                                 ) {
                                     exportLauncher.launch(
-                                        "${machine.name.ifEmpty { "untitled" }}.jff",
+                                        "${machine.name}.jff",
                                     )
                                 }
 
@@ -259,7 +298,14 @@ fun AutomataScreen(
                                     text = stringResource(R.string.import_file),
                                     modifier = Modifier.weight(1f),
                                 ) {
-                                    importLauncher.launch(JFF_OPEN_MIME_TYPES)
+                                    if (viewModel.hasUnsavedChanges) {
+                                        showUnsavedDialog = true
+                                        isBackAction = false
+                                        pendingAction =
+                                            { importLauncher.launch(JFF_OPEN_MIME_TYPES) }
+                                    } else {
+                                        importLauncher.launch(JFF_OPEN_MIME_TYPES)
+                                    }
                                 }
 
                                 DefaultButton(
@@ -300,9 +346,6 @@ fun AutomataScreen(
                                         }
                                     },
                                     onRecompose = { recomposeKey.intValue++ },
-                                    onClickName = {
-                                        activeDialog = ActiveDialog.Rename(machine.name.ifEmpty { "" })
-                                    },
                                 )
                             }
 
@@ -377,6 +420,7 @@ fun AutomataScreen(
                                                             stateNames,
                                                         )
                                                     }
+
                                                     SimulationOutcome.REJECTED -> {
                                                         val stateNames =
                                                             machine.states
@@ -387,11 +431,13 @@ fun AutomataScreen(
                                                             stateNames,
                                                         )
                                                     }
+
                                                     SimulationOutcome.ACTIVE,
                                                     SimulationOutcome.DEAD,
-                                                    -> null
+                                                        -> null
                                                 }
                                         }
+
                                         is Simulation.Step -> {
                                             currentMode.value = Mode.SIMULATION_STEP
                                             val capturedPositions = viewModel.statePositions.toMap()
@@ -452,39 +498,14 @@ fun AutomataScreen(
             }
 
             when (val dialog = activeDialog) {
-                is ActiveDialog.Rename -> {
-                    var editingName by remember(dialog) {
-                        mutableStateOf(dialog.initialName)
-                    }
-                    DefaultDialog(
-                        title = null,
-                        enabled = editingName.isNotBlank(),
-                        onDismiss = { activeDialog = null },
-                        onConfirm = {
-                            machine.name = editingName
-                            viewModel.markDirty()
-                            activeDialog = null
-                        },
-                    ) {
-                        DefaultTextField(
-                            label = stringResource(R.string.machine_name),
-                            value = editingName,
-                            suffix = ".jff",
-                            modifier = Modifier.fillMaxWidth(),
-                            onValueChange = { editingName = it },
-                        ) {
-                            editingName.isNotBlank()
-                        }
-                    }
-                }
                 is ActiveDialog.NewMachine ->
                     NewMachineWindow { newMachine ->
                         activeDialog = null
                         newMachine?.let {
                             viewModel.setCurrentMachine(it)
-                            viewModel.markDirty()
                         }
                     }
+
                 null -> {}
             }
             if (showUnsavedDialog) {
@@ -495,8 +516,12 @@ fun AutomataScreen(
                         val exampleName = viewModel.pendingExampleName ?: "untitled"
                         viewModel.pendingExampleUri = null
                         viewModel.pendingExampleName = null
-                        val jff = activity.assets.open(exampleUri).use { Jff.parse(it) }
-                        viewModel.setCurrentMachine(jff.toMachine(exampleName), jff.positions)
+                        try {
+                            val jff = activity.assets.open(exampleUri).use { Jff.parse(it) }
+                            viewModel.setCurrentMachine(jff.toMachine(exampleName), jff.positions)
+                        } catch (e: Exception) {
+                            Log.e("AutomataScreen", "Failed to load example: $exampleUri", e)
+                        }
                     } else if (isBackAction) {
                         navBack()
                     } else {
@@ -506,23 +531,17 @@ fun AutomataScreen(
                 }
                 DefaultDialog(
                     title = stringResource(R.string.unsaved_changes),
-                    cancelLabel = stringResource(R.string.cancel_button),
-                    confirmLabel = stringResource(R.string.save_changes),
+                    cancelLabel = stringResource(R.string.discard_button),
+                    onDismissRequest = {
+                        showUnsavedDialog = false
+                        pendingAction = null
+                    },
                     onDismiss = {
-                        viewModel.markSaved()
                         proceed()
                     },
                     onConfirm = {
-                        if (viewModel.pendingExampleUri != null) {
-                            // Export to user storage, then load example in export callback
-                            exportLauncher.launch(
-                                "${machine.name.ifEmpty { "untitled" }}.jff",
-                            )
-                            showUnsavedDialog = false
-                        } else {
-                            viewModel.autoSave(machine)
-                            proceed()
-                        }
+                        viewModel.autoSave(machine)
+                        proceed()
                     },
                 ) {
                     Text(text = stringResource(R.string.unsaved_changes_message))
@@ -612,11 +631,12 @@ private enum class NewMachineChoice {
 @Composable
 private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
     var machineChoice by remember { mutableStateOf<NewMachineChoice?>(null) }
-    var machineName by remember { mutableStateOf("") }
+    val defaultName = stringResource(R.string.untitled_name)
+    var machineName by remember { mutableStateOf(defaultName) }
 
     DefaultDialog(
         title = null,
-        confirmLabel = stringResource(R.string.create_new),
+        confirmLabel = stringResource(R.string.create_button),
         enabled = machineChoice != null,
         onDismiss = { onImport(null) },
         onConfirm = {
@@ -628,7 +648,9 @@ private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
         },
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().height(120.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {

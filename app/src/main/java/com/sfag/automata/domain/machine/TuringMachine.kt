@@ -61,10 +61,12 @@ class TuringMachine(
                     headPosition = 0
                 }
             }
+
             TapeDirection.RIGHT -> {
                 headPosition++
                 expandTapeIfNeeded()
             }
+
             TapeDirection.STAY -> {}
         }
     }

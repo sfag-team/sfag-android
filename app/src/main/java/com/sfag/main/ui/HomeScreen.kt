@@ -32,7 +32,9 @@ fun HomeScreen(
 ) {
     BoxWithConstraints(
         modifier =
-            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLowest),
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceContainerLowest),
     ) {
         Column(
             modifier =

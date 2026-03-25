@@ -20,9 +20,9 @@ object Symbols {
     fun isEpsilonLabel(label: String): Boolean {
         val normalized = label.trim().lowercase()
         return normalized.isEmpty() ||
-            normalized == "eps" ||
-            normalized == "epsilon" ||
-            normalized == EPSILON ||
-            normalized == LAMBDA
+                normalized == "eps" ||
+                normalized == "epsilon" ||
+                normalized == EPSILON ||
+                normalized == LAMBDA
     }
 }

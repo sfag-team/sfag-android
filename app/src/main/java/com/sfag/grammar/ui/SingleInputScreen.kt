@@ -95,7 +95,14 @@ fun SingleInputScreen(
     LaunchedEffect(Unit) {
         if (initialInput != null) {
             isParsing = true
-            parseResult = withContext(Dispatchers.Default) { parse(initialInput, rules, terminals, grammarType) }
+            parseResult = withContext(Dispatchers.Default) {
+                parse(
+                    initialInput,
+                    rules,
+                    terminals,
+                    grammarType
+                )
+            }
             isParsed = true
             isParsing = false
             isTableShown = true
@@ -135,7 +142,10 @@ fun SingleInputScreen(
             modifier = Modifier.padding(horizontal = 16.dp),
         )
         HorizontalDivider(
-            modifier = Modifier.height(4.dp).fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier
+                .height(4.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             color = MaterialTheme.colorScheme.primary,
         )
         Row(
@@ -149,7 +159,9 @@ fun SingleInputScreen(
                     inputText = it
                 },
                 placeholder = { Text(stringResource(R.string.terminal_placeholder)) },
-                modifier = Modifier.weight(1f).padding(top = 4.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(top = 4.dp),
                 singleLine = true,
                 colors =
                     TextFieldDefaults.colors(
@@ -185,7 +197,9 @@ fun SingleInputScreen(
         }
         if (isParsing) {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
@@ -202,7 +216,16 @@ fun SingleInputScreen(
                             .background(MaterialTheme.colorScheme.surfaceDim)
                             .zIndex(1f),
                 ) {
-                    TreeView(tree, treePositions, scale, offsetX, offsetY, treeStep, grammarType, canvasSize)
+                    TreeView(
+                        tree,
+                        treePositions,
+                        scale,
+                        offsetX,
+                        offsetY,
+                        treeStep,
+                        grammarType,
+                        canvasSize
+                    )
                     if (treeStep == 0) {
                         LaunchedEffect(treeStep) {
                             focusNodeAnimated(
@@ -219,7 +242,10 @@ fun SingleInputScreen(
                     }
                     if (treeStep == 1 + steps.size) {
                         Box(
-                            modifier = Modifier.fillMaxSize().zIndex(2f).padding(bottom = 64.dp),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .zIndex(2f)
+                                .padding(bottom = 64.dp),
                             contentAlignment = Alignment.BottomCenter,
                         ) {
                             Column(
@@ -243,15 +269,25 @@ fun SingleInputScreen(
                     }
                     IconButton(
                         onClick = { isTreeShown = false },
-                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp),
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close_tree))
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = stringResource(R.string.close_tree)
+                        )
                     }
                     IconButton(
                         onClick = { treeStep = 0 },
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(4.dp),
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(4.dp),
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.reset_simulation))
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.reset_simulation)
+                        )
                     }
                     IconButton(
                         onClick = {
@@ -274,7 +310,9 @@ fun SingleInputScreen(
                             }
                         },
                         modifier =
-                            Modifier.align(Alignment.BottomEnd).padding(end = 30.dp, bottom = 4.dp),
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 30.dp, bottom = 4.dp),
                     ) {
                         Icon(ChevronRight, contentDescription = stringResource(R.string.next_step))
                     }
@@ -301,7 +339,10 @@ fun SingleInputScreen(
                                 .align(Alignment.BottomStart)
                                 .padding(start = 30.dp, bottom = 4.dp),
                     ) {
-                        Icon(ChevronLeft, contentDescription = stringResource(R.string.previous_step))
+                        Icon(
+                            ChevronLeft,
+                            contentDescription = stringResource(R.string.previous_step)
+                        )
                     }
                 }
             }
@@ -309,7 +350,11 @@ fun SingleInputScreen(
             val acceptedText = stringResource(R.string.input_accepted)
             val notAcceptedText = stringResource(R.string.input_not_accepted)
             val inconclusiveText = stringResource(R.string.input_inconclusive)
-            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 16.dp)
+            ) {
                 val inputSpanStyle =
                     MaterialTheme.typography.titleLarge
                         .toSpanStyle()
@@ -336,6 +381,7 @@ fun SingleInputScreen(
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
+
                     is ParseResult.Rejected -> {
                         Text(
                             text =
@@ -356,6 +402,7 @@ fun SingleInputScreen(
                             textAlign = TextAlign.Center,
                         )
                     }
+
                     is ParseResult.Inconclusive -> {
                         Text(
                             text =
@@ -375,14 +422,20 @@ fun SingleInputScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+
                     null -> {}
                 }
             }
             if (steps != null) {
                 // Visual options
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp, horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(
+                        12.dp,
+                        Alignment.CenterHorizontally
+                    ),
                 ) {
                     IconButton(
                         onClick = {
@@ -409,7 +462,11 @@ fun SingleInputScreen(
                         )
                     }
                     IconButton(onClick = { isTreeShown = true }) {
-                        Icon(NetworkNode, stringResource(R.string.tree_derivation), tint = MaterialTheme.colorScheme.primary)
+                        Icon(
+                            NetworkNode,
+                            stringResource(R.string.tree_derivation),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
                 if (isTableShown) {
@@ -448,20 +505,22 @@ private fun LinearDerivation(steps: List<DerivationStep>, modifier: Modifier = M
                 .background(
                     MaterialTheme.colorScheme.surfaceContainerHigh,
                     MaterialTheme.shapes.medium,
-                ).padding(8.dp)
+                )
+                .padding(8.dp)
                 .fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
-        Text( // ε handling in derivation
+        Text(
+            // ε handling in derivation
             text =
                 "S => " +
-                    steps.joinToString(" => ") {
-                        if (it.derived == Symbols.EPSILON) {
-                            Symbols.EPSILON
-                        } else {
-                            it.derived.replace(Symbols.EPSILON, "")
-                        }
-                    },
+                        steps.joinToString(" => ") {
+                            if (it.derived == Symbols.EPSILON) {
+                                Symbols.EPSILON
+                            } else {
+                                it.derived.replace(Symbols.EPSILON, "")
+                            }
+                        },
             style = MaterialTheme.typography.bodyMedium,
         )
     }
@@ -478,7 +537,8 @@ private fun StateTable(steps: List<DerivationStep>, modifier: Modifier = Modifie
                 .background(
                     MaterialTheme.colorScheme.surfaceContainerHigh,
                     MaterialTheme.shapes.medium,
-                ).padding(8.dp),
+                )
+                .padding(8.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -497,7 +557,10 @@ private fun StateTable(steps: List<DerivationStep>, modifier: Modifier = Modifie
             IconButton(
                 onClick = { currentStep = steps.size },
             ) {
-                Icon(KeyboardDoubleArrowRight, contentDescription = stringResource(R.string.jump_to_end))
+                Icon(
+                    KeyboardDoubleArrowRight,
+                    contentDescription = stringResource(R.string.jump_to_end)
+                )
             }
         }
         Row(
@@ -522,7 +585,11 @@ private fun StateTable(steps: List<DerivationStep>, modifier: Modifier = Modifie
         LazyColumn {
             items(steps.take(currentStep)) { derivation ->
                 val diffIndex =
-                    findReplacementIndex(derivation.appliedRule, derivation.previous, derivation.derived)
+                    findReplacementIndex(
+                        derivation.appliedRule,
+                        derivation.previous,
+                        derivation.derived
+                    )
 
                 val right =
                     if (derivation.appliedRule.right == Symbols.EPSILON) {
@@ -550,7 +617,9 @@ private fun StateTable(steps: List<DerivationStep>, modifier: Modifier = Modifie
 
                 HorizontalDivider()
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(

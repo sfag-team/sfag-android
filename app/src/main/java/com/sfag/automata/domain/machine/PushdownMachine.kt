@@ -115,10 +115,10 @@ class PushdownMachine(
                 currentConfigs.any { config ->
                     val state = getStateByIndexOrNull(config.stateIndex) ?: return@any false
                     config.inputOffset >= remainingInput.length &&
-                        when (acceptanceCriteria) {
-                            AcceptanceCriteria.BY_FINAL_STATE -> state.final
-                            AcceptanceCriteria.BY_EMPTY_STACK -> config.stack.isEmpty()
-                        }
+                            when (acceptanceCriteria) {
+                                AcceptanceCriteria.BY_FINAL_STATE -> state.final
+                                AcceptanceCriteria.BY_EMPTY_STACK -> config.stack.isEmpty()
+                            }
                 }
             if (anyAccepting) {
                 val acceptedIds =
@@ -128,6 +128,7 @@ class PushdownMachine(
                             when (acceptanceCriteria) {
                                 AcceptanceCriteria.BY_FINAL_STATE ->
                                     states.any { it.name == node.stateName && it.final }
+
                                 AcceptanceCriteria.BY_EMPTY_STACK ->
                                     activeNodeStacks[node.id]?.isEmpty() == true
                             }
@@ -293,10 +294,12 @@ class PushdownMachine(
                 resolvedPop = pop
                 resolvedPush = ""
             }
+
             stackTop.isNotEmpty() -> {
                 resolvedPop = stackTop
                 resolvedPush = push + stackTop
             }
+
             else -> {
                 resolvedPop = ""
                 resolvedPush = push
@@ -305,10 +308,10 @@ class PushdownMachine(
         val alreadyExists =
             pdaTransitions.any {
                 it.name == name &&
-                    it.fromState == fromState.index &&
-                    it.toState == toState.index &&
-                    it.pop == resolvedPop &&
-                    it.push == resolvedPush
+                        it.fromState == fromState.index &&
+                        it.toState == toState.index &&
+                        it.pop == resolvedPop &&
+                        it.push == resolvedPush
             }
         if (!alreadyExists) {
             pdaTransitions.add(
@@ -339,7 +342,11 @@ class PushdownMachine(
         if (acceptanceCriteria == AcceptanceCriteria.BY_FINAL_STATE) {
             canReachFinalState(input, true)
         } else {
-            canReachAcceptingState(input, findStartStateIndex(true), listOf('Z')) { _, s -> s.isEmpty() }
+            canReachAcceptingState(
+                input,
+                findStartStateIndex(true),
+                listOf('Z')
+            ) { _, s -> s.isEmpty() }
         }
 
     override fun canReachFinalState(
@@ -400,7 +407,7 @@ class PushdownMachine(
                 val possibleTransitions =
                     pdaTransitions.filter {
                         it.fromState == path.stateIndex &&
-                            (it.name.isEmpty() || remaining.startsWith(it.name))
+                                (it.name.isEmpty() || remaining.startsWith(it.name))
                     }
 
                 for (transition in possibleTransitions) {
@@ -435,8 +442,8 @@ class PushdownMachine(
             }
         return pdaTransitions.filter { transition ->
             transition.fromState == fromState.index &&
-                (transition.name.isEmpty() || remaining.startsWith(transition.name)) &&
-                (transition.pop.isEmpty() || stackTopMatches(stack, transition.pop))
+                    (transition.name.isEmpty() || remaining.startsWith(transition.name)) &&
+                    (transition.pop.isEmpty() || stackTopMatches(stack, transition.pop))
         }
     }
 

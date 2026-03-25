@@ -108,7 +108,10 @@ fun AboutScreen(navBack: () -> Unit) {
         Spacer(Modifier.height(24.dp))
 
         SectionCard {
-            Text(stringResource(R.string.authors_label), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.authors_label),
+                style = MaterialTheme.typography.titleMedium
+            )
             Spacer(Modifier.height(8.dp))
             AuthorList(
                 listOf(
@@ -126,7 +129,10 @@ fun AboutScreen(navBack: () -> Unit) {
         Spacer(Modifier.height(20.dp))
 
         SectionCard {
-            Text(stringResource(R.string.supervisor_label), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.supervisor_label),
+                style = MaterialTheme.typography.titleMedium
+            )
             Text("doc. Mgr. Daniela Chuda, PhD.", style = MaterialTheme.typography.bodyMedium)
         }
 
@@ -193,7 +199,7 @@ private fun SegmentedButton(text: String, active: Boolean, onClick: () -> Unit) 
     FilledTonalButton(
         onClick = onClick,
         colors = if (active) ButtonDefaults.filledTonalButtonColors()
-                 else ButtonDefaults.outlinedButtonColors()
+        else ButtonDefaults.outlinedButtonColors()
     ) {
         Text(text)
     }
@@ -295,7 +301,7 @@ private fun LanguageButton(
         Text(
             text = text,
             color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+            else MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.labelLarge
         )
     }

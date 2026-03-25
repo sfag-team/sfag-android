@@ -18,9 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.sfag.R
+import com.sfag.automata.ui.machine.MachineEditMode
 import com.sfag.automata.ui.machine.cellPadding
 import com.sfag.automata.ui.machine.cellSize
-import com.sfag.automata.ui.machine.MachineEditMode
 
 @Composable
 internal fun Toolbar(
@@ -36,8 +36,20 @@ internal fun Toolbar(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = CenterVertically,
     ) {
-        ToolIcon(R.drawable.select, R.string.select_tool, MachineEditMode.SELECT, activeTool, onSelectTool)
-        ToolIcon(R.drawable.move, R.string.move_tool, MachineEditMode.MOVE, activeTool, onSelectTool)
+        ToolIcon(
+            R.drawable.select,
+            R.string.select_tool,
+            MachineEditMode.SELECT,
+            activeTool,
+            onSelectTool
+        )
+        ToolIcon(
+            R.drawable.move,
+            R.string.move_tool,
+            MachineEditMode.MOVE,
+            activeTool,
+            onSelectTool
+        )
         ToolIcon(
             R.drawable.add_states,
             R.string.add_state,
@@ -52,7 +64,13 @@ internal fun Toolbar(
             activeTool,
             onSelectTool,
         )
-        ToolIcon(R.drawable.delete, R.string.remove_item, MachineEditMode.REMOVE, activeTool, onSelectTool)
+        ToolIcon(
+            R.drawable.delete,
+            R.string.remove_item,
+            MachineEditMode.REMOVE,
+            activeTool,
+            onSelectTool
+        )
     }
 }
 
@@ -74,7 +92,8 @@ private fun ToolIcon(
                 .clip(MaterialTheme.shapes.small)
                 .background(
                     if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                ).clickable { onSelectTool(tool) }
+                )
+                .clickable { onSelectTool(tool) }
                 .padding(cellPadding),
         tint =
             if (isSelected) {

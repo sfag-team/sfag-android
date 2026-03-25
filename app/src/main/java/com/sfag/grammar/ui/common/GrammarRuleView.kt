@@ -30,7 +30,9 @@ fun GrammarRuleView(
     onEdit: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().height(60.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -55,7 +57,10 @@ fun GrammarRuleView(
                 Icon(Icons.Default.Create, contentDescription = stringResource(R.string.edit_rule))
             }
             IconButton(onClick = { grammarViewModel.removeRule(grammarRule) }) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.remove_rule))
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.remove_rule)
+                )
             }
         }
     }

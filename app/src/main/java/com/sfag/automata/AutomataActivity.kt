@@ -1,6 +1,7 @@
 package com.sfag.automata
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -48,8 +49,12 @@ class AutomataActivity : AppCompatActivity() {
                     viewModel.pendingExampleUri = uri
                     viewModel.pendingExampleName = exampleName
                 } else {
-                    val jff = assets.open(uri).use { Jff.parse(it) }
-                    viewModel.setCurrentMachine(jff.toMachine(exampleName), jff.positions)
+                    try {
+                        val jff = assets.open(uri).use { Jff.parse(it) }
+                        viewModel.setCurrentMachine(jff.toMachine(exampleName), jff.positions)
+                    } catch (e: Exception) {
+                        Log.e("AutomataActivity", "Failed to load example: $uri", e)
+                    }
                 }
             }
                 ?: intent.getStringExtra(EXTRA_NEW_MACHINE_TYPE)?.let { machineType ->
@@ -83,7 +88,9 @@ class AutomataActivity : AppCompatActivity() {
                         snackbarHost = { DefaultSnackbarHost(snackbarHostState) }
                     ) { innerPadding ->
                         AutomataScreen(
-                            modifier = Modifier.fillMaxSize().padding(innerPadding),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding),
                             snackbarHostState = snackbarHostState,
                             navBack = { finish() }
                         )

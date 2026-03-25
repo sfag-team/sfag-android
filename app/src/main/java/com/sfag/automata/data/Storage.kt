@@ -1,6 +1,7 @@
 package com.sfag.automata.data
 
 import android.content.Context
+import android.util.Log
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.main.config.INITIAL_ZOOM
 import com.sfag.main.data.Point2D
@@ -22,27 +23,28 @@ internal data class StoredMachine(
 
 /** File-based storage for automata using .jff files */
 internal class Storage
-    @Inject
-    constructor(
-        @param:ApplicationContext private val context: Context,
-    ) {
-        private val storageDir: File
-            get() {
-                val dir = File(context.filesDir, "automata")
-                if (!dir.exists()) {
-                    dir.mkdirs()
-                }
-                return dir
+@Inject
+constructor(
+    @param:ApplicationContext private val context: Context,
+) {
+    private val storageDir: File
+        get() {
+            val dir = File(context.filesDir, "automata")
+            if (!dir.exists()) {
+                dir.mkdirs()
             }
+            return dir
+        }
 
-        fun saveMachine(
-            machine: Machine,
-            positions: Map<Int, Point2D>,
-            offsetX: Float,
-            offsetY: Float,
-            scale: Float,
-            dirty: Boolean,
-        ) {
+    fun saveMachine(
+        machine: Machine,
+        positions: Map<Int, Point2D>,
+        offsetX: Float,
+        offsetY: Float,
+        scale: Float,
+        dirty: Boolean,
+    ): Boolean =
+        try {
             File(storageDir, "__current.jff").writeText(machine.exportToJff(positions))
             val metadata =
                 buildString {
@@ -52,12 +54,17 @@ internal class Storage
                     appendLine("$DIRTY_TAG$dirty")
                 }
             File(storageDir, "__current.meta").writeText(metadata)
+            true
+        } catch (e: Exception) {
+            Log.e("Storage", "Failed to save machine", e)
+            false
         }
 
-        fun loadMachine(): StoredMachine? {
-            val jffFile = File(storageDir, "__current.jff")
-            if (!jffFile.exists()) return null
+    fun loadMachine(): StoredMachine? {
+        val jffFile = File(storageDir, "__current.jff")
+        if (!jffFile.exists()) return null
 
+        return try {
             val jff = jffFile.inputStream().use { Jff.parse(it) }
             val metaFile = File(storageDir, "__current.meta")
             val lines = if (metaFile.exists()) metaFile.readLines() else emptyList()
@@ -75,10 +82,25 @@ internal class Storage
             val savedInputs =
                 lines
                     .drop(1)
-                    .filter { it.isNotEmpty() && !it.startsWith(CANVAS_TAG) && !it.startsWith(DIRTY_TAG) }
+                    .filter {
+                        it.isNotEmpty() && !it.startsWith(CANVAS_TAG) && !it.startsWith(
+                            DIRTY_TAG
+                        )
+                    }
                     .map { StringBuilder(it) }
                     .toMutableList()
 
-            return StoredMachine(jff.toMachine(name, savedInputs), jff.positions, offsetX, offsetY, scale, dirty)
+            StoredMachine(
+                jff.toMachine(name, savedInputs),
+                jff.positions,
+                offsetX,
+                offsetY,
+                scale,
+                dirty
+            )
+        } catch (e: Exception) {
+            Log.e("Storage", "Failed to load machine", e)
+            null
         }
     }
+}

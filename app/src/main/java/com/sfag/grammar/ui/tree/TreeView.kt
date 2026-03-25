@@ -163,7 +163,7 @@ fun TreeView(
         remember(allNodes, currentStep) {
             allNodes.any { node ->
                 (node.children.isNotEmpty() && node.children.first().step == currentStep) ||
-                    node.step == currentStep
+                        node.step == currentStep
             }
         }
     val infiniteTransition = rememberInfiniteTransition(label = "dash-animation")
@@ -184,7 +184,8 @@ fun TreeView(
                 .fillMaxSize()
                 .onSizeChanged { layoutSize ->
                     canvasSize.value = Size(layoutSize.width.toFloat(), layoutSize.height.toFloat())
-                }.pointerInput(Unit) {
+                }
+                .pointerInput(Unit) {
                     coroutineScope {
                         detectTransformGestures { _, pan, zoom, _ ->
                             scale.value =
@@ -213,11 +214,15 @@ fun TreeView(
                             }
                         }
                     }
-                }.clipToBounds()
+                }
+                .clipToBounds()
     ) {
         val pathEffect =
             if (hasHighlight) {
-                PathEffect.dashPathEffect(floatArrayOf(DASH_INTERVAL, DASH_INTERVAL), phaseState.value)
+                PathEffect.dashPathEffect(
+                    floatArrayOf(DASH_INTERVAL, DASH_INTERVAL),
+                    phaseState.value
+                )
             } else {
                 null
             }
@@ -289,11 +294,14 @@ private fun DrawScope.drawTree(
             if (lastParentPos != null) {
                 drawRoundRect(
                     color = groupingRectColor,
-                    topLeft = Offset(nodePos.x - GROUPING_RECT_PADDING - nodeRadius, nodePos.y - GROUPING_RECT_PADDING - nodeRadius),
+                    topLeft = Offset(
+                        nodePos.x - GROUPING_RECT_PADDING - nodeRadius,
+                        nodePos.y - GROUPING_RECT_PADDING - nodeRadius
+                    ),
                     size =
                         Size(
                             lastParentPos.x + nodeRadius + GROUPING_RECT_PADDING -
-                                (nodePos.x - GROUPING_RECT_PADDING - nodeRadius),
+                                    (nodePos.x - GROUPING_RECT_PADDING - nodeRadius),
                             nodePos.y + nodeRadius + GROUPING_RECT_PADDING - (nodePos.y - GROUPING_RECT_PADDING - nodeRadius)
                         ),
                     cornerRadius = CornerRadius(nodeRadius, nodeRadius)

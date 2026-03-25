@@ -69,7 +69,11 @@ class MainActivity : AppCompatActivity() {
                 PortraitPillarbox {
                     val navController = rememberNavController()
                     Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest) { innerPadding ->
-                        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)
+                        ) {
                             NavHost(
                                 navController = navController,
                                 startDestination = Destinations.HOME.route,
@@ -199,7 +203,9 @@ private fun NewMachineDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
                     horizontalArrangement =
                         Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
                     verticalAlignment = Alignment.CenterVertically,
@@ -241,7 +247,7 @@ private fun NewMachineDialog(
                         onImport()
                     }
                     DefaultButton(
-                        text = stringResource(R.string.create_new),
+                        text = stringResource(R.string.create_button),
                         modifier = Modifier.weight(1f),
                         height = 40.dp,
                         enabled = machineType != null,

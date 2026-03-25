@@ -75,9 +75,11 @@ fun Machine.TransitionAnimation(
 
         Canvas(
             modifier =
-                Modifier.fillMaxSize().offset {
-                    IntOffset(offsetXCanvas.roundToInt(), offsetYCanvas.roundToInt())
-                },
+                Modifier
+                    .fillMaxSize()
+                    .offset {
+                        IntOffset(offsetXCanvas.roundToInt(), offsetYCanvas.roundToInt())
+                    },
         ) {
             for (entry in animEntries) {
                 val position = getCurrentPositionByPath(entry.path, progress.value)

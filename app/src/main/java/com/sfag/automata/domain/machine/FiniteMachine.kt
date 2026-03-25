@@ -55,7 +55,12 @@ class FiniteMachine(
         if (epsilonTransitions.isNotEmpty()) {
             val newConfigs =
                 epsilonTransitions
-                    .map { (config, transition) -> FaConfig(transition.toState, config.inputOffset) }
+                    .map { (config, transition) ->
+                        FaConfig(
+                            transition.toState,
+                            config.inputOffset
+                        )
+                    }
                     .filter { it !in currentConfigs }
                     .toSet()
             if (newConfigs.isNotEmpty()) {
@@ -86,7 +91,7 @@ class FiniteMachine(
             val anyAccepting =
                 currentConfigs.any { config ->
                     getStateByIndex(config.stateIndex).final &&
-                        config.inputOffset >= remainingInput.length
+                            config.inputOffset >= remainingInput.length
                 }
             if (anyAccepting) {
                 val acceptedIds =
@@ -128,7 +133,8 @@ class FiniteMachine(
         consumeInput(minOffset)
 
         // Adjust offsets relative to new input position
-        val adjustedConfigs = newConfigs.map { FaConfig(it.stateIndex, it.inputOffset - minOffset) }.toSet()
+        val adjustedConfigs =
+            newConfigs.map { FaConfig(it.stateIndex, it.inputOffset - minOffset) }.toSet()
 
         return Simulation.Step(
             transitionRefs = transitionRefs,
@@ -216,7 +222,7 @@ class FiniteMachine(
                     if (path.inputIndex < input.length) {
                         transitions.filter {
                             it.fromState == path.stateIndex &&
-                                (it.name.isEmpty() || remaining.startsWith(it.name))
+                                    (it.name.isEmpty() || remaining.startsWith(it.name))
                         }
                     } else {
                         transitions.filter { it.fromState == path.stateIndex && it.name.isEmpty() }
@@ -244,7 +250,7 @@ class FiniteMachine(
             }
         return transitions.filter {
             it.fromState == fromState.index &&
-                (it.name.isEmpty() || remaining.startsWith(it.name))
+                    (it.name.isEmpty() || remaining.startsWith(it.name))
         }
     }
 }

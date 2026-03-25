@@ -2,6 +2,7 @@ package com.sfag.grammar
 
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -26,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -46,6 +48,7 @@ import com.sfag.main.ui.component.ImportFile
 import com.sfag.main.ui.component.PortraitPillarbox
 import com.sfag.main.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 private enum class Mode {
     GRAMMAR_EDITOR,
@@ -71,34 +74,54 @@ class GrammarActivity : AppCompatActivity() {
         setContent {
             AppTheme {
                 PortraitPillarbox {
-                    val inputsViewModel: MultiInputViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+                    val inputsViewModel: MultiInputViewModel =
+                        androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
                     val currentMode = remember { mutableStateOf(Mode.GRAMMAR_EDITOR) }
                     val selectedInput = remember { mutableStateOf<String?>(null) }
                     LaunchedEffect(assetPath) {
                         if (assetPath != null) {
-                            assets.open(assetPath).use { viewModel.loadFromXmlStream(it) }
+                            try {
+                                assets.open(assetPath).use { viewModel.loadFromJffStream(it) }
+                            } catch (e: Exception) {
+                                Log.e("GrammarActivity", "Failed to load example: $assetPath", e)
+                            }
                         }
                     }
                     val snackbarHostState = remember { SnackbarHostState() }
+                    val scope = rememberCoroutineScope()
+                    val importErrorMsg = stringResource(R.string.file_import_error)
                     val importLauncher =
                         rememberLauncherForActivityResult(
                             contract = ActivityResultContracts.OpenDocument(),
                         ) { uri: Uri? ->
-                            uri?.let { viewModel.loadFromXmlUri(this@GrammarActivity, it) }
+                            uri?.let {
+                                try {
+                                    viewModel.loadFromJffUri(this@GrammarActivity, it)
+                                } catch (e: Exception) {
+                                    Log.e("GrammarActivity", "Failed to import file", e)
+                                    scope.launch { snackbarHostState.showSnackbar(importErrorMsg) }
+                                }
+                            }
                         }
+                    val exportErrorMsg = stringResource(R.string.file_export_error)
                     val exportLauncher =
                         rememberLauncherForActivityResult(
                             contract = ActivityResultContracts.CreateDocument(JFF_SAVE_MIME_TYPE),
                         ) { uri: Uri? ->
-                            uri?.let {
-                                contentResolver.openOutputStream(it)?.use { stream ->
-                                    stream.write(
-                                        viewModel
-                                            .getIndividualRules()
-                                            .exportToJff()
-                                            .toByteArray(Charsets.UTF_8)
-                                    )
+                            try {
+                                uri?.let {
+                                    contentResolver.openOutputStream(it)?.use { stream ->
+                                        stream.write(
+                                            viewModel
+                                                .getIndividualRules()
+                                                .exportToJff()
+                                                .toByteArray(Charsets.UTF_8)
+                                        )
+                                    }
                                 }
+                            } catch (e: Exception) {
+                                Log.e("GrammarActivity", "Failed to export file", e)
+                                scope.launch { snackbarHostState.showSnackbar(exportErrorMsg) }
                             }
                         }
                     BackHandler {
@@ -106,7 +129,7 @@ class GrammarActivity : AppCompatActivity() {
                             Mode.GRAMMAR_EDITOR -> finish()
                             Mode.SINGLE_INPUT,
                             Mode.MULTI_INPUT,
-                            -> currentMode.value = Mode.GRAMMAR_EDITOR
+                                -> currentMode.value = Mode.GRAMMAR_EDITOR
                         }
                     }
                     Scaffold(
@@ -128,12 +151,14 @@ class GrammarActivity : AppCompatActivity() {
                                     snackbarHostState,
                                     modifier = Modifier.padding(padding)
                                 )
+
                             Mode.SINGLE_INPUT ->
                                 SingleInputScreen(
                                     viewModel,
                                     initialInput = selectedInput.value,
                                     modifier = Modifier.padding(padding)
                                 )
+
                             Mode.MULTI_INPUT ->
                                 MultiInputScreen(
                                     viewModel,
@@ -186,11 +211,24 @@ private fun TopNavigationBar(
                 val icon: ImageVector,
                 val label: String,
             )
+
             val navActions =
                 listOf(
-                    NavAction(Mode.GRAMMAR_EDITOR, Icons.Default.Build, stringResource(R.string.grammar_editor)),
-                    NavAction(Mode.SINGLE_INPUT, Icons.Default.PlayArrow, stringResource(R.string.single_input)),
-                    NavAction(Mode.MULTI_INPUT, Icons.AutoMirrored.Filled.List, stringResource(R.string.multi_input)),
+                    NavAction(
+                        Mode.GRAMMAR_EDITOR,
+                        Icons.Default.Build,
+                        stringResource(R.string.grammar_editor)
+                    ),
+                    NavAction(
+                        Mode.SINGLE_INPUT,
+                        Icons.Default.PlayArrow,
+                        stringResource(R.string.single_input)
+                    ),
+                    NavAction(
+                        Mode.MULTI_INPUT,
+                        Icons.AutoMirrored.Filled.List,
+                        stringResource(R.string.multi_input)
+                    ),
                 )
             navActions.forEach { navItem ->
                 IconButton(

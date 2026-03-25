@@ -77,7 +77,9 @@ fun <T> DropdownSelector(
                     unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                 ),
             modifier =
-                Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+                Modifier
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             items.forEach { item ->
@@ -103,7 +105,9 @@ fun RowScope.ItemSpecificationIcon(
     onClick: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxHeight().weight(3.5f),
+        modifier = Modifier
+            .fillMaxHeight()
+            .weight(3.5f),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
     ) {
@@ -119,13 +123,16 @@ fun RowScope.ItemSpecificationIcon(
                         } else {
                             MaterialTheme.colorScheme.surfaceContainerHigh
                         },
-                    ).clickable { onClick() },
+                    )
+                    .clickable { onClick() },
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 painter = painterResource(id = icon),
                 contentDescription = text,
-                modifier = Modifier.fillMaxSize().padding(16.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
                 tint =
                     if (isActive) {
                         MaterialTheme.colorScheme.onSecondaryContainer

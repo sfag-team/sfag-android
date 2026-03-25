@@ -27,8 +27,6 @@ internal data class Jff(
     val positions: Map<Int, Point2D>,
 ) {
     companion object {
-        private const val TAG = "Jff"
-
         /** Parses a JFF XML stream and returns states, transitions, and state positions. */
         fun parse(inputStream: InputStream): Jff {
             val states = mutableListOf<State>()
@@ -42,7 +40,7 @@ internal data class Jff(
 
             val automaton = root.getElementsByTagName("automaton").item(0)
             if (automaton == null) {
-                Log.w(TAG, "No automaton element found in JFF file")
+                Log.e("JffParser", "No automaton element found in JFF file")
                 return Jff(jffTag, states, transitions, positions)
             }
 
@@ -57,6 +55,7 @@ internal data class Jff(
                             states.add(state)
                             positions[state.index] = position
                         }
+
                     "transition" ->
                         parseTransition(element, jffTag)?.let { transitions.add(it) }
                 }
@@ -68,7 +67,7 @@ internal data class Jff(
         private fun parseState(element: Element): Pair<State, Point2D>? {
             val id = element.getAttribute("id").toIntOrNull()
             if (id == null) {
-                Log.w(TAG, "Invalid state ID: ${element.getAttribute("id")}")
+                Log.w("JffParser", "Invalid state ID: ${element.getAttribute("id")}")
                 return null
             }
 
@@ -97,7 +96,7 @@ internal data class Jff(
             val toState = element.getChildText("to")?.toIntOrNull()
 
             if (fromState == null || toState == null) {
-                Log.w(TAG, "Invalid transition: from=$fromState, to=$toState")
+                Log.w("JffParser", "Invalid transition: from=$fromState, to=$toState")
                 return null
             }
 
@@ -116,6 +115,7 @@ internal data class Jff(
                         push = push,
                     )
                 }
+
                 "turing" -> {
                     val readText = element.getChildText("read")?.trim()
                     val turingRead =
@@ -132,8 +132,9 @@ internal data class Jff(
                         direction = TapeDirection.fromSymbol(directionSymbol),
                     )
                 }
+
                 else -> {
-                    Log.w(TAG, "Unknown JFF type: $jffTag")
+                    Log.e("JffParser", "Unknown JFF type: $jffTag")
                     null
                 }
             }
@@ -153,6 +154,7 @@ internal fun Jff.toMachine(
                 transitions = transitions.filterIsInstance<FiniteTransition>().toMutableList(),
                 savedInputs = savedInputs,
             )
+
         "pda" ->
             PushdownMachine(
                 name = name,
@@ -161,6 +163,7 @@ internal fun Jff.toMachine(
                     transitions.filterIsInstance<PushdownTransition>().toMutableList(),
                 savedInputs = savedInputs,
             )
+
         "turing" ->
             TuringMachine(
                 name = name,
@@ -169,5 +172,6 @@ internal fun Jff.toMachine(
                     transitions.filterIsInstance<TuringTransition>().toMutableList(),
                 savedInputs = savedInputs,
             )
+
         else -> throw IllegalArgumentException("Unknown JFF type: $jffTag")
     }

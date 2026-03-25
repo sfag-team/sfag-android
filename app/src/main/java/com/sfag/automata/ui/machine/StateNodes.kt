@@ -82,13 +82,15 @@ internal fun Machine.StateNodes(
                             fillColor = rejectedFill
                             textArgb = rejectedText.toArgb()
                         }
+
                     SimulationOutcome.REJECTED -> {
                         fillColor = rejectedFill
                         textArgb = rejectedText.toArgb()
                     }
+
                     SimulationOutcome.ACTIVE,
                     SimulationOutcome.DEAD,
-                    -> {
+                        -> {
                         fillColor = currentStateFillColor
                         textArgb = currentStateTextColor.toArgb()
                     }

@@ -47,7 +47,9 @@ internal fun ListRow(
             color = MaterialTheme.colorScheme.onSecondaryContainer,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).padding(start = 16.dp),
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp),
         )
         if (onRemove != null) {
             IconButton(onClick = onRemove) {

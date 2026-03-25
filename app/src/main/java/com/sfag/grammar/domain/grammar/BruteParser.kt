@@ -94,7 +94,13 @@ private fun reconstructDerivation(
     while (currentState != "S") {
         if (!visited.add(currentState)) break
         val step = stateHistory[currentState] ?: break
-        derivationSteps.add(DerivationStep(step.previousState, derived = currentState, step.appliedRule))
+        derivationSteps.add(
+            DerivationStep(
+                step.previousState,
+                derived = currentState,
+                step.appliedRule
+            )
+        )
         currentState = step.previousState
     }
     return derivationSteps.reversed()

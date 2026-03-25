@@ -54,7 +54,8 @@ internal fun Machine.StateDialog(
         enabled = stateName.isNotEmpty(),
         onDismiss = onDismiss,
         onConfirm = {
-            val isDuplicate = states.any { it.name == stateName && it.index != selectedState?.index }
+            val isDuplicate =
+                states.any { it.name == stateName && it.index != selectedState?.index }
             if (isDuplicate) {
                 tooltipMsg = R.string.duplicate_state_name
                 scope.launch { tooltipState.show() }
@@ -87,7 +88,9 @@ internal fun Machine.StateDialog(
             state = tooltipState,
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().height(120.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
                 verticalAlignment = CenterVertically,
             ) {

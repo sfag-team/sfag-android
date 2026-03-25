@@ -42,7 +42,9 @@ fun DefaultButton(
 
     Button(
         onClick = { if (enabled) onClick() },
-        modifier = modifier.widthIn(min = 96.dp).heightIn(min = height),
+        modifier = modifier
+            .widthIn(min = 96.dp)
+            .heightIn(min = height),
         shape = MaterialTheme.shapes.medium,
         colors = if (enabled) enabledColors else disabledColors,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -78,7 +80,8 @@ fun DefaultIconButton(
                     } else {
                         MaterialTheme.colorScheme.secondaryContainer
                     },
-                ).clickable(onClick = onClick),
+                )
+                .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

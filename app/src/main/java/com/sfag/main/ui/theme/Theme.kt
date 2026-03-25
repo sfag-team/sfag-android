@@ -11,7 +11,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-@Immutable data class ExtendedColorScheme(
+@Immutable
+data class ExtendedColorScheme(
     val accepted: ColorFamily,
     val rejected: ColorFamily,
 )

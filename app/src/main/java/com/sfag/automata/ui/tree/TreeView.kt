@@ -172,7 +172,8 @@ fun Machine.TreeView(
                 .onSizeChanged {
                     canvasWidthPx = it.width.toFloat()
                     canvasHeightPx = it.height.toFloat()
-                }.clip(MaterialTheme.shapes.medium)
+                }
+                .clip(MaterialTheme.shapes.medium)
                 .background(colors.surfaceContainer)
                 .pointerInput(onSelectNode, positions) {
                     if (onSelectNode == null) return@pointerInput
@@ -192,7 +193,8 @@ fun Machine.TreeView(
                             }
                         }
                     }
-                }.pointerInput(Unit) {
+                }
+                .pointerInput(Unit) {
                     detectTransformGestures { centroid, pan, zoom, _ ->
                         val oldScale = scale
                         scale = (scale * zoom).coerceIn(MIN_ZOOM, MAX_ZOOM)
@@ -225,10 +227,13 @@ fun Machine.TreeView(
             when (node.status) {
                 SimulationOutcome.ACTIVE if node.children.isEmpty() ->
                     colors.primaryContainer
+
                 SimulationOutcome.ACCEPTED ->
                     extendedColors.accepted.colorContainer
+
                 SimulationOutcome.REJECTED ->
                     extendedColors.rejected.colorContainer
+
                 else -> colors.surfaceContainerLowest
             }
 
@@ -236,14 +241,18 @@ fun Machine.TreeView(
             when (node.status) {
                 SimulationOutcome.ACTIVE if node.children.isEmpty() ->
                     colors.onPrimaryContainer.toArgb()
+
                 SimulationOutcome.ACCEPTED ->
                     extendedColors.accepted.onColorContainer.toArgb()
+
                 SimulationOutcome.REJECTED ->
                     extendedColors.rejected.onColorContainer.toArgb()
+
                 else -> colors.onSurface.toArgb()
             }
 
-        fun nodeAlpha(node: TreeNode): Float = if (node.status == SimulationOutcome.DEAD) deadAlpha else 1f
+        fun nodeAlpha(node: TreeNode): Float =
+            if (node.status == SimulationOutcome.DEAD) deadAlpha else 1f
 
         translate(left = offsetX, top = offsetY) {
             scale(scale = scale, pivot = Offset.Zero) {

@@ -12,7 +12,9 @@ fun cykAccepts(
     originalRules: List<GrammarRule>,
 ): Boolean {
     if (input.isEmpty()) {
-        val individual = originalRules.flatMap { rule -> rule.right.split('|').map { GrammarRule(rule.left, it) } }
+        val individual = originalRules.flatMap { rule ->
+            rule.right.split('|').map { GrammarRule(rule.left, it) }
+        }
         return canDeriveEmpty("S", individual, mutableSetOf())
     }
 
@@ -60,12 +62,12 @@ private fun canDeriveEmpty(
     if (!visited.add(symbol)) return false
     return rules.any { rule ->
         rule.left == symbol &&
-            (
-                rule.right == Symbols.EPSILON ||
-                    rule.right.all { c ->
-                        c.isUpperCase() && canDeriveEmpty(c.toString(), rules, visited)
-                    }
-            )
+                (
+                        rule.right == Symbols.EPSILON ||
+                                rule.right.all { c ->
+                                    c.isUpperCase() && canDeriveEmpty(c.toString(), rules, visited)
+                                }
+                        )
     }
 }
 

@@ -1,5 +1,6 @@
 package com.sfag.grammar.data
 
+import android.util.Log
 import com.sfag.grammar.domain.grammar.GrammarRule
 import com.sfag.main.config.Symbols
 import com.sfag.main.data.JffUtils
@@ -15,7 +16,10 @@ object Jff {
         val rules = mutableListOf<GrammarRule>()
         for (i in 0 until nodeList.length) {
             val element = nodeList.item(i) as? Element ?: continue
-            val left = element.getChildText("left") ?: continue
+            val left = element.getChildText("left") ?: run {
+                Log.w("JffParser", "Production #$i missing left side, skipping")
+                continue
+            }
             val rightNode = element.getElementsByTagName("right").item(0)
             val right =
                 if (rightNode == null || rightNode.textContent.isBlank()) {

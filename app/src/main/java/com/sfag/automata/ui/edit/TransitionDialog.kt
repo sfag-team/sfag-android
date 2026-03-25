@@ -76,8 +76,8 @@ internal fun Machine.TransitionDialog(
                         pdaTransitions
                             .firstOrNull {
                                 it.fromState == from.index &&
-                                    it.toState == to.index &&
-                                    it.name == existingTransitionName
+                                        it.toState == to.index &&
+                                        it.name == existingTransitionName
                             }?.pop ?: "",
                     )
                 }
@@ -87,8 +87,8 @@ internal fun Machine.TransitionDialog(
                         pdaTransitions
                             .firstOrNull {
                                 it.fromState == from.index &&
-                                    it.toState == to.index &&
-                                    it.name == existingTransitionName
+                                        it.toState == to.index &&
+                                        it.name == existingTransitionName
                             }?.push ?: "",
                     )
                 }
@@ -118,7 +118,11 @@ internal fun Machine.TransitionDialog(
         onConfirm = {
             if (this@TransitionDialog is FiniteMachine) {
                 if (existingTransitionName == null) {
-                    addNewTransition(name = transitionName, fromState = fromState, toState = toState)
+                    addNewTransition(
+                        name = transitionName,
+                        fromState = fromState,
+                        toState = toState
+                    )
                 } else {
                     transitions
                         .firstOrNull { t -> t.fromState == from.index && t.toState == to.index }
@@ -138,8 +142,8 @@ internal fun Machine.TransitionDialog(
                     pdaTransitions
                         .firstOrNull { t ->
                             t.fromState == from.index &&
-                                t.toState == to.index &&
-                                t.name == existingTransitionName
+                                    t.toState == to.index &&
+                                    t.name == existingTransitionName
                         }?.let {
                             it.name = transitionName
                             if (pdaState.stackOperation.value == StackOperation.POP) {
@@ -216,7 +220,11 @@ internal fun Machine.TransitionDialog(
             }
 
             // Fixed height box to prevent dialog bouncing when switching modes
-            Box(modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
                 if (pdaState.stackOperation.value == StackOperation.POP) {
                     Row(
                         Modifier.fillMaxWidth(),

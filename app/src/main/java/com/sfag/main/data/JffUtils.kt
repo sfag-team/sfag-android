@@ -41,10 +41,11 @@ object JffUtils {
         return docBuilder.parse(inputStream)
     }
 
-    /** Gets the JFF type from document (fa, pda, turing, grammar). */
+    /** Gets the JFF type from document (fa, pda, turing, grammar). Throws on missing type. */
     fun getJffType(doc: Document): String {
         val typeElement = doc.documentElement.getElementsByTagName("type").item(0)
-        return typeElement?.textContent?.trim()?.lowercase() ?: "fa"
+            ?: throw IllegalArgumentException("Invalid JFF file: missing <type> element")
+        return typeElement.textContent.trim().lowercase()
     }
 
     /**
@@ -59,13 +60,15 @@ object JffUtils {
             Symbols.LAMBDA,
             "eps",
             "epsilon",
-            -> ""
+                -> ""
+
             else -> trimmed
         }
     }
 
     /** Gets text content of a child element. */
-    fun Element.getChildText(tagName: String): String? = getElementsByTagName(tagName).item(0)?.textContent
+    fun Element.getChildText(tagName: String): String? =
+        getElementsByTagName(tagName).item(0)?.textContent
 
     /** Checks if a child element exists. */
     fun Element.hasChild(tagName: String): Boolean = getElementsByTagName(tagName).length > 0
