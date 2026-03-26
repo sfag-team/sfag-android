@@ -1,8 +1,6 @@
 package com.sfag.automata.domain.machine
 
 import com.sfag.automata.domain.simulation.Simulation
-import com.sfag.automata.domain.simulation.TransitionRef
-import com.sfag.automata.domain.tree.Branch
 import com.sfag.automata.domain.tree.Tree
 
 sealed class Machine(
@@ -89,39 +87,6 @@ sealed class Machine(
             if (i !in usedIndices) return i
         }
         return usedIndices.last() + 1
-    }
-
-    /** Expands the derivation tree with exactly the transitions being processed in this step. */
-    protected fun expandSimulationTree(
-        transitionRefs: List<TransitionRef>,
-        keepActive: Boolean = false,
-    ) {
-        val active = tree.getActiveNodes()
-        if (active.isEmpty()) return
-
-        val branches = mutableMapOf<Int, List<Branch>>()
-        for (node in active) {
-            val state = states.firstOrNull { it.name == node.stateName }
-            if (state == null) {
-                branches[node.id] = emptyList()
-                continue
-            }
-            val toStateIndices =
-                transitionRefs
-                    .filter { it.fromStateIndex == state.index }
-                    .map { it.toStateIndex }
-                    .toMutableSet()
-            if (keepActive) toStateIndices.add(state.index)
-            if (toStateIndices.isEmpty()) {
-                branches[node.id] = emptyList()
-                continue
-            }
-            branches[node.id] =
-                toStateIndices
-                    .map { index -> Branch(getStateByIndex(index).name) }
-                    .sortedBy { it.stateName }
-        }
-        tree.expandActive(branches)
     }
 
     protected fun consumeInput(length: Int) {

@@ -62,6 +62,7 @@ internal constructor(
         positions: Map<Int, Point2D> = emptyMap(),
     ) {
         currentMachine = machine
+        machine.setInitialStateAsCurrent()
         loadPositions(positions)
         scaleCanvas = INITIAL_ZOOM
         machineAutoCenter = true
@@ -83,6 +84,7 @@ internal constructor(
     fun loadMachine(): Boolean {
         val stored = storage.loadMachine() ?: return false
         currentMachine = stored.machine
+        stored.machine.setInitialStateAsCurrent()
         loadPositions(stored.positions)
         offsetXCanvas = stored.offsetX
         offsetYCanvas = stored.offsetY

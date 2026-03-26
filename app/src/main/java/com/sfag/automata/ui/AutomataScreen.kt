@@ -58,6 +58,8 @@ import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.automata.domain.tree.expandFromStep
+import com.sfag.automata.domain.tree.markSimulationEnd
 import com.sfag.automata.ui.common.FormalDefinitionView
 import com.sfag.automata.ui.edit.StateList
 import com.sfag.automata.ui.edit.TransitionList
@@ -135,13 +137,6 @@ fun AutomataScreen(
 
     key(machine) {
         val recomposeKey = remember { mutableIntStateOf(0) }
-
-        // Ensure initial state is highlighted and derivation tree is ready on screen entry
-        LaunchedEffect(machine) {
-            machine.setInitialStateAsCurrent()
-            recomposeKey.intValue++
-        }
-
         val currentMode = remember { mutableStateOf(Mode.SIMULATOR) }
         var showUnsavedDialog by remember { mutableStateOf(viewModel.pendingExampleUri != null) }
         var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -406,6 +401,9 @@ fun AutomataScreen(
                                     }
                                     when (val simulation = viewModel.advanceSimulation()) {
                                         is Simulation.Ended -> {
+                                            machine.tree.markSimulationEnd(
+                                                simulation.isNodeAccepting,
+                                            )
                                             simulationOutcome = simulation.outcome
                                             recomposeKey.intValue++
                                             snackbarMsg =
@@ -439,6 +437,11 @@ fun AutomataScreen(
                                         }
 
                                         is Simulation.Step -> {
+                                            machine.tree.expandFromStep(
+                                                simulation.transitionRefs,
+                                                machine.states,
+                                                simulation.keepActive,
+                                            )
                                             currentMode.value = Mode.SIMULATION_STEP
                                             val capturedPositions = viewModel.statePositions.toMap()
                                             animationOverlay.value = {
@@ -448,7 +451,7 @@ fun AutomataScreen(
                                                         capturedPositions,
                                                         animDensity.density,
                                                     )
-                                                machine.TransitionAnimation(
+                                                TransitionAnimation(
                                                     transitionRefs = simulation.transitionRefs,
                                                     transitionPaths = transitionPaths,
                                                     offsetXCanvas = viewModel.offsetXCanvas,
@@ -497,7 +500,7 @@ fun AutomataScreen(
                 )
             }
 
-            when (val dialog = activeDialog) {
+            when (activeDialog) {
                 is ActiveDialog.NewMachine ->
                     NewMachineWindow { newMachine ->
                         activeDialog = null

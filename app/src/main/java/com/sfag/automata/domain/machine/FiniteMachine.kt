@@ -129,13 +129,17 @@ class FiniteMachine(
                         .filter { (config, transition) ->
                             FaConfig(transition.toState, config.inputOffset) in newConfigs
                         }
-                        .map { TransitionRef(it.first.stateIndex, it.second.toState) }
-                        .distinct()
-
-                expandSimulationTree(transitionRefs, keepActive = true)
+                        .map {
+                            TransitionRef(
+                                it.first.stateIndex,
+                                it.second.toState,
+                                transitions.indexOf(it.second),
+                            )
+                        }
 
                 return Simulation.Step(
                     transitionRefs = transitionRefs,
+                    keepActive = true,
                     onAllComplete = {
                         for (config in newConfigs) {
                             currentConfigs.add(config)
@@ -148,23 +152,18 @@ class FiniteMachine(
 
         // No input transitions available - check acceptance
         if (inputTransitions.isEmpty()) {
-            val anyAccepting =
-                currentConfigs.any { config ->
+            val acceptingConfigs =
+                currentConfigs.filter { config ->
                     getStateByIndex(config.stateIndex).final &&
                             config.inputOffset >= remainingInput.length
                 }
-            if (anyAccepting) {
-                val acceptedIds =
-                    tree
-                        .getActiveNodes()
-                        .filter { node -> states.any { it.name == node.stateName && it.final } }
-                        .map { it.id }
-                        .toSet()
-                tree.markAcceptedPaths(acceptedIds)
-            }
-            tree.markRemainingAsRejected()
+            val anyAccepting = acceptingConfigs.isNotEmpty()
             return Simulation.Ended(
-                if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
+                outcome = if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
+                isNodeAccepting = if (anyAccepting) { node ->
+                    val state = states.firstOrNull { it.name == node.stateName }
+                    state != null && acceptingConfigs.any { it.stateIndex == state.index }
+                } else null,
             )
         }
 
@@ -175,9 +174,9 @@ class FiniteMachine(
                     TransitionRef(
                         fromStateIndex = config.stateIndex,
                         toStateIndex = transition.toState,
+                        transitionIndex = transitions.indexOf(transition),
                     )
                 }
-                .distinct()
 
         val newConfigs =
             inputTransitions
@@ -185,8 +184,6 @@ class FiniteMachine(
                     FaConfig(transition.toState, config.inputOffset + transition.name.length)
                 }
                 .toSet()
-
-        expandSimulationTree(transitionRefs)
 
         // Advance shared input by minimum new offset
         val minOffset = newConfigs.minOf { it.inputOffset }

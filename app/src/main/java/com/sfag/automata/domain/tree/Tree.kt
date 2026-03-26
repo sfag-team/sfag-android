@@ -1,6 +1,8 @@
 package com.sfag.automata.domain.tree
 
+import com.sfag.automata.domain.machine.State
 import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.automata.domain.simulation.TransitionRef
 
 data class Branch(
     val stateName: String?,
@@ -53,7 +55,9 @@ class Tree {
                 node.status = SimulationOutcome.ACCEPTED
                 return true
             }
-            return node.children.any { walk(it) }
+            val isAccepting = node.children.any { walk(it) }
+            if (isAccepting) node.status = SimulationOutcome.ACCEPTED
+            return isAccepting
         }
         root?.let { walk(it) }
     }
@@ -86,4 +90,58 @@ class Tree {
         currentGeneration = 0
         activeNodes.clear()
     }
+}
+
+/**
+ * Expands the derivation tree with exactly the transitions being processed in this step.
+ * Called by the UI layer after receiving a simulation step result.
+ */
+fun Tree.expandFromStep(
+    transitionRefs: List<TransitionRef>,
+    states: List<State>,
+    keepActive: Boolean = false,
+) {
+    val active = getActiveNodes()
+    if (active.isEmpty()) return
+
+    val branches = mutableMapOf<Int, List<Branch>>()
+    for (node in active) {
+        val state = states.firstOrNull { it.name == node.stateName }
+        if (state == null) {
+            branches[node.id] = emptyList()
+            continue
+        }
+        val toStateIndices =
+            transitionRefs
+                .filter { it.fromStateIndex == state.index }
+                .map { it.toStateIndex }
+                .toMutableList()
+        if (keepActive && state.index !in toStateIndices) toStateIndices.add(state.index)
+        if (toStateIndices.isEmpty()) {
+            branches[node.id] = emptyList()
+            continue
+        }
+        branches[node.id] =
+            toStateIndices
+                .mapNotNull { index ->
+                    states.firstOrNull { it.index == index }?.let { Branch(it.name) }
+                }
+                .sortedBy { it.stateName }
+    }
+    expandActive(branches)
+}
+
+/**
+ * Marks accepting and rejected paths in the tree based on a node predicate.
+ * Called by the UI layer when simulation ends.
+ */
+fun Tree.markSimulationEnd(isNodeAccepting: ((TreeNode) -> Boolean)?) {
+    if (isNodeAccepting != null) {
+        val acceptedIds = getActiveNodes()
+            .filter { isNodeAccepting(it) }
+            .map { it.id }
+            .toSet()
+        markAcceptedPaths(acceptedIds)
+    }
+    markRemainingAsRejected()
 }

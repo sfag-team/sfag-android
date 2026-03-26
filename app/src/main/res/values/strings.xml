@@ -33,8 +33,6 @@
     <string name="final_state">Final</string>
     <string name="finite_automaton">Finite</string>
     <string name="from_state">from</string>
-    <string name="help_pop">Pop removes the top symbol from the stack.</string>
-    <string name="help_push">Push reads the top symbol (pop-check) and pushes a new symbol.</string>
     <string name="import_file">Import</string>
     <string name="initial_state">Initial</string>
     <string name="initial_state_exists">Your machine already has an initial state</string>
@@ -52,7 +50,6 @@
     <string name="no_saved_inputs">No saved inputs yet</string>
     <string name="no_states">No machine states</string>
     <string name="pda_stack">Stack</string>
-    <string name="pop_check">pop-check</string>
     <string name="previous_step">Previous step</string>
     <string name="pushdown_automaton">Pushdown</string>
     <string name="rejected_in_states">Rejected in state(s): %1$s</string>
@@ -62,7 +59,6 @@
     <string name="select_tool">Select</string>
     <string name="share_file">Share</string>
     <string name="single_input">Single Input</string>
-    <string name="stack_operation">Stack operation</string>
     <string name="stack_pop">pop</string>
     <string name="stack_push">push</string>
     <string name="state_name">state name</string>
@@ -72,6 +68,7 @@
     <string name="test_multiple_inputs">Test multiple inputs</string>
     <string name="to_state">to</string>
     <string name="transition_name">transition name</string>
+    <string name="transition_read">read</string>
     <string name="unsaved_changes">Unsaved changes</string>
     <string name="unsaved_changes_message">You have unsaved changes. Would you like to save them before continuing?</string>
 

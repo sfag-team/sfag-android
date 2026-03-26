@@ -1,5 +1,7 @@
 package com.sfag.automata.domain.simulation
 
+import com.sfag.automata.domain.tree.TreeNode
+
 /**
  * Identifies a single transition to animate. Uses state indices so the domain layer stays free of
  * Compose/position types.
@@ -7,16 +9,18 @@ package com.sfag.automata.domain.simulation
 data class TransitionRef(
     val fromStateIndex: Int,
     val toStateIndex: Int,
+    val transitionIndex: Int = -1,
 )
 
 /**
  * Result of a simulation step calculation. Domain layer returns this data, UI layer handles
- * animation.
+ * animation and derivation tree updates.
  */
 sealed class Simulation {
     /** No transition available - simulation ended. */
     data class Ended(
         val outcome: SimulationOutcome,
+        val isNodeAccepting: ((TreeNode) -> Boolean)? = null,
     ) : Simulation()
 
     /**
@@ -25,6 +29,7 @@ sealed class Simulation {
      */
     class Step(
         val transitionRefs: List<TransitionRef>,
+        val keepActive: Boolean = false,
         val onAllComplete: () -> Unit,
     ) : Simulation()
 }

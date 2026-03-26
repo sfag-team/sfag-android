@@ -33,8 +33,6 @@
     <string name="final_state">Koncový</string>
     <string name="finite_automaton">Konečný</string>
     <string name="from_state">zo stavu</string>
-    <string name="help_pop">Pop odstráni vrchný symbol zo zásobníka.</string>
-    <string name="help_push">Push prečíta vrchný symbol (pop-check) a vloží nový symbol.</string>
     <string name="import_file">Importovať</string>
     <string name="initial_state">Počiatočný</string>
     <string name="initial_state_exists">Váš automat už má počiatočný stav</string>
@@ -52,7 +50,6 @@
     <string name="no_saved_inputs">Zatiaľ žiadne uložené vstupy</string>
     <string name="no_states">Žiadne stavy automatu</string>
     <string name="pda_stack">Zásobník</string>
-    <string name="pop_check">pop-check</string>
     <string name="previous_step">Predchádzajúci krok</string>
     <string name="pushdown_automaton">Zásobníkový</string>
     <string name="rejected_in_states">Odmietnuté v stave/och: %1$s</string>
@@ -62,7 +59,6 @@
     <string name="select_tool">Vybrať</string>
     <string name="share_file">Zdieľať</string>
     <string name="single_input">Jeden vstup</string>
-    <string name="stack_operation">Operácia so zásobníkom</string>
     <string name="stack_pop">pop</string>
     <string name="stack_push">push</string>
     <string name="state_name">názov stavu</string>
@@ -72,6 +68,7 @@
     <string name="test_multiple_inputs">Otestovať viacero vstupov</string>
     <string name="to_state">do stavu</string>
     <string name="transition_name">názov prechodu</string>
+    <string name="transition_read">čítanie</string>
     <string name="unsaved_changes">Neuložené zmeny</string>
     <string name="unsaved_changes_message">Máte neuložené zmeny. Chcete ich uložiť pred pokračovaním?</string>
 

@@ -106,34 +106,15 @@ class PushdownMachine(
         fromState: State,
         toState: State,
         pop: String,
-        stackTop: String, // peek symbol - consumed and re-pushed when no explicit pop is given
         push: String,
     ) {
-        val resolvedPop: String
-        val resolvedPush: String
-        when {
-            pop.isNotEmpty() -> {
-                resolvedPop = pop
-                resolvedPush = ""
-            }
-
-            stackTop.isNotEmpty() -> {
-                resolvedPop = stackTop
-                resolvedPush = push + stackTop
-            }
-
-            else -> {
-                resolvedPop = ""
-                resolvedPush = push
-            }
-        }
         val alreadyExists =
             pdaTransitions.any {
                 it.name == name &&
                         it.fromState == fromState.index &&
                         it.toState == toState.index &&
-                        it.pop == resolvedPop &&
-                        it.push == resolvedPush
+                        it.pop == pop &&
+                        it.push == push
             }
         if (!alreadyExists) {
             pdaTransitions.add(
@@ -141,8 +122,8 @@ class PushdownMachine(
                     name,
                     fromState.index,
                     toState.index,
-                    pop = resolvedPop,
-                    push = resolvedPush,
+                    pop = pop,
+                    push = push,
                 ),
             )
         }
@@ -179,13 +160,17 @@ class PushdownMachine(
                 val transitionRefs =
                     epsilonResults
                         .filter { it.third in newConfigSet }
-                        .map { TransitionRef(it.first.stateIndex, it.third.stateIndex) }
-                        .distinct()
-
-                expandSimulationTree(transitionRefs, keepActive = true)
+                        .map {
+                            TransitionRef(
+                                it.first.stateIndex,
+                                it.third.stateIndex,
+                                pdaTransitions.indexOf(it.second),
+                            )
+                        }
 
                 return Simulation.Step(
                     transitionRefs = transitionRefs,
+                    keepActive = true,
                     onAllComplete = {
                         for (config in newConfigs) {
                             currentConfigs.add(config)
@@ -199,46 +184,43 @@ class PushdownMachine(
 
         // No input transitions - check acceptance
         if (inputResults.isEmpty()) {
-            val anyAccepting =
-                currentConfigs.any { config ->
-                    val state = getStateByIndexOrNull(config.stateIndex) ?: return@any false
+            val acceptingConfigs =
+                currentConfigs.filter { config ->
+                    val state = getStateByIndexOrNull(config.stateIndex) ?: return@filter false
                     config.inputOffset >= remainingInput.length &&
                             when (acceptanceCriteria) {
                                 AcceptanceCriteria.BY_FINAL_STATE -> state.final
                                 AcceptanceCriteria.BY_EMPTY_STACK -> config.stack.isEmpty()
                             }
                 }
-            if (anyAccepting) {
-                val acceptedIds =
-                    tree
-                        .getActiveNodes()
-                        .filter { node ->
-                            when (acceptanceCriteria) {
-                                AcceptanceCriteria.BY_FINAL_STATE ->
-                                    states.any { it.name == node.stateName && it.final }
-
-                                AcceptanceCriteria.BY_EMPTY_STACK ->
-                                    activeNodeStacks[node.id]?.isEmpty() == true
-                            }
-                        }
-                        .map { it.id }
-                        .toSet()
-                tree.markAcceptedPaths(acceptedIds)
-            }
-            tree.markRemainingAsRejected()
+            val anyAccepting = acceptingConfigs.isNotEmpty()
             return Simulation.Ended(
-                if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
+                outcome = if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
+                isNodeAccepting = if (anyAccepting) { node ->
+                    when (acceptanceCriteria) {
+                        AcceptanceCriteria.BY_FINAL_STATE -> {
+                            val state = states.firstOrNull { it.name == node.stateName }
+                            state != null && acceptingConfigs.any { it.stateIndex == state.index }
+                        }
+
+                        AcceptanceCriteria.BY_EMPTY_STACK ->
+                            activeNodeStacks[node.id]?.isEmpty() == true
+                    }
+                } else null,
             )
         }
 
         // Process ALL input transitions - fire all lengths simultaneously
         val transitionRefs =
             inputResults
-                .map { TransitionRef(it.first.stateIndex, it.third.stateIndex) }
-                .distinct()
+                .map {
+                    TransitionRef(
+                        it.first.stateIndex,
+                        it.third.stateIndex,
+                        pdaTransitions.indexOf(it.second),
+                    )
+                }
         val newConfigs = inputResults.map { it.third }
-
-        expandSimulationTree(transitionRefs)
 
         // Advance shared input by minimum new offset
         val minOffset = newConfigs.minOf { it.inputOffset }

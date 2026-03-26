@@ -39,6 +39,7 @@ class TuringMachine(
         val currentStateIndex = currentState!!
 
         val fromState = getStateByIndex(currentStateIndex)
+        if (fromState.final) return Simulation.Ended(SimulationOutcome.ACCEPTED)
 
         val currentSymbol = readSymbol()
         val transition =
@@ -47,10 +48,7 @@ class TuringMachine(
             }
 
         if (transition == null) {
-            // Halted - accept if in final state
-            return Simulation.Ended(
-                if (fromState.final) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
-            )
+            return Simulation.Ended(SimulationOutcome.REJECTED)
         }
 
         writeSymbol(transition.writeSymbol)
@@ -64,6 +62,7 @@ class TuringMachine(
                     TransitionRef(
                         fromStateIndex = fromState.index,
                         toStateIndex = toState.index,
+                        transitionIndex = turingTransitions.indexOf(transition),
                     ),
                 ),
             onAllComplete = {
