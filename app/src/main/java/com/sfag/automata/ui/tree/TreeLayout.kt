@@ -5,17 +5,20 @@ import com.sfag.automata.domain.tree.Tree
 import com.sfag.automata.domain.tree.TreeNode
 import com.sfag.automata.ui.common.NODE_RADIUS
 
+private const val DEPTH_SPACING = NODE_RADIUS * 1.5f
+private const val LEAF_SPACING = NODE_RADIUS * 1f
+
 internal fun calculateLayout(tree: Tree): Map<Int, Offset> {
     val root = tree.root ?: return emptyMap()
     val positions = mutableMapOf<Int, Offset>()
-    var leafIndex = 0
+    var leafPosition = 0
 
     fun layoutNode(node: TreeNode): Pair<Float, Float> {
-        val x = node.depth * NODE_RADIUS
+        val x = node.depth * DEPTH_SPACING
 
         if (node.children.isEmpty()) {
-            val y = leafIndex * NODE_RADIUS
-            leafIndex++
+            val y = leafPosition * LEAF_SPACING
+            leafPosition++
             positions[node.id] = Offset(x, y)
             return y to y
         }

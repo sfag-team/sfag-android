@@ -10,6 +10,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 
 @Immutable
 data class ExtendedColorScheme(
@@ -378,7 +380,14 @@ val MaterialTheme.extendedColorScheme: ExtendedColorScheme
 
 @Composable
 fun AppTheme(content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalExtendedColors provides extendedLight) {
+    val fixedDensity = Density(
+        density = LocalDensity.current.density,
+        fontScale = 1f,
+    )
+    CompositionLocalProvider(
+        LocalExtendedColors provides extendedLight,
+        LocalDensity provides fixedDensity,
+    ) {
         MaterialTheme(colorScheme = lightScheme, typography = AppTypography, content = content)
     }
 }

@@ -1,6 +1,7 @@
 package com.sfag.automata.domain.machine
 
 import com.sfag.automata.domain.simulation.Simulation
+import com.sfag.automata.domain.tree.NodeSnapshot
 import com.sfag.automata.domain.tree.Tree
 
 sealed class Machine(
@@ -23,6 +24,8 @@ sealed class Machine(
     val tree = Tree()
 
     abstract fun advanceSimulation(): Simulation
+
+    abstract fun snapshotActiveNodes(): Map<Int, NodeSnapshot>
 
     abstract fun canReachFinalState(
         input: StringBuilder,
@@ -78,6 +81,7 @@ sealed class Machine(
             }
         remainingInput = StringBuilder(fullInput)
         resetSimulation()
+        tree.attachSnapshots(snapshotActiveNodes())
     }
 
     fun findNewStateIndex(): Int {

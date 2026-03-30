@@ -15,7 +15,6 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 private const val PATH_CURVATURE = 0.125f
-private const val LABEL_OFFSET = NODE_RADIUS * 1.75f
 
 // Precomputed geometry constants (avoids runtime sqrt on constant values)
 private const val LOOP_ATTACH = NODE_RADIUS * 0.7071068f // NODE_RADIUS / sqrt(2)
@@ -26,11 +25,11 @@ data class TransitionPath(
     val arrowBody: Path,
     val tipX: Float,
     val tipY: Float,
-    /** For regular: bezier control position. For self-loop: arc peak (outermost position). */
-    val controlPoint: Offset,
-    /** Text label anchor: near the curve, offset outward from the chord. */
-    val textPosition: Offset,
-    val isSelfLoop: Boolean,
+    /** Point on the curve where labels attach (bezier midpoint or arc peak). */
+    val labelAnchor: Offset,
+    /** Unit outward normal from the curve at the label anchor. */
+    val outwardX: Float,
+    val outwardY: Float,
 )
 
 /** Mutable intermediate type for geometry computation before spreading. */
@@ -94,15 +93,17 @@ fun Machine.computeTransitionPaths(
                             else -> null
                         }
                     }.distinct()
-            val above =
-                connectedStates.count { stateIndex ->
-                    (positions[stateIndex]?.y ?: return@count false) < startPosition.y
-                }
-            val below =
-                connectedStates.count { stateIndex ->
-                    (positions[stateIndex]?.y ?: return@count false) > startPosition.y
-                }
-            val loopSign = if (above > below) 1f else -1f
+            // Sum vertical direction to each connected state (-dy/distance):
+            // positive = more above, negative = more below. Loop goes away from heavier side.
+            var verticalBalance = 0f
+            for (stateIndex in connectedStates) {
+                val position = positions[stateIndex] ?: continue
+                val dx = position.x - startPosition.x
+                val dy = position.y - startPosition.y
+                val dist = sqrt(dx * dx + dy * dy)
+                if (dist > 0.001f) verticalBalance -= dy / dist
+            }
+            val loopSign = if (verticalBalance > 0.5f) 1f else -1f
 
             geometries.add(
                 MutableGeometry(
@@ -226,12 +227,9 @@ private fun buildSelfLoopPath(geometry: MutableGeometry): TransitionPath {
         arrowBody = arrowBody,
         tipX = geometry.endX,
         tipY = geometry.endY,
-        controlPoint = Offset(geometry.controlX, geometry.controlY),
-        textPosition = Offset(
-            geometry.controlX,
-            geometry.controlY + geometry.loopSign * LABEL_OFFSET,
-        ),
-        isSelfLoop = true,
+        labelAnchor = Offset(geometry.controlX, geometry.controlY),
+        outwardX = 0f,
+        outwardY = geometry.loopSign,
     )
 }
 
@@ -251,12 +249,9 @@ private fun buildRegularPath(geometry: MutableGeometry): TransitionPath {
         arrowBody = arrowBody,
         tipX = geometry.endX,
         tipY = geometry.endY,
-        controlPoint = Offset(geometry.controlX, geometry.controlY),
-        textPosition = Offset(
-            bezierMidX + geometry.perpX * LABEL_OFFSET,
-            bezierMidY + geometry.perpY * LABEL_OFFSET,
-        ),
-        isSelfLoop = false,
+        labelAnchor = Offset(bezierMidX, bezierMidY),
+        outwardX = geometry.perpX,
+        outwardY = geometry.perpY,
     )
 }
 

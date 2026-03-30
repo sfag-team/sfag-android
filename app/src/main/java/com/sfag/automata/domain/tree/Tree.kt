@@ -82,6 +82,12 @@ class Tree {
 
     fun getActiveNodes(): List<TreeNode> = activeNodes.toList()
 
+    fun attachSnapshots(snapshots: Map<Int, NodeSnapshot>) {
+        for (node in activeNodes) {
+            snapshots[node.id]?.let { node.snapshot = it }
+        }
+    }
+
     fun getCurrentGeneration(): Int = currentGeneration
 
     fun clear() {

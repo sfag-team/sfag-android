@@ -112,33 +112,19 @@ class MainActivity : AppCompatActivity() {
                                 }
                                 composable(route = Destinations.EXAMPLES.route) {
                                     ExamplesScreen(
-                                        navBack = {
-                                            navController.navigate(Destinations.HOME.route) {
-                                                popUpTo(Destinations.HOME.route) {
-                                                    inclusive = true
-                                                }
-                                            }
-                                        },
+                                        navBack = { navController.popBackStack() },
                                         navToGrammar = { grammarUri, name ->
-                                            navController.navigate(Destinations.HOME.route) {
-                                                popUpTo(Destinations.HOME.route) {
-                                                    inclusive = true
-                                                }
-                                            }
+                                            navController.popBackStack()
                                             navToGrammarActivity(grammarUri, name)
                                         },
                                         navToAutomata = { automataUri, name ->
-                                            navController.navigate(Destinations.HOME.route) {
-                                                popUpTo(Destinations.HOME.route) {
-                                                    inclusive = true
-                                                }
-                                            }
+                                            navController.popBackStack()
                                             navToAutomataActivity(automataUri, name)
                                         }
                                     )
                                 }
                                 composable(route = Destinations.ABOUT.route) {
-                                    AboutScreen(navBack = { navController.navigate(Destinations.HOME.route) })
+                                    AboutScreen(navBack = { navController.popBackStack() })
                                 }
                             }
                         }

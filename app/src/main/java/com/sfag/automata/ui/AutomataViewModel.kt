@@ -12,6 +12,7 @@ import com.sfag.automata.data.AutomataStorage
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.automata.domain.tree.NodeSnapshot
 import com.sfag.main.config.INITIAL_ZOOM
 import com.sfag.main.data.Point2D
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,6 +41,23 @@ internal constructor(
     // Pending example to load after user confirms replacing saved machine
     var pendingExampleUri by mutableStateOf<String?>(null)
     var pendingExampleName by mutableStateOf<String?>(null)
+
+    // Historical node inspection
+    var inspectedNodeId by mutableStateOf<Int?>(null)
+        private set
+    var inspectedSnapshot by mutableStateOf<NodeSnapshot?>(null)
+        private set
+
+    fun inspectNode(machine: Machine, nodeId: Int) {
+        val node = machine.tree.findNode(nodeId)
+        inspectedNodeId = nodeId
+        inspectedSnapshot = node?.snapshot
+    }
+
+    fun clearInspection() {
+        inspectedNodeId = null
+        inspectedSnapshot = null
+    }
 
     // Track unsaved changes
     var hasUnsavedChanges by mutableStateOf(false)

@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.IntOffset
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.ui.common.NODE_OUTLINE
 import com.sfag.automata.ui.common.NODE_RADIUS
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
@@ -74,40 +75,39 @@ internal fun Machine.TransitionArrows(
             drawPath(buildArrowHead(arrow.path), color = borderColor)
         }
 
-        // Labels
-        val lineHeight = scaledTextSize * 1.25f
-        val selfLoopClearance = scaledTextSize * 0.25f + NODE_OUTLINE
-        val regularClearance = scaledTextSize * 0.5f + NODE_OUTLINE
+        // Labels - labelAnchor is the point on the curve, outward normal points away
+        val labelSpacing = scaledTextSize * 1.25f
+        val labelClearance = scaledTextSize * 0.5f
 
         for (arrow in groupedArrows) {
-            val labelClearance = if (arrow.path.isSelfLoop) selfLoopClearance else regularClearance
             val count = arrow.labels.size
+            val normalX = arrow.path.outwardX
+            val normalY = arrow.path.outwardY
 
             val maxTextWidth = arrow.labels.maxOf { labelPaint.measureText(it) }
             val halfW = (maxTextWidth * 0.5f).coerceAtLeast(1f)
-            val halfH = (count * scaledTextSize * 0.625f).coerceAtLeast(1f)
+            val halfH =
+                ((count - 1) * labelSpacing * 0.5f + scaledTextSize * 0.5f).coerceAtLeast(1f)
 
-            val deltaX = arrow.path.textPosition.x - arrow.path.controlPoint.x
-            val deltaY = arrow.path.textPosition.y - arrow.path.controlPoint.y
-            val deltaLength = sqrt(deltaX * deltaX + deltaY * deltaY)
-            val normalX = if (deltaLength > 0.1f) deltaX / deltaLength else 0f
-            val normalY = if (deltaLength > 0.1f) deltaY / deltaLength else 1f
+            // Rectangle edge distance along the outward normal
+            val absNx = abs(normalX)
+            val absNy = abs(normalY)
+            val edgeDist = when {
+                absNx < 0.001f -> halfH
+                absNy < 0.001f -> halfW
+                else -> minOf(halfW / absNx, halfH / absNy)
+            }
 
-            val normalXScaled = normalX / halfW
-            val normalYScaled = normalY / halfH
-            val denominatorSq = normalXScaled * normalXScaled + normalYScaled * normalYScaled
-            val edgeDist = if (denominatorSq > 0f) 1f / sqrt(denominatorSq) else halfH
+            val adjustment = edgeDist + labelClearance
+            val centerX = arrow.path.labelAnchor.x + normalX * adjustment
+            val centerY = arrow.path.labelAnchor.y + normalY * adjustment
 
-            val adjustment = edgeDist + labelClearance - NODE_RADIUS * 2f
-            val centerX = arrow.path.textPosition.x + normalX * adjustment
-            val centerY = arrow.path.textPosition.y + normalY * adjustment
-
-            val baseY = centerY - (count - 1) * lineHeight * 0.5f + scaledTextSize * 0.375f
+            val baseY = centerY - (count - 1) * labelSpacing * 0.5f + scaledTextSize * 0.375f
             arrow.labels.forEachIndexed { i, label ->
                 drawContext.canvas.nativeCanvas.drawText(
                     label,
                     centerX,
-                    baseY + i * lineHeight,
+                    baseY + i * labelSpacing,
                     labelPaint,
                 )
             }

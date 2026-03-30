@@ -22,7 +22,8 @@ import com.sfag.automata.ui.machine.cellSize
 
 /** PDA stack bar. Shows stack contents left-to-right (bottom-to-top). */
 @Composable
-fun PushdownMachine.Stack() {
+fun PushdownMachine.Stack(overrideSymbols: List<Char>? = null) {
+    val displaySymbols = overrideSymbols ?: symbolStack
     Row(
         modifier =
             Modifier
@@ -44,10 +45,10 @@ fun PushdownMachine.Stack() {
             horizontalArrangement = Arrangement.spacedBy(cellPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (symbolStack.isEmpty()) {
+            if (displaySymbols.isEmpty()) {
                 item { Cell(symbol = ' ') }
             } else {
-                items(symbolStack) { Cell(symbol = it) }
+                items(displaySymbols) { Cell(symbol = it) }
             }
         }
     }

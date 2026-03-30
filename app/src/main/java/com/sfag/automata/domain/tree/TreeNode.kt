@@ -8,4 +8,5 @@ class TreeNode(
     val depth: Int,
     val children: MutableList<TreeNode> = mutableListOf(),
     var status: SimulationOutcome = SimulationOutcome.ACTIVE,
+    var snapshot: NodeSnapshot? = null,
 )

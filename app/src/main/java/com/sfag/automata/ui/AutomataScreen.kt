@@ -216,7 +216,11 @@ fun AutomataScreen(
                     }
                 }
 
-                Mode.SIMULATION_STEP -> {}
+                Mode.SIMULATION_STEP -> {
+                    animationOverlay.value = null
+                    viewModel.autoSave(machine)
+                    navBack()
+                }
                 Mode.INPUT_EDITOR -> {
                     machine.setInitialStateAsCurrent()
                     viewModel.autoSave(machine)
@@ -225,9 +229,9 @@ fun AutomataScreen(
 
                 Mode.MACHINE_EDITOR -> {
                     machine.setInitialStateAsCurrent()
-                    recomposeKey.intValue++
                     viewModel.autoSave(machine)
                     currentMode.value = Mode.SIMULATOR
+                    recomposeKey.intValue++
                 }
             }
         }
@@ -359,8 +363,8 @@ fun AutomataScreen(
                                     }
                                     if (currentMode.value == Mode.MACHINE_EDITOR) {
                                         machine.setInitialStateAsCurrent()
-                                        recomposeKey.intValue++
                                         currentMode.value = Mode.SIMULATOR
+                                        recomposeKey.intValue++
                                     } else {
                                         currentMode.value = Mode.MACHINE_EDITOR
                                     }
@@ -380,9 +384,10 @@ fun AutomataScreen(
                                     } else {
                                         simulationOutcome = null
                                         animationOverlay.value = null
+                                        viewModel.clearInspection()
                                         machine.setInitialStateAsCurrent()
-                                        recomposeKey.intValue++
                                         currentMode.value = Mode.SIMULATOR
+                                        recomposeKey.intValue++
                                     }
                                 }
                                 DefaultIconButton(
@@ -404,6 +409,7 @@ fun AutomataScreen(
                                             machine.tree.markSimulationEnd(
                                                 simulation.isNodeAccepting,
                                             )
+                                            viewModel.clearInspection()
                                             simulationOutcome = simulation.outcome
                                             recomposeKey.intValue++
                                             snackbarMsg =
@@ -458,10 +464,13 @@ fun AutomataScreen(
                                                     offsetYCanvas = viewModel.offsetYCanvas,
                                                     onAnimationsEnd = {
                                                         simulation.onAllComplete()
+                                                        machine.tree.attachSnapshots(
+                                                            machine.snapshotActiveNodes(),
+                                                        )
+                                                        viewModel.clearInspection()
                                                         animationOverlay.value = null
+                                                        currentMode.value = Mode.SIMULATOR
                                                         recomposeKey.intValue++
-                                                        currentMode.value =
-                                                            Mode.SIMULATOR
                                                     },
                                                 )
                                             }
@@ -537,6 +546,7 @@ fun AutomataScreen(
                     cancelLabel = stringResource(R.string.discard_button),
                     onDismissRequest = {
                         showUnsavedDialog = false
+                        isBackAction = false
                         pendingAction = null
                     },
                     onDismiss = {
@@ -601,15 +611,14 @@ private fun BottomScreenPart(
                 if (showsTree) {
                     machine.TreeView(
                         recomposeKey = recomposeKey.intValue,
-                        onSelectNode =
+                        inspectedNodeId = viewModel.inspectedNodeId,
+                        onSelectNode = { nodeId ->
+                            viewModel.inspectNode(machine, nodeId)
                             if (machine is PushdownMachine) {
-                                { nodeId ->
-                                    machine.selectNode(nodeId)
-                                    recomposeKey.intValue++
-                                }
-                            } else {
-                                null
-                            },
+                                machine.selectNode(nodeId)
+                            }
+                            recomposeKey.intValue++
+                        },
                     )
                 }
                 Box(

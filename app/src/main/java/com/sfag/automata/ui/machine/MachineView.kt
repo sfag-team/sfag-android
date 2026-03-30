@@ -26,7 +26,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,6 +49,7 @@ import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.State
 import com.sfag.automata.domain.machine.TuringMachine
 import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.automata.domain.tree.NodeSnapshot
 import com.sfag.automata.ui.AutomataViewModel
 import com.sfag.automata.ui.bar.Stack
 import com.sfag.automata.ui.bar.Tape
@@ -97,9 +97,6 @@ fun Machine.MachineView(
     // Tool state
     var activeTool by remember { mutableStateOf(MachineEditMode.SELECT) }
 
-    // Recomposition trigger
-    var localRecomposeKey by remember { mutableIntStateOf(0) }
-
     // Transition paths state for hit testing from the outer pointerInput
     val transitionPathsState = remember { mutableStateOf<List<TransitionPath?>>(emptyList()) }
 
@@ -114,15 +111,59 @@ fun Machine.MachineView(
                 }
             } else {
                 key(recomposeKey) {
-                    when (this@MachineView) {
-                        is FiniteMachine ->
-                            Tape(listState = tapeListState, onEdit = onEdit)
+                    val primaryColor = MaterialTheme.colorScheme.primary
+                    val headColor = if (simulationOutcome != null)
+                        primaryColor.copy(alpha = 0.38f)
+                    else
+                        primaryColor
+                    val snapshot = viewModel.inspectedSnapshot
+                    if (snapshot is NodeSnapshot.TmSnapshot) {
+                        Tape(
+                            symbols = snapshot.tape,
+                            headIndex = snapshot.headPosition,
+                            listState = tapeListState,
+                            headColor = headColor,
+                            onEdit = onEdit,
+                            infiniteRight = true,
+                            infiniteLeft = true,
+                        )
+                    } else if (snapshot != null) {
+                        val headIndex = snapshot.inputConsumed.coerceIn(
+                            0,
+                            (fullInput.length - 1).coerceAtLeast(0),
+                        )
+                        Tape(
+                            symbols = fullInput.toList(),
+                            headIndex = headIndex,
+                            listState = tapeListState,
+                            headColor = headColor,
+                            isConsumedShown = true,
+                            onEdit = onEdit,
+                            infiniteRight = false,
+                        )
+                    } else {
+                        when (this@MachineView) {
+                            is FiniteMachine ->
+                                Tape(
+                                    listState = tapeListState,
+                                    onEdit = onEdit,
+                                    headColor = headColor
+                                )
 
-                        is PushdownMachine ->
-                            Tape(listState = tapeListState, onEdit = onEdit)
+                            is PushdownMachine ->
+                                Tape(
+                                    listState = tapeListState,
+                                    onEdit = onEdit,
+                                    headColor = headColor
+                                )
 
-                        is TuringMachine ->
-                            Tape(listState = tapeListState, onEdit = onEdit)
+                            is TuringMachine ->
+                                Tape(
+                                    listState = tapeListState,
+                                    onEdit = onEdit,
+                                    headColor = headColor
+                                )
+                        }
                     }
                 }
             }
@@ -345,7 +386,7 @@ fun Machine.MachineView(
                                                                     hitState.index,
                                                                 )
                                                                 viewModel.markDirty()
-                                                                localRecomposeKey++
+                                                                onRecompose()
                                                             }
 
                                                             MachineEditMode.MOVE,
@@ -399,7 +440,6 @@ fun Machine.MachineView(
                                                                             removeTransition(it)
                                                                         }
                                                                     viewModel.markDirty()
-                                                                    localRecomposeKey++
                                                                     onRecompose()
                                                                 }
 
@@ -458,8 +498,6 @@ fun Machine.MachineView(
                                                     )
                                                 }
                                             } while (event.changes.any { it.pressed })
-                                            localRecomposeKey++
-                                            onRecompose()
                                         }
                                         // No node hit - fall through, detectTransformGestures handles pan/zoom
                                     }
@@ -478,7 +516,7 @@ fun Machine.MachineView(
 
                     if (isEditing) {
                         key(activeTool) {
-                            key(recomposeKey, localRecomposeKey) {
+                            key(recomposeKey) {
                                 val transitionPaths =
                                     computeTransitionPaths(positions, density.density)
                                 SideEffect { transitionPathsState.value = transitionPaths }
@@ -562,7 +600,6 @@ fun Machine.MachineView(
                         ) {
                             viewModel.markDirty()
                             dialogRequest.value = null
-                            localRecomposeKey++
                             onRecompose()
                         }
 
@@ -574,7 +611,6 @@ fun Machine.MachineView(
                         ) {
                             viewModel.markDirty()
                             dialogRequest.value = null
-                            localRecomposeKey++
                             onRecompose()
                         }
 
@@ -594,7 +630,11 @@ fun Machine.MachineView(
                         .fillMaxWidth()
                         .height(cellSize + cellPadding * 2)
                 ) {
-                    key(recomposeKey) { Stack() }
+                    key(recomposeKey) {
+                        val pdaSnapshot =
+                            viewModel.inspectedSnapshot as? NodeSnapshot.PdaSnapshot
+                        Stack(overrideSymbols = pdaSnapshot?.stack)
+                    }
                 }
             }
         }

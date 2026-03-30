@@ -3,6 +3,7 @@ package com.sfag.automata.domain.machine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.TransitionRef
+import com.sfag.automata.domain.tree.NodeSnapshot
 import com.sfag.main.config.MAX_FA_PDA_CONFIGS
 
 enum class AcceptanceCriteria(
@@ -76,6 +77,24 @@ class PushdownMachine(
                 listOf('Z')
             ) { _, s -> s.isEmpty() }
         }
+
+    override fun snapshotActiveNodes(): Map<Int, NodeSnapshot> {
+        val active = tree.getActiveNodes()
+        val remaining = currentConfigs.toMutableList()
+        val result = mutableMapOf<Int, NodeSnapshot>()
+        for (node in active) {
+            val state = states.firstOrNull { it.name == node.stateName } ?: continue
+            val matchIndex = remaining.indexOfFirst { it.stateIndex == state.index }
+            if (matchIndex >= 0) {
+                val config = remaining.removeAt(matchIndex)
+                result[node.id] = NodeSnapshot.PdaSnapshot(
+                    inputConsumed = fullInput.length - remainingInput.length + config.inputOffset,
+                    stack = config.stack.toList(),
+                )
+            }
+        }
+        return result
+    }
 
     override fun removeTransition(transition: Transition) {
         pdaTransitions.remove(transition)

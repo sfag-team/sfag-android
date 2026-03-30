@@ -147,6 +147,7 @@ fun Tape(
 fun FiniteMachine.Tape(
     listState: LazyListState,
     onEdit: () -> Unit,
+    headColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     val symbols = fullInput
     val headIndex =
@@ -156,7 +157,7 @@ fun FiniteMachine.Tape(
         symbols = symbols.toList(),
         headIndex = headIndex,
         listState = listState,
-        headColor = MaterialTheme.colorScheme.primary,
+        headColor = headColor,
         isConsumedShown = true,
         onEdit = onEdit,
         infiniteRight = false,
@@ -167,6 +168,7 @@ fun FiniteMachine.Tape(
 fun PushdownMachine.Tape(
     listState: LazyListState,
     onEdit: () -> Unit,
+    headColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     val symbols = fullInput
     val headIndex =
@@ -176,7 +178,7 @@ fun PushdownMachine.Tape(
         symbols = symbols.toList(),
         headIndex = headIndex,
         listState = listState,
-        headColor = MaterialTheme.colorScheme.primary,
+        headColor = headColor,
         isConsumedShown = true,
         onEdit = onEdit,
         infiniteRight = false,
@@ -188,11 +190,13 @@ fun PushdownMachine.Tape(
 fun TuringMachine.Tape(
     listState: LazyListState,
     onEdit: () -> Unit,
+    headColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     Tape(
         symbols = tape,
         headIndex = headPosition,
         listState = listState,
+        headColor = headColor,
         onEdit = onEdit,
         infiniteRight = true,
         infiniteLeft = true,

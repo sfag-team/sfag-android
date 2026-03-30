@@ -3,6 +3,7 @@ package com.sfag.automata.domain.machine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.TransitionRef
+import com.sfag.automata.domain.tree.NodeSnapshot
 import com.sfag.main.config.MAX_TURING_CONFIGS
 import com.sfag.main.config.Symbols
 
@@ -110,6 +111,18 @@ class TuringMachine(
             },
             maxConfigs = MAX_TURING_CONFIGS,
         )
+    }
+
+    override fun snapshotActiveNodes(): Map<Int, NodeSnapshot> {
+        val active = tree.getActiveNodes()
+        val result = mutableMapOf<Int, NodeSnapshot>()
+        for (node in active) {
+            result[node.id] = NodeSnapshot.TmSnapshot(
+                tape = tape.toList(),
+                headPosition = headPosition,
+            )
+        }
+        return result
     }
 
     override fun removeTransition(transition: Transition) {
