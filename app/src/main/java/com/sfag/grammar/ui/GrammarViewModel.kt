@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.sfag.grammar.data.GrammarStorage
 import com.sfag.grammar.data.Jff
 import com.sfag.grammar.domain.grammar.GrammarRule
@@ -13,6 +14,8 @@ import com.sfag.grammar.domain.grammar.GrammarType
 import com.sfag.grammar.domain.grammar.classifyGrammar
 import com.sfag.main.config.Symbols
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.InputStream
 import javax.inject.Inject
 
@@ -90,8 +93,9 @@ internal constructor(
 
     /** Persists the current grammar to the fixed auto-save slot. */
     fun autoSave() {
-        if (rules.isNotEmpty()) {
-            storage.saveGrammar(getIndividualRules())
+        val individualRules = if (rules.isNotEmpty()) getIndividualRules() else return
+        viewModelScope.launch(Dispatchers.IO) {
+            storage.saveGrammar(individualRules)
         }
     }
 
@@ -115,7 +119,7 @@ internal constructor(
         val parsed = Jff.parse(inputStream)
         rules = emptyList()
         parsed.forEach { addRule(it.left, it.right) }
-        toggleGrammarFinished()
+        isGrammarFinished = true
     }
 
     private fun updateSymbols() {

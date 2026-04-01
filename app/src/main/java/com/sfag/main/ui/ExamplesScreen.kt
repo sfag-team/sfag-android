@@ -27,8 +27,8 @@ import com.sfag.main.config.Superscripts
 @Composable
 fun ExamplesScreen(
     navBack: () -> Unit,
-    navToAutomata: (machineUri: String, name: String) -> Unit,
-    navToGrammar: (grammarUri: String, name: String) -> Unit,
+    navToAutomata: (exampleUri: String, name: String) -> Unit,
+    navToGrammar: (exampleUri: String, name: String) -> Unit,
 ) {
     Column(
         modifier =

@@ -3,10 +3,8 @@ package com.sfag.automata.ui
 import android.provider.OpenableColumns
 import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.slideInVertically
@@ -34,7 +32,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +40,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -55,6 +53,7 @@ import com.sfag.automata.domain.common.checkDeterminism
 import com.sfag.automata.domain.common.getFormalDefinition
 import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
+import com.sfag.automata.domain.machine.MachineType
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
@@ -63,12 +62,12 @@ import com.sfag.automata.domain.tree.markSimulationEnd
 import com.sfag.automata.ui.common.FormalDefinitionView
 import com.sfag.automata.ui.edit.StateList
 import com.sfag.automata.ui.edit.TransitionList
+import com.sfag.automata.ui.input.InputEditor
 import com.sfag.automata.ui.machine.DialogRequest
-import com.sfag.automata.ui.machine.MachineView
+import com.sfag.automata.ui.machine.MachineEditor
 import com.sfag.automata.ui.machine.TransitionAnimation
 import com.sfag.automata.ui.machine.computeTransitionPaths
 import com.sfag.automata.ui.tree.TreeView
-import com.sfag.main.config.EXTRA_OPEN_FILE_PICKER
 import com.sfag.main.config.JFF_OPEN_MIME_TYPES
 import com.sfag.main.config.JFF_SAVE_MIME_TYPE
 import com.sfag.main.data.JffUtils
@@ -77,7 +76,6 @@ import com.sfag.main.ui.component.DefaultDialog
 import com.sfag.main.ui.component.DefaultIconButton
 import com.sfag.main.ui.component.DefaultTextField
 import com.sfag.main.ui.component.ItemSpecificationIcon
-import kotlinx.coroutines.launch
 
 private enum class Mode {
     SIMULATOR,
@@ -96,42 +94,17 @@ fun AutomataScreen(
     modifier: Modifier = Modifier,
     navBack: () -> Unit,
 ) {
-    val activity = LocalActivity.current as? AppCompatActivity ?: return
-    val viewModel: AutomataViewModel = hiltViewModel(activity)
-    val noInitialStateMsg = stringResource(R.string.no_initial_state)
-    val importErrorMsg = stringResource(R.string.file_import_error)
-    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val viewModel: AutomataViewModel = hiltViewModel()
 
-    val initImportLauncher =
-        rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri ->
-            uri?.let {
-                try {
-                    val fileName = activity.contentResolver
-                        .query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-                        ?.use { cursor ->
-                            if (cursor.moveToFirst()) cursor.getString(0)
-                                ?.removeSuffix(".jff") else null
-                        } ?: "untitled"
-                    activity.contentResolver.openInputStream(it)?.use { stream ->
-                        val jff = Jff.parse(stream)
-                        viewModel.setCurrentMachine(jff.toMachine(fileName), jff.positions)
-                    }
-                } catch (e: Exception) {
-                    Log.e("AutomataScreen", "Failed to import file", e)
-                    scope.launch { snackbarHostState.showSnackbar(importErrorMsg) }
-                    navBack()
-                }
-            }
-        }
+    val importErrorMsg = stringResource(R.string.file_import_error)
+    val noInitialStateMsg = stringResource(R.string.no_initial_state)
+    val acceptedMsg = stringResource(R.string.accepted_in_states)
+    val rejectedMsg = stringResource(R.string.rejected_in_states)
 
     val machine = viewModel.currentMachine
     if (machine == null) {
-        val importMode = activity.intent?.getBooleanExtra(EXTRA_OPEN_FILE_PICKER, false) ?: false
-        if (importMode) {
-            LaunchedEffect(Unit) { initImportLauncher.launch(JFF_OPEN_MIME_TYPES) }
-        } else {
-            LaunchedEffect(Unit) { navBack() }
-        }
+        LaunchedEffect(Unit) { navBack() }
         return
     }
 
@@ -140,7 +113,6 @@ fun AutomataScreen(
         val currentMode = remember { mutableStateOf(Mode.SIMULATOR) }
         var showUnsavedDialog by remember { mutableStateOf(viewModel.pendingExampleUri != null) }
         var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
-        var isBackAction by remember { mutableStateOf(false) }
         var simulationOutcome by remember { mutableStateOf<SimulationOutcome?>(null) }
         val animationOverlay = remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
         val dialogRequest = remember { mutableStateOf<DialogRequest?>(null) }
@@ -154,14 +126,14 @@ fun AutomataScreen(
             ) { uri ->
                 try {
                     uri?.let {
-                        activity.contentResolver.openOutputStream(it)?.use { stream ->
+                        context.contentResolver.openOutputStream(it)?.use { stream ->
                             stream.write(
                                 machine
                                     .exportToJff(viewModel.getPositions())
                                     .toByteArray(Charsets.UTF_8),
                             )
                         }
-                        activity.contentResolver.query(
+                        context.contentResolver.query(
                             it,
                             arrayOf(OpenableColumns.DISPLAY_NAME),
                             null,
@@ -187,13 +159,13 @@ fun AutomataScreen(
             rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri ->
                 uri?.let {
                     try {
-                        val fileName = activity.contentResolver
+                        val fileName = context.contentResolver
                             .query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
                             ?.use { cursor ->
                                 if (cursor.moveToFirst()) cursor.getString(0)
                                     ?.removeSuffix(".jff") else null
                             } ?: "untitled"
-                        activity.contentResolver.openInputStream(it)?.use { stream ->
+                        context.contentResolver.openInputStream(it)?.use { stream ->
                             val jff = Jff.parse(stream)
                             viewModel.setCurrentMachine(jff.toMachine(fileName), jff.positions)
                         }
@@ -208,8 +180,8 @@ fun AutomataScreen(
             when (currentMode.value) {
                 Mode.SIMULATOR -> {
                     if (viewModel.hasUnsavedChanges) {
+                        pendingAction = { navBack() }
                         showUnsavedDialog = true
-                        isBackAction = true
                     } else {
                         viewModel.autoSave(machine)
                         navBack()
@@ -221,6 +193,7 @@ fun AutomataScreen(
                     viewModel.autoSave(machine)
                     navBack()
                 }
+
                 Mode.INPUT_EDITOR -> {
                     machine.setInitialStateAsCurrent()
                     viewModel.autoSave(machine)
@@ -277,7 +250,7 @@ fun AutomataScreen(
                                     modifier = Modifier.weight(1f),
                                 ) {
                                     JffUtils.shareFile(
-                                        context = activity,
+                                        context = context,
                                         jffContent =
                                             machine.exportToJff(viewModel.getPositions()),
                                         filename = machine.name,
@@ -298,10 +271,9 @@ fun AutomataScreen(
                                     modifier = Modifier.weight(1f),
                                 ) {
                                     if (viewModel.hasUnsavedChanges) {
-                                        showUnsavedDialog = true
-                                        isBackAction = false
                                         pendingAction =
                                             { importLauncher.launch(JFF_OPEN_MIME_TYPES) }
+                                        showUnsavedDialog = true
                                     } else {
                                         importLauncher.launch(JFF_OPEN_MIME_TYPES)
                                     }
@@ -312,9 +284,8 @@ fun AutomataScreen(
                                     modifier = Modifier.weight(1f),
                                 ) {
                                     if (viewModel.hasUnsavedChanges) {
-                                        showUnsavedDialog = true
-                                        isBackAction = false
                                         pendingAction = { activeDialog = ActiveDialog.NewMachine }
+                                        showUnsavedDialog = true
                                     } else {
                                         activeDialog = ActiveDialog.NewMachine
                                     }
@@ -329,7 +300,7 @@ fun AutomataScreen(
                                         .clip(MaterialTheme.shapes.medium)
                                         .background(MaterialTheme.colorScheme.surfaceContainer),
                             ) {
-                                machine.MachineView(
+                                machine.MachineEditor(
                                     isEditing =
                                         currentMode.value == Mode.MACHINE_EDITOR,
                                     recomposeKey = recomposeKey.intValue,
@@ -412,34 +383,25 @@ fun AutomataScreen(
                                             viewModel.clearInspection()
                                             simulationOutcome = simulation.outcome
                                             recomposeKey.intValue++
-                                            snackbarMsg =
-                                                when (simulation.outcome) {
-                                                    SimulationOutcome.ACCEPTED -> {
-                                                        val stateNames =
-                                                            machine.states
-                                                                .filter { it.isCurrent && it.final }
-                                                                .joinToString(", ") { it.name }
-                                                        activity.getString(
-                                                            R.string.accepted_in_states,
-                                                            stateNames,
-                                                        )
-                                                    }
-
-                                                    SimulationOutcome.REJECTED -> {
-                                                        val stateNames =
-                                                            machine.states
-                                                                .filter { it.isCurrent }
-                                                                .joinToString(", ") { it.name }
-                                                        activity.getString(
-                                                            R.string.rejected_in_states,
-                                                            stateNames,
-                                                        )
-                                                    }
-
-                                                    SimulationOutcome.ACTIVE,
-                                                    SimulationOutcome.DEAD,
-                                                        -> null
+                                            snackbarMsg = when (simulation.outcome) {
+                                                SimulationOutcome.ACCEPTED -> {
+                                                    val stateNames = machine.states
+                                                        .filter { it.isCurrent && it.final }
+                                                        .joinToString(", ") { it.name }
+                                                    acceptedMsg.format(stateNames)
                                                 }
+
+                                                SimulationOutcome.REJECTED -> {
+                                                    val stateNames = machine.states
+                                                        .filter { it.isCurrent }
+                                                        .joinToString(", ") { it.name }
+                                                    rejectedMsg.format(stateNames)
+                                                }
+
+                                                SimulationOutcome.ACTIVE,
+                                                SimulationOutcome.DEAD,
+                                                    -> null
+                                            }
                                         }
 
                                         is Simulation.Step -> {
@@ -497,7 +459,7 @@ fun AutomataScreen(
                 enter = slideInVertically(initialOffsetY = { it }),
                 exit = slideOutVertically(targetOffsetY = { it }),
             ) {
-                machine.InputScreen(
+                machine.InputEditor(
                     onConfirm = {
                         viewModel.autoSave(machine)
                         currentMode.value = Mode.SIMULATOR
@@ -526,16 +488,14 @@ fun AutomataScreen(
                     val exampleUri = viewModel.pendingExampleUri
                     if (exampleUri != null) {
                         val exampleName = viewModel.pendingExampleName ?: "untitled"
-                        viewModel.pendingExampleUri = null
                         viewModel.pendingExampleName = null
+                        viewModel.pendingExampleUri = null
                         try {
-                            val jff = activity.assets.open(exampleUri).use { Jff.parse(it) }
+                            val jff = context.assets.open(exampleUri).use { Jff.parse(it) }
                             viewModel.setCurrentMachine(jff.toMachine(exampleName), jff.positions)
                         } catch (e: Exception) {
                             Log.e("AutomataScreen", "Failed to load example: $exampleUri", e)
                         }
-                    } else if (isBackAction) {
-                        navBack()
                     } else {
                         pendingAction?.invoke()
                     }
@@ -546,7 +506,6 @@ fun AutomataScreen(
                     cancelLabel = stringResource(R.string.discard_button),
                     onDismissRequest = {
                         showUnsavedDialog = false
-                        isBackAction = false
                         pendingAction = null
                     },
                     onDismiss = {
@@ -635,26 +594,21 @@ private fun BottomScreenPart(
     }
 }
 
-private enum class NewMachineChoice {
-    FINITE,
-    PUSHDOWN,
-}
 
 @Composable
 private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
-    var machineChoice by remember { mutableStateOf<NewMachineChoice?>(null) }
-    val defaultName = stringResource(R.string.untitled_name)
-    var machineName by remember { mutableStateOf(defaultName) }
+    var machineName by remember { mutableStateOf("untitled") }
+    var machineType by remember { mutableStateOf<MachineType?>(null) }
 
     DefaultDialog(
         title = null,
         confirmLabel = stringResource(R.string.create_button),
-        enabled = machineChoice != null,
+        enabled = machineType != null,
         onDismiss = { onImport(null) },
         onConfirm = {
-            when (machineChoice) {
-                NewMachineChoice.FINITE -> onImport(FiniteMachine(name = machineName))
-                NewMachineChoice.PUSHDOWN -> onImport(PushdownMachine(name = machineName))
+            when (machineType) {
+                MachineType.FINITE -> onImport(FiniteMachine(name = machineName))
+                MachineType.PUSHDOWN -> onImport(PushdownMachine(name = machineName))
                 null -> {}
             }
         },
@@ -669,16 +623,16 @@ private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
             ItemSpecificationIcon(
                 icon = R.drawable.finite_automata,
                 text = stringResource(R.string.finite_automaton),
-                isActive = machineChoice == NewMachineChoice.FINITE,
+                isActive = machineType == MachineType.FINITE,
             ) {
-                machineChoice = NewMachineChoice.FINITE
+                machineType = MachineType.FINITE
             }
             ItemSpecificationIcon(
                 icon = R.drawable.pushdown_automata,
                 text = stringResource(R.string.pushdown_automaton),
-                isActive = machineChoice == NewMachineChoice.PUSHDOWN,
+                isActive = machineType == MachineType.PUSHDOWN,
             ) {
-                machineChoice = NewMachineChoice.PUSHDOWN
+                machineType = MachineType.PUSHDOWN
             }
         }
 

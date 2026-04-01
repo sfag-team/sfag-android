@@ -40,14 +40,15 @@ internal fun Machine.StateDialog(
     tapOffset: Offset,
     onAddPosition: (stateIndex: Int, offset: Offset) -> Unit,
     onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
 ) {
     var stateName by remember { mutableStateOf(selectedState?.name ?: "") }
     var isInitial by remember { mutableStateOf(selectedState?.initial ?: false) }
     var isFinal by remember { mutableStateOf(selectedState?.final ?: false) }
-    val tooltipState = rememberTooltipState()
-    val scope = rememberCoroutineScope()
 
     var tooltipMsg by remember { mutableIntStateOf(R.string.duplicate_state_name) }
+    val tooltipState = rememberTooltipState()
+    val scope = rememberCoroutineScope()
 
     DefaultDialog(
         title = null,
@@ -57,7 +58,6 @@ internal fun Machine.StateDialog(
             val isDuplicate =
                 states.any { it.name == stateName && it.index != selectedState?.index }
             if (isDuplicate) {
-                tooltipMsg = R.string.duplicate_state_name
                 scope.launch { tooltipState.show() }
                 return@DefaultDialog
             }
@@ -78,7 +78,7 @@ internal fun Machine.StateDialog(
                 selectedState.initial = isInitial
                 selectedState.final = isFinal
             }
-            onDismiss()
+            onConfirm()
         },
     ) {
         TooltipBox(

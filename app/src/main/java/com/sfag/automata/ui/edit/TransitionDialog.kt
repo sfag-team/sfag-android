@@ -30,6 +30,7 @@ internal fun Machine.TransitionDialog(
     to: State,
     existingTransitionName: String?,
     onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
 ) {
     // PDA-specific state - only initialized for PushdownMachine
     val existingPdaTransition =
@@ -87,7 +88,7 @@ internal fun Machine.TransitionDialog(
                         }
                 }
             }
-            onDismiss()
+            onConfirm()
         },
     ) {
         // Transition name field - labeled "read" for PDA

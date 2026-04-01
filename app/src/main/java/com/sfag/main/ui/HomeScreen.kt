@@ -27,7 +27,7 @@ import com.sfag.main.ui.component.DefaultButton
 fun HomeScreen(
     navToAutomata: () -> Unit,
     navToGrammar: () -> Unit,
-    navToExamplesScreen: () -> Unit,
+    navToExamples: () -> Unit,
     navToAbout: () -> Unit,
 ) {
     BoxWithConstraints(
@@ -80,7 +80,7 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     height = 56.dp,
                 ) {
-                    navToExamplesScreen()
+                    navToExamples()
                 }
                 DefaultButton(
                     text = stringResource(R.string.about_page),

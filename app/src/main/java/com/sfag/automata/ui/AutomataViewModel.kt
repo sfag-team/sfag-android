@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.sfag.automata.data.AutomataStorage
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.simulation.Simulation
@@ -16,6 +17,8 @@ import com.sfag.automata.domain.tree.NodeSnapshot
 import com.sfag.main.config.INITIAL_ZOOM
 import com.sfag.main.data.Point2D
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 // JFLAP coordinate conversion (96 DPI desktop to 160 DPI Android dp) - protocol constant
@@ -79,6 +82,7 @@ internal constructor(
         machine: Machine,
         positions: Map<Int, Point2D> = emptyMap(),
     ) {
+        clearInspection()
         currentMachine = machine
         machine.setInitialStateAsCurrent()
         loadPositions(positions)
@@ -87,16 +91,17 @@ internal constructor(
         markSaved()
     }
 
-    /** Persists the current machine to the fixed auto-save slot. Returns true on success. */
-    fun autoSave(machine: Machine): Boolean =
-        storage.saveMachine(
-            machine,
-            getPositions(),
-            offsetXCanvas,
-            offsetYCanvas,
-            scaleCanvas,
-            hasUnsavedChanges
-        )
+    /** Persists the current machine to the fixed auto-save slot. */
+    fun autoSave(machine: Machine) {
+        val positions = getPositions()
+        val offsetX = offsetXCanvas
+        val offsetY = offsetYCanvas
+        val scale = scaleCanvas
+        val dirty = hasUnsavedChanges
+        viewModelScope.launch(Dispatchers.IO) {
+            storage.saveMachine(machine, positions, offsetX, offsetY, scale, dirty)
+        }
+    }
 
     /** Loads the auto-saved machine. Returns true on success. */
     fun loadMachine(): Boolean {

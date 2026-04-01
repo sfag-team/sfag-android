@@ -1,7 +1,5 @@
 package com.sfag.automata.ui.machine
 
-import androidx.activity.compose.LocalActivity
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.shrinkVertically
@@ -65,7 +63,7 @@ private const val TAP_RADIUS = NODE_RADIUS * 0.5f
 internal val cellSize = 48.dp
 internal val cellPadding = 4.dp
 
-/** Dialog request shared between MachineView and the bottom panel lists. */
+/** Dialog request shared between MachineEditor and the bottom panel lists. */
 sealed interface DialogRequest {
     data class ForState(
         val tapOffset: Offset,
@@ -81,7 +79,7 @@ sealed interface DialogRequest {
 
 /** Unified view for both simulation and editing modes. */
 @Composable
-fun Machine.MachineView(
+fun Machine.MachineEditor(
     isEditing: Boolean,
     recomposeKey: Int,
     animationOverlay: (@Composable () -> Unit)?,
@@ -90,8 +88,7 @@ fun Machine.MachineView(
     onEdit: () -> Unit,
     onRecompose: () -> Unit,
 ) {
-    val activity = LocalActivity.current as? AppCompatActivity ?: return
-    val viewModel: AutomataViewModel = hiltViewModel(activity)
+    val viewModel: AutomataViewModel = hiltViewModel()
     val density = LocalDensity.current
 
     // Tool state
@@ -142,7 +139,7 @@ fun Machine.MachineView(
                             infiniteRight = false,
                         )
                     } else {
-                        when (this@MachineView) {
+                        when (this@MachineEditor) {
                             is FiniteMachine ->
                                 Tape(
                                     listState = tapeListState,
@@ -597,22 +594,32 @@ fun Machine.MachineView(
                             onAddPosition = { stateIndex, offset ->
                                 viewModel.addStatePosition(stateIndex, offset)
                             },
-                        ) {
-                            viewModel.markDirty()
-                            dialogRequest.value = null
-                            onRecompose()
-                        }
+                            onDismiss = {
+                                dialogRequest.value = null
+                                onRecompose()
+                            },
+                            onConfirm = {
+                                viewModel.markDirty()
+                                dialogRequest.value = null
+                                onRecompose()
+                            },
+                        )
 
                     is DialogRequest.ForTransition ->
                         TransitionDialog(
                             request.fromState,
                             request.toState,
-                            request.transitionName
-                        ) {
-                            viewModel.markDirty()
-                            dialogRequest.value = null
-                            onRecompose()
-                        }
+                            request.transitionName,
+                            onDismiss = {
+                                dialogRequest.value = null
+                                onRecompose()
+                            },
+                            onConfirm = {
+                                viewModel.markDirty()
+                                dialogRequest.value = null
+                                onRecompose()
+                            },
+                        )
 
                     null -> {}
                 }
@@ -620,7 +627,7 @@ fun Machine.MachineView(
         }
 
         // BOTTOM BAR (PDA stack - slides away in edit mode, canvas height stays stable)
-        if (this@MachineView is PushdownMachine) {
+        if (this@MachineEditor is PushdownMachine) {
             AnimatedVisibility(
                 visible = !isEditing,
                 exit = shrinkVertically(shrinkTowards = Alignment.Top),

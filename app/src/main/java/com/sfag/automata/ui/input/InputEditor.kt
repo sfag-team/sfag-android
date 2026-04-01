@@ -1,4 +1,4 @@
-package com.sfag.automata.ui
+package com.sfag.automata.ui.input
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -49,13 +49,13 @@ import kotlinx.coroutines.withContext
 
 /** Full-screen input editor. */
 @Composable
-fun Machine.InputScreen(
+fun Machine.InputEditor(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val savedInputs =
         remember {
-            this@InputScreen.savedInputs.map { StringBuilder(it.toString()) }.toMutableList()
+            this@InputEditor.savedInputs.map { StringBuilder(it.toString()) }.toMutableList()
         }
     val criteria = remember { (this as? PushdownMachine)?.acceptanceCriteria }
 
@@ -87,7 +87,7 @@ fun Machine.InputScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // PDA acceptance criteria
-            if (this@InputScreen is PushdownMachine) {
+            if (this@InputEditor is PushdownMachine) {
                 val listOfCriteria =
                     listOf(
                         AcceptanceCriteria.BY_FINAL_STATE.text,
@@ -143,7 +143,7 @@ fun Machine.InputScreen(
                 trailingIcon = {
                     IconButton(
                         onClick = {
-                            this@InputScreen.savedInputs.add(StringBuilder(newFullInput.value))
+                            this@InputEditor.savedInputs.add(StringBuilder(newFullInput.value))
                             recomposeKey++
                         },
                     ) {
@@ -165,9 +165,9 @@ fun Machine.InputScreen(
             OutlinedButton(
                 onClick = {
                     // Restore original state
-                    this@InputScreen.savedInputs.clear()
-                    this@InputScreen.savedInputs.addAll(savedInputs.map { StringBuilder(it.toString()) })
-                    if (criteria != null && this@InputScreen is PushdownMachine) {
+                    this@InputEditor.savedInputs.clear()
+                    this@InputEditor.savedInputs.addAll(savedInputs.map { StringBuilder(it.toString()) })
+                    if (criteria != null && this@InputEditor is PushdownMachine) {
                         acceptanceCriteria = criteria
                     }
                     onDismiss()
@@ -201,7 +201,7 @@ fun Machine.InputScreen(
                         .clip(MaterialTheme.shapes.medium)
                         .background(MaterialTheme.colorScheme.surfaceContainer),
             ) {
-                if (this@InputScreen.savedInputs.isEmpty()) {
+                if (this@InputEditor.savedInputs.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -223,7 +223,7 @@ fun Machine.InputScreen(
                         contentPadding =
                             PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
                     ) {
-                        items(this@InputScreen.savedInputs.toList()) { savedInput ->
+                        items(this@InputEditor.savedInputs.toList()) { savedInput ->
                             val savedText = savedInput.toString()
                             var isAccepted by remember(savedText) { mutableStateOf<Boolean?>(null) }
                             LaunchedEffect(savedText) {
@@ -255,7 +255,7 @@ fun Machine.InputScreen(
                                 trailingContent = {
                                     IconButton(
                                         onClick = {
-                                            this@InputScreen.savedInputs.remove(savedInput)
+                                            this@InputEditor.savedInputs.remove(savedInput)
                                             recomposeKey++
                                         },
                                     ) {

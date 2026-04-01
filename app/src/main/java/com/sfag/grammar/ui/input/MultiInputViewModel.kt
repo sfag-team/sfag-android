@@ -1,4 +1,4 @@
-package com.sfag.grammar.ui
+package com.sfag.grammar.ui.input
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
