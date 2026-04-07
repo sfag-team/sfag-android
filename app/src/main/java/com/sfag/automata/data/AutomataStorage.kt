@@ -22,21 +22,19 @@ internal data class StoredMachine(
 )
 
 /** File-based storage for automata using .jff files */
-internal class AutomataStorage
+class AutomataStorage
 @Inject
 constructor(
     @param:ApplicationContext private val context: Context,
 ) {
-    private val storageDir: File
-        get() {
-            val dir = File(context.filesDir, "automata")
-            if (!dir.exists()) {
-                dir.mkdirs()
-            }
-            return dir
-        }
+    private val storageDir = File(context.filesDir, "automata").also {
+        if (!it.exists()) it.mkdirs()
+    }
 
-    fun saveMachine(
+    private val jffFile = File(storageDir, "__current.jff")
+    private val metaFile = File(storageDir, "__current.meta")
+
+    internal fun saveMachine(
         machine: Machine,
         positions: Map<Int, Point2D>,
         offsetX: Float,
@@ -45,50 +43,46 @@ constructor(
         dirty: Boolean,
     ): Boolean =
         try {
-            File(storageDir, "__current.jff").writeText(machine.exportToJff(positions))
-            val metadata =
-                buildString {
-                    appendLine(machine.name)
-                    machine.savedInputs.forEach { appendLine(it.toString()) }
-                    appendLine("$CANVAS_TAG$offsetX,$offsetY,$scale")
-                    appendLine("$DIRTY_TAG$dirty")
-                }
-            File(storageDir, "__current.meta").writeText(metadata)
+            jffFile.writeText(machine.exportToJff(positions))
+            val metadata = buildString {
+                appendLine(machine.name)
+                machine.savedInputs.forEach { appendLine(it.toString()) }
+                appendLine("$CANVAS_TAG$offsetX,$offsetY,$scale")
+                appendLine("$DIRTY_TAG$dirty")
+            }
+            metaFile.writeText(metadata)
             true
         } catch (e: Exception) {
             Log.e("AutomataStorage", "Failed to save machine", e)
             false
         }
 
-    fun loadMachine(): StoredMachine? {
-        val jffFile = File(storageDir, "__current.jff")
+    fun hasStoredMachine(): Boolean = jffFile.exists()
+
+    internal fun loadMachine(): StoredMachine? {
         if (!jffFile.exists()) return null
 
         return try {
             val jff = jffFile.inputStream().use { Jff.parse(it) }
-            val metaFile = File(storageDir, "__current.meta")
-            val lines = if (metaFile.exists()) metaFile.readLines() else emptyList()
-            val name = lines.firstOrNull() ?: "untitled"
+            val metaLines = if (metaFile.exists()) metaFile.readLines() else emptyList()
 
-            val canvasParts = lines.lastOrNull { it.startsWith(CANVAS_TAG) }
-                ?.removePrefix(CANVAS_TAG)?.split(",")
+            val canvasParts =
+                metaLines.lastOrNull { it.startsWith(CANVAS_TAG) }?.removePrefix(CANVAS_TAG)?.split(",")
             val offsetX = canvasParts?.getOrNull(0)?.toFloatOrNull() ?: 0f
             val offsetY = canvasParts?.getOrNull(1)?.toFloatOrNull() ?: 0f
             val scale = canvasParts?.getOrNull(2)?.toFloatOrNull() ?: INITIAL_ZOOM
 
-            val dirtyLine = lines.lastOrNull { it.startsWith(DIRTY_TAG) }
+            val dirtyLine = metaLines.lastOrNull { it.startsWith(DIRTY_TAG) }
             val dirty = dirtyLine?.removePrefix(DIRTY_TAG)?.toBooleanStrictOrNull() ?: false
 
-            val savedInputs =
-                lines
-                    .drop(1)
-                    .filter {
-                        it.isNotEmpty() && !it.startsWith(CANVAS_TAG) && !it.startsWith(
-                            DIRTY_TAG
-                        )
-                    }
-                    .map { StringBuilder(it) }
-                    .toMutableList()
+            val name = metaLines.firstOrNull() ?: ""
+            val savedInputs = metaLines
+                .drop(1)
+                .filter {
+                    it.isNotEmpty() && !it.startsWith(CANVAS_TAG) && !it.startsWith(DIRTY_TAG)
+                }
+                .map { StringBuilder(it) }
+                .toMutableList()
 
             StoredMachine(
                 jff.toMachine(name, savedInputs),

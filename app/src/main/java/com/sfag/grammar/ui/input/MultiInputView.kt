@@ -1,4 +1,4 @@
-package com.sfag.grammar.ui
+package com.sfag.grammar.ui.input
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,11 +40,12 @@ import com.sfag.grammar.domain.grammar.GrammarType
 import com.sfag.grammar.domain.grammar.ParseResult
 import com.sfag.grammar.domain.grammar.cykAccepts
 import com.sfag.grammar.domain.grammar.parse
+import com.sfag.grammar.ui.GrammarViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
-fun MultiInputScreen(
+fun MultiInputView(
     grammarViewModel: GrammarViewModel,
     inputsViewModel: MultiInputViewModel,
     onTestInput: (String) -> Unit,

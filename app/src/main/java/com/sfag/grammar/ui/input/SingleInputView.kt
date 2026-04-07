@@ -1,4 +1,4 @@
-package com.sfag.grammar.ui
+package com.sfag.grammar.ui.input
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
@@ -55,6 +55,7 @@ import com.sfag.grammar.domain.grammar.GrammarType
 import com.sfag.grammar.domain.grammar.ParseResult
 import com.sfag.grammar.domain.grammar.findReplacementIndex
 import com.sfag.grammar.domain.grammar.parse
+import com.sfag.grammar.ui.GrammarViewModel
 import com.sfag.grammar.ui.common.GrammarRuleView
 import com.sfag.grammar.ui.tree.TreeView
 import com.sfag.grammar.ui.tree.buildTree
@@ -72,7 +73,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun SingleInputScreen(
+fun SingleInputView(
     grammarViewModel: GrammarViewModel,
     initialInput: String?,
     modifier: Modifier = Modifier,

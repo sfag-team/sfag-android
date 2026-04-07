@@ -31,10 +31,10 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun DefaultTextField(
-    label: String,
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    label: String = "",
     requirementText: String = "",
     suffix: String = "",
     labelColor: Color? = null,
@@ -125,11 +125,11 @@ private class SuffixVisualTransformation(
 fun ImmutableTextField(
     text: String,
     modifier: Modifier = Modifier,
-    backgroundColor: Color?,
+    backgroundColor: Color? = null,
     textColor: Color = MaterialTheme.colorScheme.onSurface,
     style: TextStyle = MaterialTheme.typography.titleLarge,
-    onClick: (() -> Unit)?,
-    trailingContent: (@Composable () -> Unit)?,
+    onClick: (() -> Unit)? = null,
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     Box(
         modifier =

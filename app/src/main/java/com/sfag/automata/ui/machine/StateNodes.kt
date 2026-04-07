@@ -27,7 +27,7 @@ import kotlin.math.sqrt
 
 private const val ARROW_HEAD_SIZE = NODE_RADIUS * 0.5f
 
-/** Renders all states as nodes (purely visual - interaction handled by MachineView). */
+/** Renders all states as nodes (purely visual - interaction handled by MachineEditor). */
 @Composable
 internal fun Machine.StateNodes(
     positions: Map<Int, Offset>,

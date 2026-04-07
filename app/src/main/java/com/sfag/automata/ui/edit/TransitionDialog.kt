@@ -19,6 +19,8 @@ import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.State
+import com.sfag.main.ui.component.CancelButton
+import com.sfag.main.ui.component.ConfirmButton
 import com.sfag.main.ui.component.DefaultDialog
 import com.sfag.main.ui.component.DefaultTextField
 import com.sfag.main.ui.component.DropdownSelector
@@ -30,6 +32,7 @@ internal fun Machine.TransitionDialog(
     to: State,
     existingTransitionName: String?,
     onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
 ) {
     // PDA-specific state - only initialized for PushdownMachine
     val existingPdaTransition =
@@ -50,70 +53,76 @@ internal fun Machine.TransitionDialog(
     var toState: State by remember { mutableStateOf(to) }
 
     DefaultDialog(
-        title = null,
-        onDismiss = onDismiss,
-        onConfirm = {
-            if (this@TransitionDialog is FiniteMachine) {
-                if (existingTransitionName == null) {
-                    addNewTransition(
-                        name = transitionName,
-                        fromState = fromState,
-                        toState = toState,
-                    )
-                } else {
-                    transitions
-                        .firstOrNull { t -> t.fromState == from.index && t.toState == to.index }
-                        ?.let { it.name = transitionName }
-                }
-            } else if (this@TransitionDialog is PushdownMachine) {
-                if (existingTransitionName == null) {
-                    addNewTransition(
-                        name = transitionName,
-                        fromState = fromState,
-                        toState = toState,
-                        pop = popSymbol,
-                        push = pushSymbol,
-                    )
-                } else {
-                    pdaTransitions
-                        .firstOrNull { t ->
-                            t.fromState == from.index &&
-                                    t.toState == to.index &&
-                                    t.name == existingTransitionName
-                        }?.let {
-                            it.name = transitionName
-                            it.pop = popSymbol
-                            it.push = pushSymbol
+        onDismissRequest = onDismiss,
+        buttons = {
+            CancelButton(onClick = onDismiss)
+            ConfirmButton(
+                onClick = {
+                    if (this@TransitionDialog is FiniteMachine) {
+                        if (existingTransitionName == null) {
+                            addNewTransition(
+                                name = transitionName,
+                                fromState = fromState,
+                                toState = toState,
+                            )
+                        } else {
+                            transitions
+                                .firstOrNull { t ->
+                                    t.fromState == from.index && t.toState == to.index
+                                }
+                                ?.let { it.name = transitionName }
                         }
-                }
-            }
-            onDismiss()
+                    } else if (this@TransitionDialog is PushdownMachine) {
+                        if (existingTransitionName == null) {
+                            addNewTransition(
+                                name = transitionName,
+                                fromState = fromState,
+                                toState = toState,
+                                pop = popSymbol,
+                                push = pushSymbol,
+                            )
+                        } else {
+                            pdaTransitions
+                                .firstOrNull { t ->
+                                    t.fromState == from.index &&
+                                            t.toState == to.index &&
+                                            t.name == existingTransitionName
+                                }?.let {
+                                    it.name = transitionName
+                                    it.pop = popSymbol
+                                    it.push = pushSymbol
+                                }
+                        }
+                    }
+                    onConfirm()
+                },
+            )
         },
     ) {
         // Transition name field - labeled "read" for PDA
         DefaultTextField(
+            value = transitionName,
+            onValueChange = { transitionName = it },
+            modifier = Modifier.fillMaxWidth(),
             label = if (this@TransitionDialog is PushdownMachine)
                 stringResource(R.string.transition_read)
             else
                 stringResource(R.string.transition_name),
-            value = transitionName,
-            modifier = Modifier.fillMaxWidth(),
-            onValueChange = { transitionName = it },
         )
 
         // Pop and Push fields (PDA only) - separate lines
         if (this@TransitionDialog is PushdownMachine) {
             DefaultTextField(
-                label = stringResource(R.string.stack_pop),
                 value = popSymbol,
                 onValueChange = { popSymbol = it },
                 modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.stack_pop),
             )
             DefaultTextField(
-                label = stringResource(R.string.stack_push),
                 value = pushSymbol,
                 onValueChange = { pushSymbol = it },
                 modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.stack_push),
             )
         }
 
@@ -129,24 +138,20 @@ internal fun Machine.TransitionDialog(
             )
             DropdownSelector(
                 items = states,
-                label = "",
                 defaultSelectedIndex = states.indexOf(from),
+                onSelectItem = { if (it != fromState) fromState = it },
                 modifier = Modifier.weight(1f),
-            ) {
-                if (it != fromState) fromState = it
-            }
+            )
             Text(
                 text = stringResource(R.string.to_state),
                 style = MaterialTheme.typography.bodyMedium,
             )
             DropdownSelector(
                 items = states,
-                label = "",
                 defaultSelectedIndex = states.indexOf(to),
+                onSelectItem = { if (it != toState) toState = it },
                 modifier = Modifier.weight(1f),
-            ) {
-                if (it != toState) toState = it
-            }
+            )
         }
     }
 }

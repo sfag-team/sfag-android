@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,17 +24,13 @@ import com.sfag.R
 
 @Composable
 fun DefaultDialog(
-    title: String?,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
+    onDismissRequest: () -> Unit,
+    buttons: @Composable RowScope.() -> Unit,
     modifier: Modifier = Modifier,
-    confirmLabel: String = stringResource(R.string.save_button),
-    cancelLabel: String = stringResource(R.string.cancel_button),
-    onDismissRequest: (() -> Unit)? = null,
-    enabled: Boolean = true,
+    title: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismissRequest ?: onDismiss) {
+    Dialog(onDismissRequest = onDismissRequest) {
         Surface(
             modifier = modifier,
             shape = MaterialTheme.shapes.extraLarge,
@@ -58,18 +55,69 @@ fun DefaultDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.medium) {
-                        Text(cancelLabel)
-                    }
-                    Button(
-                        onClick = onConfirm,
-                        enabled = enabled,
-                        shape = MaterialTheme.shapes.medium,
-                    ) {
-                        Text(confirmLabel)
-                    }
+                    buttons()
                 }
             }
         }
+    }
+}
+
+@Composable
+fun CancelButton(
+    onClick: () -> Unit,
+    label: String = stringResource(R.string.cancel_button),
+) {
+    OutlinedButton(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Text(label)
+    }
+}
+
+@Composable
+fun ConfirmButton(
+    onClick: () -> Unit,
+    label: String = stringResource(R.string.save_button),
+    enabled: Boolean = true,
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Text(label)
+    }
+}
+
+@Composable
+fun CreateButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    label: String = stringResource(R.string.create_button),
+    enabled: Boolean = true,
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Text(label)
+    }
+}
+
+@Composable
+fun ImportButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    label: String = stringResource(R.string.import_button),
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Text(label)
     }
 }

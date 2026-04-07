@@ -15,7 +15,6 @@
     <string name="remove_item">Odstrániť</string>
     <string name="save_button">Uložiť</string>
     <string name="select_language">Vybrať jazyk</string>
-    <string name="untitled_name">bez názvu</string>
 
     <!-- Automata Screen -->
     <string name="accept_by">Akceptovať pomocou</string>
@@ -33,7 +32,7 @@
     <string name="final_state">Koncový</string>
     <string name="finite_automaton">Konečný</string>
     <string name="from_state">zo stavu</string>
-    <string name="import_file">Importovať</string>
+    <string name="import_button">Importovať</string>
     <string name="initial_state">Počiatočný</string>
     <string name="initial_state_exists">Váš automat už má počiatočný stav</string>
     <string name="input_accepted"> je akceptované</string>
