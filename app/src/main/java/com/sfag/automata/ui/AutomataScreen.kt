@@ -49,7 +49,6 @@ import com.sfag.R
 import com.sfag.automata.data.Jff
 import com.sfag.automata.data.exportToJff
 import com.sfag.automata.data.toMachine
-import com.sfag.automata.domain.common.checkDeterminism
 import com.sfag.automata.domain.common.getFormalDefinition
 import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
@@ -571,20 +570,17 @@ private fun BottomScreenPart(
             }
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                val showsTree = machine.checkDeterminism() == false
-                if (showsTree) {
-                    machine.TreeView(
-                        recomposeKey = recomposeKey.intValue,
-                        inspectedNodeId = viewModel.inspectedNodeId,
-                        onSelectNode = { nodeId ->
-                            viewModel.inspectNode(machine, nodeId)
-                            if (machine is PushdownMachine) {
-                                machine.selectNode(nodeId)
-                            }
-                            recomposeKey.intValue++
-                        },
-                    )
-                }
+                machine.TreeView(
+                    recomposeKey = recomposeKey.intValue,
+                    inspectedNodeId = viewModel.inspectedNodeId,
+                    onSelectNode = { nodeId ->
+                        viewModel.inspectNode(machine, nodeId)
+                        if (machine is PushdownMachine) {
+                            machine.selectNode(nodeId)
+                        }
+                        recomposeKey.intValue++
+                    },
+                )
                 Box(
                     modifier =
                         Modifier.fillMaxWidth()

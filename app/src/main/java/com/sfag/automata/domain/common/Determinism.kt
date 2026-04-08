@@ -7,12 +7,14 @@ import com.sfag.automata.domain.machine.Transition
 import com.sfag.automata.domain.machine.TuringMachine
 
 fun Machine.determinismLabel(): String? {
-    val det = checkDeterminism() ?: return null
-    val prefix = if (det) "D" else "N"
-    return "$prefix$typeLabel"
+    return when (isDeterministic()) {
+        true -> "D$typeLabel"
+        false -> "N$typeLabel"
+        null -> null
+    }
 }
 
-fun Machine.checkDeterminism(): Boolean? {
+fun Machine.isDeterministic(): Boolean? {
     if (states.isEmpty() && transitions.isEmpty()) {
         return null
     }

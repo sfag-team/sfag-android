@@ -110,10 +110,10 @@ class MainActivity : AppCompatActivity() {
                                             }
                                             navController.navigate(
                                                 "${Destinations.AUTOMATA.route}?importUri=${
-                                                Uri.encode(
-                                                    uri.toString()
-                                                )
-                                            }"
+                                                    Uri.encode(
+                                                        uri.toString()
+                                                    )
+                                                }"
                                             ) {
                                                 launchSingleTop = true
                                             }

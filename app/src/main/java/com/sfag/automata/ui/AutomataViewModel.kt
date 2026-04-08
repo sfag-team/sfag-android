@@ -107,7 +107,11 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
         offsetXCanvas = stored.offsetX
         offsetYCanvas = stored.offsetY
         scaleCanvas = stored.scale
-        if (stored.dirty) markDirty() else markSaved()
+        if (stored.dirty) {
+            markDirty()
+        } else {
+            markSaved()
+        }
         return true
     }
 

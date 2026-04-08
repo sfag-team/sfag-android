@@ -31,7 +31,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.sfag.automata.domain.common.checkDeterminism
+import com.sfag.automata.domain.common.isDeterministic
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.simulation.SimulationOutcome
@@ -44,17 +44,13 @@ import com.sfag.main.config.MAX_ZOOM
 import com.sfag.main.config.MIN_ZOOM
 import com.sfag.main.ui.theme.extendedColorScheme
 
-private val CANVAS_HEIGHT = 300.dp
-
 @Composable
 fun Machine.TreeView(
     recomposeKey: Int,
     inspectedNodeId: Int? = null,
     onSelectNode: ((Int) -> Unit)?,
 ) {
-    if (checkDeterminism() != false) {
-        return
-    }
+    val canvasHeight = if (isDeterministic() == true) 100.dp else 300.dp
     if (tree.root == null) {
         val initialState = states.firstOrNull { it.initial }
         if (initialState != null) {
@@ -140,7 +136,7 @@ fun Machine.TreeView(
         }
 
         val gen = tree.getCurrentGeneration()
-        val viewHeightPx = with(density) { CANVAS_HEIGHT.toPx() }
+        val viewHeightPx = with(density) { canvasHeight.toPx() }
 
         // Reset detected - clear drag flag so auto-center runs
         if (gen < lastCenteredGen.intValue) {
@@ -181,7 +177,7 @@ fun Machine.TreeView(
         Canvas(
             modifier =
                 Modifier.fillMaxWidth()
-                    .height(CANVAS_HEIGHT)
+                    .height(canvasHeight)
                     .onSizeChanged {
                         canvasWidthPx = it.width.toFloat()
                         canvasHeightPx = it.height.toFloat()
