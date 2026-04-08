@@ -1,7 +1,7 @@
 package com.sfag.automata.domain.machine
 
 import com.sfag.automata.domain.simulation.Simulation
-import com.sfag.automata.domain.tree.NodeSnapshot
+import com.sfag.automata.domain.simulation.snapshotActiveNodes
 import com.sfag.automata.domain.tree.Tree
 
 sealed class Machine(
@@ -25,12 +25,7 @@ sealed class Machine(
 
     abstract fun advanceSimulation(): Simulation
 
-    abstract fun snapshotActiveNodes(): Map<Int, NodeSnapshot>
-
-    abstract fun canReachFinalState(
-        input: StringBuilder,
-        fromInit: Boolean,
-    ): Boolean?
+    abstract fun canReachFinalState(input: StringBuilder, fromInit: Boolean): Boolean?
 
     abstract fun removeTransition(transition: Transition)
 
@@ -85,10 +80,14 @@ sealed class Machine(
     }
 
     fun findNewStateIndex(): Int {
-        if (states.isEmpty()) return 1
+        if (states.isEmpty()) {
+            return 1
+        }
         val usedIndices = states.map { it.index }.toSortedSet()
         for (i in 1..usedIndices.last() + 1) {
-            if (i !in usedIndices) return i
+            if (i !in usedIndices) {
+                return i
+            }
         }
         return usedIndices.last() + 1
     }
@@ -100,7 +99,9 @@ sealed class Machine(
     }
 
     protected fun ensureCurrentState(): Boolean {
-        if (currentState == null) currentState = states.firstOrNull { it.initial }?.index
+        if (currentState == null) {
+            currentState = states.firstOrNull { it.initial }?.index
+        }
         return currentState != null
     }
 
@@ -112,8 +113,8 @@ sealed class Machine(
         }
 
     /**
-     * Generic BFS reachability check. Explores configurations breadth-first
-     * using a visited set (configs must implement structural equality via data class).
+     * Generic BFS reachability check. Explores configurations breadth-first using a visited set
+     * (configs must implement structural equality via data class).
      *
      * @return true = accepted, false = rejected (exhausted), null = inconclusive (limit hit)
      */
@@ -129,9 +130,15 @@ sealed class Machine(
         while (current.isNotEmpty() && visited.size < maxConfigs) {
             val next = mutableListOf<Config>()
             for (config in current) {
-                if (!visited.add(config)) continue
-                if (visited.size > maxConfigs) break
-                if (isAccepted(config)) return true
+                if (!visited.add(config)) {
+                    continue
+                }
+                if (visited.size > maxConfigs) {
+                    break
+                }
+                if (isAccepted(config)) {
+                    return true
+                }
                 next.addAll(expand(config))
             }
             current = next

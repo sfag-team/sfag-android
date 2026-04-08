@@ -7,18 +7,15 @@ import androidx.compose.ui.graphics.vector.PathBuilder
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
-private fun icon(
-    name: String,
-    block: PathBuilder.() -> Unit,
-): ImageVector =
-    ImageVector
-        .Builder(
+private fun icon(name: String, block: PathBuilder.() -> Unit): ImageVector =
+    ImageVector.Builder(
             name = name,
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
             viewportWidth = 960f,
             viewportHeight = 960f,
-        ).apply { path(fill = SolidColor(Color.Black), pathBuilder = block) }
+        )
+        .apply { path(fill = SolidColor(Color.Black), pathBuilder = block) }
         .build()
 
 val ChevronLeft by lazy {

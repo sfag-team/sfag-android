@@ -23,14 +23,10 @@ import com.sfag.automata.ui.machine.cellPadding
 import com.sfag.automata.ui.machine.cellSize
 
 @Composable
-internal fun Toolbar(
-    activeTool: MachineEditMode,
-    onSelectTool: (MachineEditMode) -> Unit,
-) {
+internal fun Toolbar(activeTool: MachineEditMode, onSelectTool: (MachineEditMode) -> Unit) {
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
+            Modifier.fillMaxWidth()
                 .height(cellSize + cellPadding * 2)
                 .padding(horizontal = cellPadding),
         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -41,14 +37,14 @@ internal fun Toolbar(
             R.string.select_tool,
             MachineEditMode.SELECT,
             activeTool,
-            onSelectTool
+            onSelectTool,
         )
         ToolIcon(
             R.drawable.move,
             R.string.move_tool,
             MachineEditMode.MOVE,
             activeTool,
-            onSelectTool
+            onSelectTool,
         )
         ToolIcon(
             R.drawable.add_states,
@@ -69,7 +65,7 @@ internal fun Toolbar(
             R.string.remove_item,
             MachineEditMode.REMOVE,
             activeTool,
-            onSelectTool
+            onSelectTool,
         )
     }
 }
@@ -87,11 +83,10 @@ private fun ToolIcon(
         painter = painterResource(id = icon),
         contentDescription = stringResource(label),
         modifier =
-            Modifier
-                .size(cellSize)
+            Modifier.size(cellSize)
                 .clip(MaterialTheme.shapes.small)
                 .background(
-                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
                 )
                 .clickable { onSelectTool(tool) }
                 .padding(cellPadding),

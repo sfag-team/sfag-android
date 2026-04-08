@@ -19,6 +19,7 @@ import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.State
+import com.sfag.main.data.JffUtils
 import com.sfag.main.ui.component.CancelButton
 import com.sfag.main.ui.component.ConfirmButton
 import com.sfag.main.ui.component.DefaultDialog
@@ -39,8 +40,8 @@ internal fun Machine.TransitionDialog(
         if (this@TransitionDialog is PushdownMachine && existingTransitionName != null) {
             pdaTransitions.firstOrNull {
                 it.fromState == from.index &&
-                        it.toState == to.index &&
-                        it.name == existingTransitionName
+                    it.toState == to.index &&
+                    it.read == existingTransitionName
             }
         } else {
             null
@@ -58,10 +59,11 @@ internal fun Machine.TransitionDialog(
             CancelButton(onClick = onDismiss)
             ConfirmButton(
                 onClick = {
+                    val normalizedName = JffUtils.normalizeEpsilon(transitionName)
                     if (this@TransitionDialog is FiniteMachine) {
                         if (existingTransitionName == null) {
                             addNewTransition(
-                                name = transitionName,
+                                read = normalizedName,
                                 fromState = fromState,
                                 toState = toState,
                             )
@@ -70,62 +72,38 @@ internal fun Machine.TransitionDialog(
                                 .firstOrNull { t ->
                                     t.fromState == from.index && t.toState == to.index
                                 }
-                                ?.let { it.name = transitionName }
+                                ?.let { it.read = normalizedName }
                         }
                     } else if (this@TransitionDialog is PushdownMachine) {
+                        val normalizedPop = JffUtils.normalizeEpsilon(popSymbol)
+                        val normalizedPush = JffUtils.normalizeEpsilon(pushSymbol)
                         if (existingTransitionName == null) {
                             addNewTransition(
-                                name = transitionName,
+                                read = normalizedName,
                                 fromState = fromState,
                                 toState = toState,
-                                pop = popSymbol,
-                                push = pushSymbol,
+                                pop = normalizedPop,
+                                push = normalizedPush,
                             )
                         } else {
                             pdaTransitions
                                 .firstOrNull { t ->
                                     t.fromState == from.index &&
-                                            t.toState == to.index &&
-                                            t.name == existingTransitionName
-                                }?.let {
-                                    it.name = transitionName
-                                    it.pop = popSymbol
-                                    it.push = pushSymbol
+                                        t.toState == to.index &&
+                                        t.read == existingTransitionName
+                                }
+                                ?.let {
+                                    it.read = normalizedName
+                                    it.pop = normalizedPop
+                                    it.push = normalizedPush
                                 }
                         }
                     }
                     onConfirm()
-                },
+                }
             )
         },
     ) {
-        // Transition name field - labeled "read" for PDA
-        DefaultTextField(
-            value = transitionName,
-            onValueChange = { transitionName = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = if (this@TransitionDialog is PushdownMachine)
-                stringResource(R.string.transition_read)
-            else
-                stringResource(R.string.transition_name),
-        )
-
-        // Pop and Push fields (PDA only) - separate lines
-        if (this@TransitionDialog is PushdownMachine) {
-            DefaultTextField(
-                value = popSymbol,
-                onValueChange = { popSymbol = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = stringResource(R.string.stack_pop),
-            )
-            DefaultTextField(
-                value = pushSymbol,
-                onValueChange = { pushSymbol = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = stringResource(R.string.stack_push),
-            )
-        }
-
         // From/To dropdowns row
         Row(
             Modifier.fillMaxWidth(),
@@ -151,6 +129,35 @@ internal fun Machine.TransitionDialog(
                 defaultSelectedIndex = states.indexOf(to),
                 onSelectItem = { if (it != toState) toState = it },
                 modifier = Modifier.weight(1f),
+            )
+        }
+
+        // Transition read field
+        DefaultTextField(
+            value = transitionName,
+            onValueChange = { transitionName = it },
+            modifier = Modifier.fillMaxWidth(),
+            label =
+                if (this@TransitionDialog is PushdownMachine) {
+                    stringResource(R.string.transition_read)
+                } else {
+                    stringResource(R.string.transition_name)
+                },
+        )
+
+        // Pop and Push fields (PDA only)
+        if (this@TransitionDialog is PushdownMachine) {
+            DefaultTextField(
+                value = popSymbol,
+                onValueChange = { popSymbol = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.stack_pop),
+            )
+            DefaultTextField(
+                value = pushSymbol,
+                onValueChange = { pushSymbol = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.stack_push),
             )
         }
     }

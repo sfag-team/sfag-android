@@ -4,7 +4,7 @@ class TreeNode(
     val step: Int,
     val label: Char,
     val parents: MutableSet<TreeNode> = mutableSetOf(),
-    val children: MutableSet<TreeNode> = mutableSetOf()
+    val children: MutableSet<TreeNode> = mutableSetOf(),
 ) {
     override fun toString(): String = label.toString()
 
@@ -20,7 +20,9 @@ class TreeNode(
         stack.addLast(this)
         while (stack.isNotEmpty()) {
             val node = stack.removeLast()
-            if (!visited.add(node)) continue
+            if (!visited.add(node)) {
+                continue
+            }
             if (node.children.isEmpty()) {
                 leaves.add(node)
             } else {
@@ -30,11 +32,10 @@ class TreeNode(
         return leaves.toMutableList()
     }
 
-    fun collect(
-        nodes: MutableSet<TreeNode>,
-        step: Int
-    ) {
-        if (this.step > step) return
+    fun collect(nodes: MutableSet<TreeNode>, step: Int) {
+        if (this.step > step) {
+            return
+        }
         if (nodes.add(this)) {
             children.forEach { it.collect(nodes, step) }
         }

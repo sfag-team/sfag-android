@@ -25,15 +25,10 @@ import com.sfag.R
 internal val rowHeight = 48.dp
 
 @Composable
-internal fun ListRow(
-    text: String,
-    onClick: () -> Unit,
-    onRemove: (() -> Unit)?,
-) {
+internal fun ListRow(text: String, onClick: () -> Unit, onRemove: (() -> Unit)?) {
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
+            Modifier.fillMaxWidth()
                 .height(rowHeight)
                 .clip(MaterialTheme.shapes.small)
                 .background(MaterialTheme.colorScheme.secondaryContainer)
@@ -47,9 +42,7 @@ internal fun ListRow(
             color = MaterialTheme.colorScheme.onSecondaryContainer,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 16.dp),
+            modifier = Modifier.weight(1f).padding(start = 16.dp),
         )
         if (onRemove != null) {
             IconButton(onClick = onRemove) {

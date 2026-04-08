@@ -14,29 +14,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun PortraitPillarbox(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
+fun PortraitPillarbox(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         if (maxWidth < 600.dp) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                content()
-            }
+            Box(modifier = Modifier.fillMaxSize()) { content() }
         } else {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black),
-                contentAlignment = Alignment.Center
+                modifier = Modifier.fillMaxSize().background(Color.Black),
+                contentAlignment = Alignment.Center,
             ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .aspectRatio(9f / 16f)
-                ) {
-                    content()
-                }
+                Surface(modifier = Modifier.fillMaxHeight().aspectRatio(9f / 16f)) { content() }
             }
         }
     }

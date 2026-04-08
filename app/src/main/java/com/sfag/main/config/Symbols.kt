@@ -15,14 +15,4 @@ object Symbols {
 
     // Notations
     const val ARROW = "->" // production rule arrow
-
-    /** Returns true if the label represents an epsilon/empty transition. */
-    fun isEpsilonLabel(label: String): Boolean {
-        val normalized = label.trim().lowercase()
-        return normalized.isEmpty() ||
-                normalized == "eps" ||
-                normalized == "epsilon" ||
-                normalized == EPSILON ||
-                normalized == LAMBDA
-    }
 }

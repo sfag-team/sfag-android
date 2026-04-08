@@ -103,11 +103,10 @@ private class SuffixVisualTransformation(
     private val suffixColor: Color,
 ) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
-        val transformedText =
-            buildAnnotatedString {
-                append(text)
-                withStyle(style = SpanStyle(color = suffixColor)) { append(suffix) }
-            }
+        val transformedText = buildAnnotatedString {
+            append(text)
+            withStyle(style = SpanStyle(color = suffixColor)) { append(suffix) }
+        }
         return TransformedText(
             text = transformedText,
             offsetMapping =
@@ -136,7 +135,7 @@ fun ImmutableTextField(
             modifier
                 .clip(MaterialTheme.shapes.extraSmall)
                 .then(
-                    if (backgroundColor != null) Modifier.background(backgroundColor) else Modifier,
+                    if (backgroundColor != null) Modifier.background(backgroundColor) else Modifier
                 )
                 .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
                 .padding(start = 16.dp, end = if (trailingContent != null) 4.dp else 16.dp),

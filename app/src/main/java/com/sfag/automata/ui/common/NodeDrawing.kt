@@ -19,8 +19,8 @@ fun fontScaleFactor(nameLength: Int): Float =
     }
 
 /**
- * Draws a single automaton node: outline circle, filled interior, optional
- * final-state ring, and centered name label.
+ * Draws a single automaton node: outline circle, filled interior, optional final-state ring, and
+ * centered name label.
  *
  * Outline is centered on NODE_RADIUS - outer edge at NODE_RADIUS + NODE_OUTLINE / 2.
  */

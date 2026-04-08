@@ -1,12 +1,11 @@
 package com.sfag.automata.domain.tree
 
 import com.sfag.automata.domain.machine.State
+import com.sfag.automata.domain.simulation.NodeSnapshot
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.TransitionRef
 
-data class Branch(
-    val stateName: String?,
-)
+data class Branch(val stateName: String?)
 
 class Tree {
     var root: TreeNode? = null
@@ -36,11 +35,7 @@ class Tree {
             }
             for (child in children) {
                 val childNode =
-                    TreeNode(
-                        id = nextId++,
-                        stateName = child.stateName,
-                        depth = node.depth + 1,
-                    )
+                    TreeNode(id = nextId++, stateName = child.stateName, depth = node.depth + 1)
                 node.children.add(childNode)
                 newActive.add(childNode)
             }
@@ -56,7 +51,9 @@ class Tree {
                 return true
             }
             val isAccepting = node.children.any { walk(it) }
-            if (isAccepting) node.status = SimulationOutcome.ACCEPTED
+            if (isAccepting) {
+                node.status = SimulationOutcome.ACCEPTED
+            }
             return isAccepting
         }
         root?.let { walk(it) }
@@ -74,7 +71,9 @@ class Tree {
 
     fun findNode(id: Int): TreeNode? {
         fun walk(node: TreeNode): TreeNode? {
-            if (node.id == id) return node
+            if (node.id == id) {
+                return node
+            }
             return node.children.firstNotNullOfOrNull { walk(it) }
         }
         return root?.let { walk(it) }
@@ -99,16 +98,18 @@ class Tree {
 }
 
 /**
- * Expands the derivation tree with exactly the transitions being processed in this step.
- * Called by the UI layer after receiving a simulation step result.
+ * Expands the derivation tree with exactly the transitions being processed in this step. Called by
+ * the UI layer after receiving a simulation step result.
  */
 fun Tree.expandFromStep(
     transitionRefs: List<TransitionRef>,
     states: List<State>,
-    keepActive: Boolean = false,
+    activeStates: Set<Int> = emptySet(),
 ) {
     val active = getActiveNodes()
-    if (active.isEmpty()) return
+    if (active.isEmpty()) {
+        return
+    }
 
     val branches = mutableMapOf<Int, List<Branch>>()
     for (node in active) {
@@ -122,7 +123,9 @@ fun Tree.expandFromStep(
                 .filter { it.fromStateIndex == state.index }
                 .map { it.toStateIndex }
                 .toMutableList()
-        if (keepActive && state.index !in toStateIndices) toStateIndices.add(state.index)
+        if (state.index in activeStates && state.index !in toStateIndices) {
+            toStateIndices.add(state.index)
+        }
         if (toStateIndices.isEmpty()) {
             branches[node.id] = emptyList()
             continue
@@ -138,15 +141,12 @@ fun Tree.expandFromStep(
 }
 
 /**
- * Marks accepting and rejected paths in the tree based on a node predicate.
- * Called by the UI layer when simulation ends.
+ * Marks accepting and rejected paths in the tree based on a node predicate. Called by the UI layer
+ * when simulation ends.
  */
 fun Tree.markSimulationEnd(isNodeAccepting: ((TreeNode) -> Boolean)?) {
     if (isNodeAccepting != null) {
-        val acceptedIds = getActiveNodes()
-            .filter { isNodeAccepting(it) }
-            .map { it.id }
-            .toSet()
+        val acceptedIds = getActiveNodes().filter { isNodeAccepting(it) }.map { it.id }.toSet()
         markAcceptedPaths(acceptedIds)
     }
     markRemainingAsRejected()

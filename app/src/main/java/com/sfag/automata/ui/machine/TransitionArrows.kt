@@ -26,10 +26,7 @@ import kotlin.math.sqrt
 
 private const val ARROW_HEAD_SIZE = NODE_RADIUS * 0.5f
 
-private data class GroupedArrow(
-    val path: TransitionPath,
-    val labels: List<String>,
-)
+private data class GroupedArrow(val path: TransitionPath, val labels: List<String>)
 
 /** Draws transition arrows: body strokes, arrowheads, and labels in a single canvas. */
 @Composable
@@ -56,10 +53,9 @@ internal fun Machine.TransitionArrows(
 
     Canvas(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .then(modifier)
-                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) },
+            Modifier.fillMaxSize().then(modifier).offset {
+                IntOffset(offsetX.roundToInt(), offsetY.roundToInt())
+            }
     ) {
         // Body strokes
         for (arrow in groupedArrows) {
@@ -92,11 +88,12 @@ internal fun Machine.TransitionArrows(
             // Rectangle edge distance along the outward normal
             val absNx = abs(normalX)
             val absNy = abs(normalY)
-            val edgeDist = when {
-                absNx < 0.001f -> halfH
-                absNy < 0.001f -> halfW
-                else -> minOf(halfW / absNx, halfH / absNy)
-            }
+            val edgeDist =
+                when {
+                    absNx < 0.001f -> halfH
+                    absNy < 0.001f -> halfW
+                    else -> minOf(halfW / absNx, halfH / absNy)
+                }
 
             val adjustment = edgeDist + labelClearance
             val centerX = arrow.path.labelAnchor.x + normalX * adjustment
@@ -115,7 +112,10 @@ internal fun Machine.TransitionArrows(
     }
 }
 
-/** Samples the path at ARROW_HEAD_SIZE back from the tip to get direction, then builds equilateral head. */
+/**
+ * Samples the path at ARROW_HEAD_SIZE back from the tip to get direction, then builds equilateral
+ * head.
+ */
 private fun buildArrowHead(path: TransitionPath): Path {
     val pathMeasure = android.graphics.PathMeasure(path.arrowBody.asAndroidPath(), false)
     val length = pathMeasure.length
@@ -153,4 +153,3 @@ private fun Machine.groupArrows(transitionPaths: List<TransitionPath?>): List<Gr
         )
     }
 }
-

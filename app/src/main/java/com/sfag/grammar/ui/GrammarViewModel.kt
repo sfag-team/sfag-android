@@ -14,17 +14,14 @@ import com.sfag.grammar.domain.grammar.GrammarType
 import com.sfag.grammar.domain.grammar.classifyGrammar
 import com.sfag.main.config.Symbols
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.io.InputStream
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @HiltViewModel
-class GrammarViewModel
-@Inject
-internal constructor(
-    private val storage: GrammarStorage,
-) : ViewModel() {
+class GrammarViewModel @Inject internal constructor(private val storage: GrammarStorage) :
+    ViewModel() {
     var rules by mutableStateOf<List<GrammarRule>>(emptyList())
         private set
 
@@ -44,10 +41,7 @@ internal constructor(
         isGrammarFinished = !isGrammarFinished
     }
 
-    fun addRule(
-        left: String,
-        right: String,
-    ) {
+    fun addRule(left: String, right: String) {
         val newRule = GrammarRule(left, right)
         if (rules.any { it.left == left && it.right == right }) {
             return
@@ -63,11 +57,7 @@ internal constructor(
         updateSymbols()
     }
 
-    fun updateRule(
-        rule: GrammarRule,
-        newLeft: String,
-        newRight: String,
-    ) {
+    fun updateRule(rule: GrammarRule, newLeft: String, newRight: String) {
         val currentRules = rules.toMutableList()
         val index = currentRules.indexOf(rule)
         if (index != -1) {
@@ -94,9 +84,7 @@ internal constructor(
     /** Persists the current grammar to the fixed auto-save slot. */
     fun autoSave() {
         val individualRules = if (rules.isNotEmpty()) getIndividualRules() else return
-        viewModelScope.launch(Dispatchers.IO) {
-            storage.saveGrammar(individualRules)
-        }
+        viewModelScope.launch(Dispatchers.IO) { storage.saveGrammar(individualRules) }
     }
 
     /** Loads the auto-saved grammar. Returns true on success. */
@@ -108,10 +96,7 @@ internal constructor(
         return true
     }
 
-    fun loadFromJffUri(
-        context: Context,
-        uri: Uri,
-    ) {
+    fun loadFromJffUri(context: Context, uri: Uri) {
         context.contentResolver.openInputStream(uri)?.use { loadFromJffStream(it) }
     }
 

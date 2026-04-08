@@ -72,7 +72,7 @@ internal fun Machine.StateDialog(
                                     index = newIndex,
                                     final = isFinal,
                                     initial = isInitial,
-                                ),
+                                )
                             )
                             onAddPosition(newIndex, tapOffset)
                         } else {
@@ -94,9 +94,7 @@ internal fun Machine.StateDialog(
             state = tooltipState,
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
+                modifier = Modifier.fillMaxWidth().height(120.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
                 verticalAlignment = CenterVertically,
             ) {

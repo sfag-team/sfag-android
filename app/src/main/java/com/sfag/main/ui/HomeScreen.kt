@@ -32,14 +32,11 @@ fun HomeScreen(
 ) {
     BoxWithConstraints(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLowest)
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
+                Modifier.fillMaxWidth()
                     .defaultMinSize(minHeight = maxHeight)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp),
@@ -54,8 +51,7 @@ fun HomeScreen(
 
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
+                    Modifier.fillMaxWidth()
                         .clip(MaterialTheme.shapes.medium)
                         .background(MaterialTheme.colorScheme.surfaceContainer)
                         .padding(horizontal = 24.dp, vertical = 32.dp),

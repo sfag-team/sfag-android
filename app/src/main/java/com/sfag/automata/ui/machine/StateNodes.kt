@@ -59,16 +59,15 @@ internal fun Machine.StateNodes(
 
     Canvas(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) },
+            Modifier.fillMaxSize().offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
     ) {
         for (state in states) {
             val position = positions[state.index] ?: continue
-            val center = Offset(
-                (position.x + NODE_RADIUS / 2f) * pxPerDp,
-                (position.y + NODE_RADIUS / 2f) * pxPerDp,
-            )
+            val center =
+                Offset(
+                    (position.x + NODE_RADIUS / 2f) * pxPerDp,
+                    (position.y + NODE_RADIUS / 2f) * pxPerDp,
+                )
 
             val fillColor: Color
             val textArgb: Int
@@ -89,8 +88,7 @@ internal fun Machine.StateNodes(
                     }
 
                     SimulationOutcome.ACTIVE,
-                    SimulationOutcome.DEAD,
-                        -> {
+                    SimulationOutcome.DEAD -> {
                         fillColor = currentStateFillColor
                         textArgb = currentStateTextColor.toArgb()
                     }
@@ -132,11 +130,12 @@ private fun DrawScope.drawInitialArrow(center: Offset, color: Color) {
         cap = StrokeCap.Round,
     )
     val halfBase = ARROW_HEAD_SIZE / sqrt(3f)
-    val headPath = Path().apply {
-        moveTo(arrowTip, center.y)
-        lineTo(arrowTip - ARROW_HEAD_SIZE, center.y - halfBase)
-        lineTo(arrowTip - ARROW_HEAD_SIZE, center.y + halfBase)
-        close()
-    }
+    val headPath =
+        Path().apply {
+            moveTo(arrowTip, center.y)
+            lineTo(arrowTip - ARROW_HEAD_SIZE, center.y - halfBase)
+            lineTo(arrowTip - ARROW_HEAD_SIZE, center.y + halfBase)
+            close()
+        }
     drawPath(path = headPath, color = color)
 }

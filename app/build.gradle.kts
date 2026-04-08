@@ -19,7 +19,7 @@ android {
         targetSdk = 36
 
         // Major * 10000 + Minor * 100 + Patch
-        versionCode = 20307
+        versionCode = 20308
         versionName = "2.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -30,7 +30,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }

@@ -52,7 +52,9 @@ fun Machine.TreeView(
     inspectedNodeId: Int? = null,
     onSelectNode: ((Int) -> Unit)?,
 ) {
-    if (checkDeterminism() != false) return
+    if (checkDeterminism() != false) {
+        return
+    }
     if (tree.root == null) {
         val initialState = states.firstOrNull { it.initial }
         if (initialState != null) {
@@ -133,19 +135,27 @@ fun Machine.TreeView(
 
     // Auto-center on step advance, reset, and initial render
     LaunchedEffect(recomposeKey, canvasWidthPx) {
-        if (canvasWidthPx <= 0f) return@LaunchedEffect
+        if (canvasWidthPx <= 0f) {
+            return@LaunchedEffect
+        }
 
         val gen = tree.getCurrentGeneration()
         val viewHeightPx = with(density) { CANVAS_HEIGHT.toPx() }
 
         // Reset detected - clear drag flag so auto-center runs
-        if (gen < lastCenteredGen.intValue) userHasDragged = false
+        if (gen < lastCenteredGen.intValue) {
+            userHasDragged = false
+        }
 
         // Same generation as last centered - nothing to do
         val isNew = gen != lastCenteredGen.intValue || lastCenteredGen.intValue < 0
         lastCenteredGen.intValue = gen
-        if (!isNew) return@LaunchedEffect
-        if (userHasDragged) return@LaunchedEffect
+        if (!isNew) {
+            return@LaunchedEffect
+        }
+        if (userHasDragged) {
+            return@LaunchedEffect
+        }
 
         // Center on selected node (PDA stack selection) or active nodes centroid
         val targetPx = badgeNodeId?.let { positionsPx[it] }
@@ -155,7 +165,9 @@ fun Machine.TreeView(
         } else {
             val active = tree.getActiveNodes()
             val activePosPx = active.mapNotNull { positionsPx[it.id] }
-            if (activePosPx.isEmpty()) return@LaunchedEffect
+            if (activePosPx.isEmpty()) {
+                return@LaunchedEffect
+            }
 
             val centroidXPx = activePosPx.map { it.x.toDouble() }.average().toFloat()
             val centroidYPx = activePosPx.map { it.y.toDouble() }.average().toFloat()
@@ -168,8 +180,7 @@ fun Machine.TreeView(
     key(recomposeKey) {
         Canvas(
             modifier =
-                Modifier
-                    .fillMaxWidth()
+                Modifier.fillMaxWidth()
                     .height(CANVAS_HEIGHT)
                     .onSizeChanged {
                         canvasWidthPx = it.width.toFloat()
@@ -178,7 +189,9 @@ fun Machine.TreeView(
                     .clip(MaterialTheme.shapes.medium)
                     .background(colors.surfaceContainer)
                     .pointerInput(onSelectNode, positions) {
-                        if (onSelectNode == null) return@pointerInput
+                        if (onSelectNode == null) {
+                            return@pointerInput
+                        }
                         detectTapGestures { tapOffset ->
                             // Convert screen position to tree position
                             val treeX = (tapOffset.x - offsetX) / scale
@@ -189,18 +202,20 @@ fun Machine.TreeView(
                                 if (position != null) {
                                     val dx = treeX - position.x
                                     val dy = treeY - position.y
-                                    if (dx * dx + dy * dy <= NODE_RADIUS * NODE_RADIUS) return node
+                                    if (dx * dx + dy * dy <= NODE_RADIUS * NODE_RADIUS) {
+                                        return node
+                                    }
                                 }
                                 for (child in node.children) {
-                                    findHitNode(child)?.let { return it }
+                                    findHitNode(child)?.let {
+                                        return it
+                                    }
                                 }
                                 return null
                             }
 
                             tree.root?.let { root ->
-                                findHitNode(root)?.let { node ->
-                                    onSelectNode(node.id)
-                                }
+                                findHitNode(root)?.let { node -> onSelectNode(node.id) }
                             }
                         }
                     }
@@ -226,21 +241,18 @@ fun Machine.TreeView(
                             }
                             userHasDragged = true
                         }
-                    },
+                    }
         ) {
             // Leaf nodes: active = primary, accepted = green, rejected = red
             // Dead-end nodes use same colors but dimmed via alpha
             // Interior nodes stay neutral (surface fill)
             fun fillColor(node: TreeNode): Color =
                 when (node.status) {
-                    SimulationOutcome.ACTIVE if node.children.isEmpty() ->
-                        colors.primaryContainer
+                    SimulationOutcome.ACTIVE if node.children.isEmpty() -> colors.primaryContainer
 
-                    SimulationOutcome.ACCEPTED ->
-                        extendedColors.accepted.colorContainer
+                    SimulationOutcome.ACCEPTED -> extendedColors.accepted.colorContainer
 
-                    SimulationOutcome.REJECTED ->
-                        extendedColors.rejected.colorContainer
+                    SimulationOutcome.REJECTED -> extendedColors.rejected.colorContainer
 
                     else -> colors.surfaceContainerLowest
                 }
@@ -250,11 +262,9 @@ fun Machine.TreeView(
                     SimulationOutcome.ACTIVE if node.children.isEmpty() ->
                         colors.onPrimaryContainer.toArgb()
 
-                    SimulationOutcome.ACCEPTED ->
-                        extendedColors.accepted.onColorContainer.toArgb()
+                    SimulationOutcome.ACCEPTED -> extendedColors.accepted.onColorContainer.toArgb()
 
-                    SimulationOutcome.REJECTED ->
-                        extendedColors.rejected.onColorContainer.toArgb()
+                    SimulationOutcome.REJECTED -> extendedColors.rejected.onColorContainer.toArgb()
 
                     else -> colors.onSurface.toArgb()
                 }
@@ -307,7 +317,7 @@ fun Machine.TreeView(
                                 "S",
                                 badgeX,
                                 badgeY,
-                                badgePaint
+                                badgePaint,
                             )
                         }
 

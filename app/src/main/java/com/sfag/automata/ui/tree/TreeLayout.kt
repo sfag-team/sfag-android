@@ -27,8 +27,12 @@ internal fun calculateLayout(tree: Tree): Map<Int, Offset> {
         var maxChildY = Float.MIN_VALUE
         for (child in node.children) {
             val (childMin, childMax) = layoutNode(child)
-            if (childMin < minChildY) minChildY = childMin
-            if (childMax > maxChildY) maxChildY = childMax
+            if (childMin < minChildY) {
+                minChildY = childMin
+            }
+            if (childMax > maxChildY) {
+                maxChildY = childMax
+            }
         }
 
         val y = (minChildY + maxChildY) / 2f

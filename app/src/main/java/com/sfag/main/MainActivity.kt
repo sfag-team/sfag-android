@@ -41,12 +41,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.sfag.R
+import com.sfag.automata.data.AutomataStorage
 import com.sfag.automata.data.Jff
 import com.sfag.automata.data.toMachine
 import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.MachineType
 import com.sfag.automata.domain.machine.PushdownMachine
-import com.sfag.automata.data.AutomataStorage
 import com.sfag.automata.ui.AutomataScreen
 import com.sfag.automata.ui.AutomataViewModel
 import com.sfag.grammar.ui.GrammarScreen
@@ -66,9 +66,7 @@ import com.sfag.main.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-enum class Destinations(
-    val route: String,
-) {
+enum class Destinations(val route: String) {
     HOME("homeScreen"),
     AUTOMATA("automataScreen"),
     GRAMMAR("grammarScreen"),
@@ -90,41 +88,43 @@ class MainActivity : AppCompatActivity() {
             AppTheme {
                 PortraitPillarbox {
                     val navController = rememberNavController()
-                    Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest) { innerPadding ->
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(innerPadding)
-                        ) {
+                    Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest) {
+                        innerPadding ->
+                        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
                             NavHost(
                                 navController = navController,
                                 startDestination = Destinations.HOME.route,
                                 modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.Center,
                             ) {
                                 composable(route = Destinations.HOME.route) {
                                     var showNewMachineDialog by remember { mutableStateOf(false) }
 
-                                    val initImportLauncher = rememberLauncherForActivityResult(
-                                        contract = ActivityResultContracts.OpenDocument()
-                                    ) { uri ->
-                                        showNewMachineDialog = false
-                                        if (uri == null) return@rememberLauncherForActivityResult
-                                        navController.navigate(
-                                            "${Destinations.AUTOMATA.route}?importUri=${
+                                    val initImportLauncher =
+                                        rememberLauncherForActivityResult(
+                                            contract = ActivityResultContracts.OpenDocument()
+                                        ) { uri ->
+                                            showNewMachineDialog = false
+                                            if (uri == null) {
+                                                return@rememberLauncherForActivityResult
+                                            }
+                                            navController.navigate(
+                                                "${Destinations.AUTOMATA.route}?importUri=${
                                                 Uri.encode(
                                                     uri.toString()
                                                 )
                                             }"
-                                        ) {
-                                            launchSingleTop = true
+                                            ) {
+                                                launchSingleTop = true
+                                            }
                                         }
-                                    }
 
                                     HomeScreen(
                                         navToAutomata = {
                                             if (automataStorage.hasStoredMachine()) {
-                                                navController.navigate(Destinations.AUTOMATA.route) {
+                                                navController.navigate(
+                                                    Destinations.AUTOMATA.route
+                                                ) {
                                                     launchSingleTop = true
                                                 }
                                             } else {
@@ -145,16 +145,14 @@ class MainActivity : AppCompatActivity() {
                                             navController.navigate(Destinations.ABOUT.route) {
                                                 launchSingleTop = true
                                             }
-                                        }
+                                        },
                                     )
 
                                     if (showNewMachineDialog) {
                                         NewMachineDialog(
                                             onDismiss = { showNewMachineDialog = false },
                                             onImport = {
-                                                initImportLauncher.launch(
-                                                    JFF_OPEN_MIME_TYPES
-                                                )
+                                                initImportLauncher.launch(JFF_OPEN_MIME_TYPES)
                                             },
                                             onConfirm = { name, machineType ->
                                                 showNewMachineDialog = false
@@ -167,7 +165,7 @@ class MainActivity : AppCompatActivity() {
                                                 ) {
                                                     launchSingleTop = true
                                                 }
-                                            }
+                                            },
                                         )
                                     }
                                 }
@@ -205,45 +203,45 @@ class MainActivity : AppCompatActivity() {
                                                 }
                                                 launchSingleTop = true
                                             }
-                                        }
+                                        },
                                     )
                                 }
                                 composable(route = Destinations.ABOUT.route) {
                                     AboutScreen(navBack = { navController.popBackStack() })
                                 }
                                 composable(
-                                    route = "${Destinations.AUTOMATA.route}?name={name}&machineType={machineType}&examplePath={examplePath}&importUri={importUri}",
-                                    arguments = listOf(
-                                        navArgument("name") {
-                                            type = NavType.StringType
-                                            nullable = true
-                                            defaultValue = null
-                                        },
-                                        navArgument("machineType") {
-                                            type = NavType.StringType
-                                            nullable = true
-                                            defaultValue = null
-                                        },
-                                        navArgument("examplePath") {
-                                            type = NavType.StringType
-                                            nullable = true
-                                            defaultValue = null
-                                        },
-                                        navArgument("importUri") {
-                                            type = NavType.StringType
-                                            nullable = true
-                                            defaultValue = null
-                                        },
-                                    )
+                                    route =
+                                        "${Destinations.AUTOMATA.route}?name={name}&machineType={machineType}&examplePath={examplePath}&importUri={importUri}",
+                                    arguments =
+                                        listOf(
+                                            navArgument("name") {
+                                                type = NavType.StringType
+                                                nullable = true
+                                                defaultValue = null
+                                            },
+                                            navArgument("machineType") {
+                                                type = NavType.StringType
+                                                nullable = true
+                                                defaultValue = null
+                                            },
+                                            navArgument("examplePath") {
+                                                type = NavType.StringType
+                                                nullable = true
+                                                defaultValue = null
+                                            },
+                                            navArgument("importUri") {
+                                                type = NavType.StringType
+                                                nullable = true
+                                                defaultValue = null
+                                            },
+                                        ),
                                 ) { backStackEntry ->
-                                    val name =
-                                        backStackEntry.arguments?.getString("name")
+                                    val name = backStackEntry.arguments?.getString("name")
                                     val machineType =
                                         backStackEntry.arguments?.getString("machineType")
                                     val examplePath =
                                         backStackEntry.arguments?.getString("examplePath")
-                                    val importUri =
-                                        backStackEntry.arguments?.getString("importUri")
+                                    val importUri = backStackEntry.arguments?.getString("importUri")
 
                                     val context = LocalContext.current
                                     val viewModel: AutomataViewModel = hiltViewModel()
@@ -252,53 +250,58 @@ class MainActivity : AppCompatActivity() {
                                     var initialized by remember {
                                         mutableStateOf(
                                             if (machineType != null) {
-                                                val machine = when (machineType) {
-                                                    MachineType.FINITE.name -> FiniteMachine(
-                                                        name = name ?: ""
-                                                    )
+                                                val machine =
+                                                    when (machineType) {
+                                                        MachineType.FINITE.name ->
+                                                            FiniteMachine(name = name ?: "")
 
-                                                    MachineType.PUSHDOWN.name -> PushdownMachine(
-                                                        name = name ?: ""
-                                                    )
+                                                        MachineType.PUSHDOWN.name ->
+                                                            PushdownMachine(name = name ?: "")
 
-                                                    else -> throw IllegalArgumentException(
-                                                        "Unknown machine type: $machineType"
-                                                    )
-                                                }
+                                                        else ->
+                                                            throw IllegalArgumentException(
+                                                                "Unknown machine type: $machineType"
+                                                            )
+                                                    }
                                                 viewModel.setCurrentMachine(machine)
                                                 true
                                             } else if (importUri != null) {
                                                 try {
                                                     val contentUri = importUri.toUri()
-                                                    val fileName = context.contentResolver
-                                                        .query(
-                                                            contentUri,
-                                                            arrayOf(OpenableColumns.DISPLAY_NAME),
-                                                            null,
-                                                            null,
-                                                            null
-                                                        )?.use { cursor ->
-                                                            if (cursor.moveToFirst()) {
-                                                                cursor.getString(0)
-                                                                    ?.substringBeforeLast(".")
-                                                            } else {
-                                                                null
-                                                            }
-                                                        } ?: ""
-                                                    context.contentResolver.openInputStream(
-                                                        contentUri
-                                                    )?.use { stream ->
-                                                        val jff = Jff.parse(stream)
-                                                        viewModel.setCurrentMachine(
-                                                            jff.toMachine(fileName),
-                                                            jff.positions
-                                                        )
-                                                    }
+                                                    val fileName =
+                                                        context.contentResolver
+                                                            .query(
+                                                                contentUri,
+                                                                arrayOf(
+                                                                    OpenableColumns.DISPLAY_NAME
+                                                                ),
+                                                                null,
+                                                                null,
+                                                                null,
+                                                            )
+                                                            ?.use { cursor ->
+                                                                if (cursor.moveToFirst()) {
+                                                                    cursor
+                                                                        .getString(0)
+                                                                        ?.substringBeforeLast(".")
+                                                                } else {
+                                                                    null
+                                                                }
+                                                            } ?: ""
+                                                    context.contentResolver
+                                                        .openInputStream(contentUri)
+                                                        ?.use { stream ->
+                                                            val jff = Jff.parse(stream)
+                                                            viewModel.setCurrentMachine(
+                                                                jff.toMachine(fileName),
+                                                                jff.positions,
+                                                            )
+                                                        }
                                                 } catch (e: Exception) {
                                                     Log.e(
                                                         "MainActivity",
                                                         "Failed to import file",
-                                                        e
+                                                        e,
                                                     )
                                                 }
                                                 true
@@ -312,25 +315,31 @@ class MainActivity : AppCompatActivity() {
                                     }
 
                                     LaunchedEffect(Unit) {
-                                        if (initialized) return@LaunchedEffect
+                                        if (initialized) {
+                                            return@LaunchedEffect
+                                        }
                                         examplePath ?: return@LaunchedEffect
                                         val machineName = name ?: ""
-                                        if (viewModel.loadMachine() && viewModel.hasUnsavedChanges) {
+                                        if (
+                                            viewModel.loadMachine() && viewModel.hasUnsavedChanges
+                                        ) {
                                             viewModel.pendingExampleUri = examplePath
                                             viewModel.pendingExampleName = machineName
                                         } else {
                                             try {
-                                                val jff = context.assets.open(examplePath)
-                                                    .use { Jff.parse(it) }
+                                                val jff =
+                                                    context.assets.open(examplePath).use {
+                                                        Jff.parse(it)
+                                                    }
                                                 viewModel.setCurrentMachine(
                                                     jff.toMachine(machineName),
-                                                    jff.positions
+                                                    jff.positions,
                                                 )
                                             } catch (e: Exception) {
                                                 Log.e(
                                                     "MainActivity",
                                                     "Failed to load example: $examplePath",
-                                                    e
+                                                    e,
                                                 )
                                             }
                                         }
@@ -346,36 +355,43 @@ class MainActivity : AppCompatActivity() {
                                             }
                                         }
                                         backStackEntry.lifecycle.addObserver(observer)
-                                        onDispose { backStackEntry.lifecycle.removeObserver(observer) }
+                                        onDispose {
+                                            backStackEntry.lifecycle.removeObserver(observer)
+                                        }
                                     }
 
-                                    if (!initialized) return@composable
+                                    if (!initialized) {
+                                        return@composable
+                                    }
 
                                     val snackbarHostState = remember { SnackbarHostState() }
                                     Scaffold(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                                        snackbarHost = { DefaultSnackbarHost(snackbarHostState) }
+                                        containerColor =
+                                            MaterialTheme.colorScheme.surfaceContainerLowest,
+                                        snackbarHost = { DefaultSnackbarHost(snackbarHostState) },
                                     ) { automataInnerPadding ->
                                         if (viewModel.currentMachine != null) {
                                             AutomataScreen(
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .padding(automataInnerPadding),
+                                                modifier =
+                                                    Modifier.fillMaxSize()
+                                                        .padding(automataInnerPadding),
                                                 snackbarHostState = snackbarHostState,
-                                                navBack = { navController.popBackStack() }
+                                                navBack = { navController.popBackStack() },
                                             )
                                         }
                                     }
                                 }
                                 composable(
-                                    route = "${Destinations.GRAMMAR.route}?examplePath={examplePath}",
-                                    arguments = listOf(
-                                        navArgument("examplePath") {
-                                            type = NavType.StringType
-                                            nullable = true
-                                            defaultValue = null
-                                        },
-                                    )
+                                    route =
+                                        "${Destinations.GRAMMAR.route}?examplePath={examplePath}",
+                                    arguments =
+                                        listOf(
+                                            navArgument("examplePath") {
+                                                type = NavType.StringType
+                                                nullable = true
+                                                defaultValue = null
+                                            }
+                                        ),
                                 ) { backStackEntry ->
                                     val examplePath =
                                         backStackEntry.arguments?.getString("examplePath")
@@ -396,7 +412,9 @@ class MainActivity : AppCompatActivity() {
                                     }
 
                                     LaunchedEffect(Unit) {
-                                        if (initialized) return@LaunchedEffect
+                                        if (initialized) {
+                                            return@LaunchedEffect
+                                        }
                                         examplePath ?: return@LaunchedEffect
                                         try {
                                             context.assets.open(examplePath).use {
@@ -406,7 +424,7 @@ class MainActivity : AppCompatActivity() {
                                             Log.e(
                                                 "MainActivity",
                                                 "Failed to load grammar example: $examplePath",
-                                                e
+                                                e,
                                             )
                                         }
                                         initialized = true
@@ -419,14 +437,16 @@ class MainActivity : AppCompatActivity() {
                                             }
                                         }
                                         backStackEntry.lifecycle.addObserver(observer)
-                                        onDispose { backStackEntry.lifecycle.removeObserver(observer) }
+                                        onDispose {
+                                            backStackEntry.lifecycle.removeObserver(observer)
+                                        }
                                     }
 
-                                    if (!initialized) return@composable
+                                    if (!initialized) {
+                                        return@composable
+                                    }
 
-                                    GrammarScreen(
-                                        navBack = { navController.popBackStack() }
-                                    )
+                                    GrammarScreen(navBack = { navController.popBackStack() })
                                 }
                             }
                         }
@@ -436,7 +456,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
-
 
 @Composable
 private fun NewMachineDialog(
@@ -459,9 +478,7 @@ private fun NewMachineDialog(
         },
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp),
+            modifier = Modifier.fillMaxWidth().height(120.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {

@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
 import com.sfag.main.config.Symbols
-import org.w3c.dom.Document
 import java.io.File
+import org.w3c.dom.Document
 
 /** Utilities for JFF (JFLAP) file operations. */
 object JffUtils {
@@ -33,8 +33,9 @@ object JffUtils {
 
     /** Gets the JFF type from document (fa, pda, turing, grammar). Throws on missing type. */
     fun getJffType(doc: Document): String {
-        val typeElement = doc.documentElement.getElementsByTagName("type").item(0)
-            ?: throw IllegalArgumentException("Invalid JFF file: missing <type> element")
+        val typeElement =
+            doc.documentElement.getElementsByTagName("type").item(0)
+                ?: throw IllegalArgumentException("Invalid JFF file: missing <type> element")
         return typeElement.textContent.trim().lowercase()
     }
 
@@ -49,8 +50,7 @@ object JffUtils {
             Symbols.EPSILON,
             Symbols.LAMBDA,
             "eps",
-            "epsilon",
-                -> ""
+            "epsilon" -> ""
 
             else -> trimmed
         }
@@ -60,15 +60,11 @@ object JffUtils {
      * Builds a complete JFF XML document with the standard header and structure wrapper. [type] is
      * the JFF type tag (fa, pda, turing, grammar). [body] appends the type-specific XML content.
      */
-    fun jffDocument(
-        type: String,
-        body: StringBuilder.() -> Unit,
-    ): String =
-        buildString {
-            appendLine("""<?xml version="1.0" encoding="UTF-8" standalone="no"?>""")
-            appendLine("<structure>")
-            appendLine("    <type>$type</type>")
-            body()
-            appendLine("</structure>")
-        }
+    fun jffDocument(type: String, body: StringBuilder.() -> Unit): String = buildString {
+        appendLine("""<?xml version="1.0" encoding="UTF-8" standalone="no"?>""")
+        appendLine("<structure>")
+        appendLine("    <type>$type</type>")
+        body()
+        appendLine("</structure>")
+    }
 }

@@ -8,9 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
-class MultiInputViewModel
-@Inject
-constructor() : ViewModel() {
+class MultiInputViewModel @Inject constructor() : ViewModel() {
     var inputs by mutableStateOf(List(5) { "" })
         private set
 
@@ -18,10 +16,7 @@ constructor() : ViewModel() {
         inputs = inputs + ""
     }
 
-    fun updateRowText(
-        index: Int,
-        newText: String,
-    ) {
+    fun updateRowText(index: Int, newText: String) {
         inputs = inputs.toMutableList().apply { this[index] = newText }
     }
 

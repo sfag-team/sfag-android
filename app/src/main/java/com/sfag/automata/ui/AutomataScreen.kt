@@ -57,6 +57,7 @@ import com.sfag.automata.domain.machine.MachineType
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.automata.domain.simulation.snapshotActiveNodes
 import com.sfag.automata.domain.tree.expandFromStep
 import com.sfag.automata.domain.tree.markSimulationEnd
 import com.sfag.automata.ui.common.FormalDefinitionView
@@ -125,7 +126,7 @@ fun AutomataScreen(
 
         val exportLauncher =
             rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.CreateDocument(JFF_SAVE_MIME_TYPE),
+                contract = ActivityResultContracts.CreateDocument(JFF_SAVE_MIME_TYPE)
             ) { uri ->
                 try {
                     uri?.let {
@@ -133,16 +134,11 @@ fun AutomataScreen(
                             stream.write(
                                 machine
                                     .exportToJff(viewModel.getPositions())
-                                    .toByteArray(Charsets.UTF_8),
+                                    .toByteArray(Charsets.UTF_8)
                             )
                         }
-                        context.contentResolver.query(
-                            it,
-                            arrayOf(OpenableColumns.DISPLAY_NAME),
-                            null,
-                            null,
-                            null
-                        )
+                        context.contentResolver
+                            .query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
                             ?.use { cursor ->
                                 if (cursor.moveToFirst()) {
                                     val fileName = cursor.getString(0) ?: return@use
@@ -159,15 +155,20 @@ fun AutomataScreen(
             }
 
         val importLauncher =
-            rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri ->
+            rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) {
+                uri ->
                 uri?.let {
                     try {
-                        val fileName = context.contentResolver
-                            .query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-                            ?.use { cursor ->
-                                if (cursor.moveToFirst()) cursor.getString(0)
-                                    ?.substringBeforeLast(".") else null
-                            } ?: ""
+                        val fileName =
+                            context.contentResolver
+                                .query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                                ?.use { cursor ->
+                                    if (cursor.moveToFirst()) {
+                                        cursor.getString(0)?.substringBeforeLast(".")
+                                    } else {
+                                        null
+                                    }
+                                } ?: ""
                         context.contentResolver.openInputStream(it)?.use { stream ->
                             val jff = Jff.parse(stream)
                             viewModel.setCurrentMachine(jff.toMachine(fileName), jff.positions)
@@ -219,23 +220,18 @@ fun AutomataScreen(
             }
         }
 
-        val canvasScrollBlocker =
-            remember {
-                object : NestedScrollConnection {
-                    // Consume vertical scroll only; horizontal passes to tape-bar LazyRows
-                    override fun onPreScroll(
-                        available: Offset,
-                        source: NestedScrollSource,
-                    ): Offset = Offset(0f, available.y)
-                }
+        val canvasScrollBlocker = remember {
+            object : NestedScrollConnection {
+                // Consume vertical scroll only; horizontal passes to tape-bar LazyRows
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset =
+                    Offset(0f, available.y)
             }
+        }
 
         Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLowest)) {
             if (currentMode.value != Mode.INPUT_EDITOR) {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                     contentPadding = PaddingValues(vertical = 16.dp),
                 ) {
                     item {
@@ -262,11 +258,7 @@ fun AutomataScreen(
                                 )
 
                                 DefaultButton(
-                                    onClick = {
-                                        exportLauncher.launch(
-                                            "${machine.name}.jff",
-                                        )
-                                    },
+                                    onClick = { exportLauncher.launch("${machine.name}.jff") },
                                     text = stringResource(R.string.save_file),
                                     modifier = Modifier.weight(1f),
                                 )
@@ -274,8 +266,9 @@ fun AutomataScreen(
                                 DefaultButton(
                                     onClick = {
                                         if (viewModel.hasUnsavedChanges) {
-                                            pendingAction =
-                                                { importLauncher.launch(JFF_OPEN_MIME_TYPES) }
+                                            pendingAction = {
+                                                importLauncher.launch(JFF_OPEN_MIME_TYPES)
+                                            }
                                             showUnsavedDialog = true
                                         } else {
                                             importLauncher.launch(JFF_OPEN_MIME_TYPES)
@@ -288,8 +281,9 @@ fun AutomataScreen(
                                 DefaultButton(
                                     onClick = {
                                         if (viewModel.hasUnsavedChanges) {
-                                            pendingAction =
-                                                { activeDialog = ActiveDialog.NewMachine }
+                                            pendingAction = {
+                                                activeDialog = ActiveDialog.NewMachine
+                                            }
                                             showUnsavedDialog = true
                                         } else {
                                             activeDialog = ActiveDialog.NewMachine
@@ -302,23 +296,19 @@ fun AutomataScreen(
 
                             Box(
                                 modifier =
-                                    Modifier
-                                        .fillMaxWidth()
+                                    Modifier.fillMaxWidth()
                                         .nestedScroll(canvasScrollBlocker)
                                         .clip(MaterialTheme.shapes.medium)
-                                        .background(MaterialTheme.colorScheme.surfaceContainer),
+                                        .background(MaterialTheme.colorScheme.surfaceContainer)
                             ) {
                                 machine.MachineEditor(
-                                    isEditing =
-                                        currentMode.value == Mode.MACHINE_EDITOR,
+                                    isEditing = currentMode.value == Mode.MACHINE_EDITOR,
                                     recomposeKey = recomposeKey.intValue,
                                     animationOverlay = animationOverlay.value,
                                     dialogRequest = dialogRequest,
                                     simulationOutcome = simulationOutcome,
                                     onEdit = {
-                                        if (
-                                            currentMode.value != Mode.SIMULATION_STEP
-                                        ) {
+                                        if (currentMode.value != Mode.SIMULATION_STEP) {
                                             simulationOutcome = null
                                             currentMode.value = Mode.INPUT_EDITOR
                                         }
@@ -346,8 +336,7 @@ fun AutomataScreen(
                                     },
                                     icon = R.drawable.edit,
                                     modifier = Modifier.weight(1f),
-                                    isActive =
-                                        currentMode.value == Mode.MACHINE_EDITOR,
+                                    isActive = currentMode.value == Mode.MACHINE_EDITOR,
                                 )
                                 DefaultIconButton(
                                     onClick = {
@@ -386,37 +375,40 @@ fun AutomataScreen(
                                         when (val simulation = viewModel.advanceSimulation()) {
                                             is Simulation.Ended -> {
                                                 machine.tree.markSimulationEnd(
-                                                    simulation.isNodeAccepting,
+                                                    simulation.isNodeAccepting
                                                 )
                                                 viewModel.clearInspection()
                                                 simulationOutcome = simulation.outcome
                                                 recomposeKey.intValue++
-                                                snackbarMsg = when (simulation.outcome) {
-                                                    SimulationOutcome.ACCEPTED -> {
-                                                        val stateNames = machine.states
-                                                            .filter { it.isCurrent && it.final }
-                                                            .joinToString(", ") { it.name }
-                                                        acceptedMsg.format(stateNames)
-                                                    }
+                                                snackbarMsg =
+                                                    when (simulation.outcome) {
+                                                        SimulationOutcome.ACCEPTED -> {
+                                                            val stateNames =
+                                                                machine.states
+                                                                    .filter {
+                                                                        it.isCurrent && it.final
+                                                                    }
+                                                                    .joinToString(", ") { it.name }
+                                                            acceptedMsg.format(stateNames)
+                                                        }
 
-                                                    SimulationOutcome.REJECTED -> {
-                                                        val stateNames = machine.states
-                                                            .filter { it.isCurrent }
-                                                            .joinToString(", ") { it.name }
-                                                        rejectedMsg.format(stateNames)
-                                                    }
+                                                        SimulationOutcome.REJECTED -> {
+                                                            val stateNames =
+                                                                machine.states
+                                                                    .filter { it.isCurrent }
+                                                                    .joinToString(", ") { it.name }
+                                                            rejectedMsg.format(stateNames)
+                                                        }
 
-                                                    SimulationOutcome.ACTIVE,
-                                                    SimulationOutcome.DEAD,
-                                                        -> null
-                                                }
+                                                        else -> null
+                                                    }
                                             }
 
                                             is Simulation.Step -> {
                                                 machine.tree.expandFromStep(
                                                     simulation.transitionRefs,
                                                     machine.states,
-                                                    simulation.keepActive,
+                                                    simulation.activeStates,
                                                 )
                                                 currentMode.value = Mode.SIMULATION_STEP
                                                 val capturedPositions =
@@ -436,7 +428,7 @@ fun AutomataScreen(
                                                         onAnimationsEnd = {
                                                             simulation.onAllComplete()
                                                             machine.tree.attachSnapshots(
-                                                                machine.snapshotActiveNodes(),
+                                                                machine.snapshotActiveNodes()
                                                             )
                                                             viewModel.clearInspection()
                                                             animationOverlay.value = null
@@ -487,9 +479,7 @@ fun AutomataScreen(
                 is ActiveDialog.NewMachine ->
                     NewMachineWindow { newMachine ->
                         activeDialog = null
-                        newMachine?.let {
-                            viewModel.setCurrentMachine(it)
-                        }
+                        newMachine?.let { viewModel.setCurrentMachine(it) }
                     }
 
                 null -> {}
@@ -528,14 +518,13 @@ fun AutomataScreen(
                             onClick = {
                                 viewModel.autoSave(machine)
                                 proceed()
-                            },
+                            }
                         )
                     },
                 ) {
                     Text(text = stringResource(R.string.unsaved_changes_message))
                 }
             }
-
         }
     }
 }
@@ -571,7 +560,7 @@ private fun BottomScreenPart(
                         val fromState = machine.getStateByIndex(transition.fromState)
                         val toState = machine.getStateByIndex(transition.toState)
                         dialogRequest.value =
-                            DialogRequest.ForTransition(fromState, toState, transition.name)
+                            DialogRequest.ForTransition(fromState, toState, transition.read)
                     },
                     onRemoveTransition = { transition ->
                         machine.removeTransition(transition)
@@ -598,10 +587,9 @@ private fun BottomScreenPart(
                 }
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
+                        Modifier.fillMaxWidth()
                             .clip(MaterialTheme.shapes.medium)
-                            .background(MaterialTheme.colorScheme.surfaceContainer),
+                            .background(MaterialTheme.colorScheme.surfaceContainer)
                 ) {
                     FormalDefinitionView(machine.getFormalDefinition())
                 }
@@ -609,7 +597,6 @@ private fun BottomScreenPart(
         }
     }
 }
-
 
 @Composable
 private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
@@ -633,9 +620,7 @@ private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
         },
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp),
+            modifier = Modifier.fillMaxWidth().height(120.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {

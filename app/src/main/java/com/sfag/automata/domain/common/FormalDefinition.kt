@@ -33,13 +33,13 @@ private fun FiniteMachine.getFiniteFormalDefinition(): FormalDefinition {
         transitions.map { transition ->
             val fromStateName = getStateByIndexOrNull(transition.fromState)?.name ?: "?"
             val toStateName = getStateByIndexOrNull(transition.toState)?.name ?: "?"
-            val readSymbol = transition.name.ifEmpty { Symbols.EPSILON }
+            val readSymbol = transition.read.ifEmpty { Symbols.EPSILON }
             "${Symbols.DELTA}($fromStateName, $readSymbol) = $toStateName"
         }
 
     return FormalDefinition(
         stateNames = states.map { it.name },
-        inputAlphabet = transitions.mapNotNull { it.name.firstOrNull() }.toSet(),
+        inputAlphabet = transitions.mapNotNull { it.read.firstOrNull() }.toSet(),
         initialStateName = states.firstOrNull { it.initial }?.name ?: "q0",
         finalStateNames = states.filter { it.final }.map { it.name },
         transitionDescriptions = transitionDescriptions,
@@ -51,7 +51,7 @@ private fun PushdownMachine.getPushdownFormalDefinition(): FormalDefinition {
         pdaTransitions.map { transition ->
             val fromStateName = getStateByIndexOrNull(transition.fromState)?.name ?: "?"
             val toStateName = getStateByIndexOrNull(transition.toState)?.name ?: "?"
-            val readSymbol = transition.name.ifEmpty { Symbols.EPSILON }
+            val readSymbol = transition.read.ifEmpty { Symbols.EPSILON }
             val popSymbol = transition.pop.ifEmpty { Symbols.EPSILON }
             val pushSymbol = transition.push.ifEmpty { Symbols.EPSILON }
             "${Symbols.DELTA}($fromStateName, $readSymbol, $popSymbol) = ($toStateName, $pushSymbol)"
@@ -62,7 +62,7 @@ private fun PushdownMachine.getPushdownFormalDefinition(): FormalDefinition {
 
     return FormalDefinition(
         stateNames = states.map { it.name },
-        inputAlphabet = transitions.mapNotNull { it.name.firstOrNull() }.toSet(),
+        inputAlphabet = transitions.mapNotNull { it.read.firstOrNull() }.toSet(),
         initialStateName = states.firstOrNull { it.initial }?.name ?: "q0",
         finalStateNames = states.filter { it.final }.map { it.name },
         transitionDescriptions = transitionDescriptions,
@@ -76,20 +76,20 @@ private fun TuringMachine.getTuringFormalDefinition(): FormalDefinition {
         turingTransitions.map { transition ->
             val fromStateName = getStateByIndexOrNull(transition.fromState)?.name ?: "?"
             val toStateName = getStateByIndexOrNull(transition.toState)?.name ?: "?"
-            val readSymbol = transition.name.ifEmpty { Symbols.EPSILON }
-            "${Symbols.DELTA}($fromStateName, $readSymbol) = ($toStateName, ${transition.writeSymbol}, ${transition.direction})"
+            val readSymbol = transition.read.ifEmpty { Symbols.EPSILON }
+            "${Symbols.DELTA}($fromStateName, $readSymbol) = ($toStateName, ${transition.write}, ${transition.direction})"
         }
 
     val tapeAlphabetSet =
         turingTransitions
-            .flatMap { listOf(it.name.firstOrNull(), it.writeSymbol) }
+            .flatMap { listOf(it.read.firstOrNull(), it.write) }
             .filterNotNull()
             .toSet()
             .plus(blankSymbol)
 
     return FormalDefinition(
         stateNames = states.map { it.name },
-        inputAlphabet = transitions.mapNotNull { it.name.firstOrNull() }.toSet(),
+        inputAlphabet = transitions.mapNotNull { it.read.firstOrNull() }.toSet(),
         initialStateName = states.firstOrNull { it.initial }?.name ?: "q0",
         finalStateNames = states.filter { it.final }.map { it.name },
         transitionDescriptions = transitionDescriptions,

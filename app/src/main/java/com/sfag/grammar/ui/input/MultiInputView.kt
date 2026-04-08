@@ -56,11 +56,7 @@ fun MultiInputView(
     val terminals = grammarViewModel.terminals
     val grammarType = grammarViewModel.grammarType
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
+    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
         Text(
             text = stringResource(R.string.test_multiple_inputs),
             style = MaterialTheme.typography.headlineMedium,
@@ -68,9 +64,7 @@ fun MultiInputView(
             modifier = Modifier,
         )
         HorizontalDivider(
-            modifier = Modifier
-                .height(4.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.height(4.dp).fillMaxWidth(),
             color = MaterialTheme.colorScheme.primary,
         )
         // Compute fresh every composition (not cached) so indices are never stale
@@ -84,7 +78,9 @@ fun MultiInputView(
 
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(inputs.indices.toList()) { index ->
-                if (index in rowsToRemove) return@items
+                if (index in rowsToRemove) {
+                    return@items
+                }
                 TableRow(
                     inputText = inputs[index],
                     onValueChange = { newText ->
@@ -123,7 +119,9 @@ private fun TableRow(
             withContext(Dispatchers.Default) {
                 if (inputText.isNotEmpty() && inputText.any { it !in terminals }) {
                     false
-                } else if (grammarType == GrammarType.CONTEXT_FREE || grammarType == GrammarType.REGULAR) {
+                } else if (
+                    grammarType == GrammarType.CONTEXT_FREE || grammarType == GrammarType.REGULAR
+                ) {
                     cykAccepts(inputText, rules)
                 } else {
                     when (parse(inputText, rules, terminals, grammarType)) {
@@ -140,9 +138,7 @@ private fun TableRow(
     }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextField(
@@ -178,7 +174,7 @@ private fun TableRow(
                 IconButton(onClick = { onTestInput(inputText) }) {
                     Icon(
                         Icons.Default.PlayArrow,
-                        contentDescription = stringResource(R.string.see_derivation)
+                        contentDescription = stringResource(R.string.see_derivation),
                     )
                 }
             }

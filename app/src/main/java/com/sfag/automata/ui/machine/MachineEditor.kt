@@ -46,8 +46,8 @@ import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.State
 import com.sfag.automata.domain.machine.TuringMachine
+import com.sfag.automata.domain.simulation.NodeSnapshot
 import com.sfag.automata.domain.simulation.SimulationOutcome
-import com.sfag.automata.domain.tree.NodeSnapshot
 import com.sfag.automata.ui.AutomataViewModel
 import com.sfag.automata.ui.bar.Stack
 import com.sfag.automata.ui.bar.Tape
@@ -65,10 +65,7 @@ internal val cellPadding = 4.dp
 
 /** Dialog request shared between MachineEditor and the bottom panel lists. */
 sealed interface DialogRequest {
-    data class ForState(
-        val tapOffset: Offset,
-        val state: State?,
-    ) : DialogRequest
+    data class ForState(val tapOffset: Offset, val state: State?) : DialogRequest
 
     data class ForTransition(
         val fromState: State,
@@ -109,10 +106,9 @@ fun Machine.MachineEditor(
             } else {
                 key(recomposeKey) {
                     val primaryColor = MaterialTheme.colorScheme.primary
-                    val headColor = if (simulationOutcome != null)
-                        primaryColor.copy(alpha = 0.38f)
-                    else
-                        primaryColor
+                    val headColor =
+                        if (simulationOutcome != null) primaryColor.copy(alpha = 0.38f)
+                        else primaryColor
                     val snapshot = viewModel.inspectedSnapshot
                     if (snapshot is NodeSnapshot.TmSnapshot) {
                         Tape(
@@ -125,10 +121,11 @@ fun Machine.MachineEditor(
                             infiniteLeft = true,
                         )
                     } else if (snapshot != null) {
-                        val headIndex = snapshot.inputConsumed.coerceIn(
-                            0,
-                            (fullInput.length - 1).coerceAtLeast(0),
-                        )
+                        val headIndex =
+                            snapshot.inputConsumed.coerceIn(
+                                0,
+                                (fullInput.length - 1).coerceAtLeast(0),
+                            )
                         Tape(
                             symbols = fullInput.toList(),
                             headIndex = headIndex,
@@ -144,21 +141,21 @@ fun Machine.MachineEditor(
                                 Tape(
                                     listState = tapeListState,
                                     onEdit = onEdit,
-                                    headColor = headColor
+                                    headColor = headColor,
                                 )
 
                             is PushdownMachine ->
                                 Tape(
                                     listState = tapeListState,
                                     onEdit = onEdit,
-                                    headColor = headColor
+                                    headColor = headColor,
                                 )
 
                             is TuringMachine ->
                                 Tape(
                                     listState = tapeListState,
                                     onEdit = onEdit,
-                                    headColor = headColor
+                                    headColor = headColor,
                                 )
                         }
                     }
@@ -169,12 +166,11 @@ fun Machine.MachineEditor(
         // CENTER: State diagram with zoom/pan - fixed height so bar show/hide never triggers redraw
         BoxWithConstraints(
             modifier =
-                Modifier
-                    .fillMaxWidth()
+                Modifier.fillMaxWidth()
                     .aspectRatio(1f)
                     .padding(1.dp)
                     .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+                    .background(MaterialTheme.colorScheme.surfaceContainerLowest)
         ) {
             var offsetX by remember { mutableFloatStateOf(viewModel.offsetXCanvas) }
             var offsetY by remember { mutableFloatStateOf(viewModel.offsetYCanvas) }
@@ -186,8 +182,8 @@ fun Machine.MachineEditor(
             SideEffect {
                 if (
                     viewModel.machineAutoCenter &&
-                    states.isNotEmpty() &&
-                    viewModel.statePositions.isNotEmpty()
+                        states.isNotEmpty() &&
+                        viewModel.statePositions.isNotEmpty()
                 ) {
                     val positions = viewModel.statePositions
                     val minX = positions.values.minOf { it.x }
@@ -224,31 +220,26 @@ fun Machine.MachineEditor(
 
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
+                    Modifier.fillMaxSize()
                         // Canvas pan+zoom (outer = gets events second in Main pass)
                         .pointerInput(Unit) {
                             detectTransformGestures { centroid, pan, zoom, _ ->
                                 val oldScale = scale
                                 scale = (scale * zoom).coerceIn(MIN_ZOOM, MAX_ZOOM)
-                                offsetX +=
-                                    centroid.x * (1f / scale - 1f / oldScale) + pan.x / scale
-                                offsetY +=
-                                    centroid.y * (1f / scale - 1f / oldScale) + pan.y / scale
+                                offsetX += centroid.x * (1f / scale - 1f / oldScale) + pan.x / scale
+                                offsetY += centroid.y * (1f / scale - 1f / oldScale) + pan.y / scale
                                 val bounds = machineBounds
                                 val pxPerDp = density.density
                                 if (bounds != null) {
                                     offsetX =
                                         offsetX.coerceIn(
                                             -(bounds.right + NODE_RADIUS) * pxPerDp,
-                                            size.width.toFloat() / scale -
-                                                    bounds.left * pxPerDp,
+                                            size.width.toFloat() / scale - bounds.left * pxPerDp,
                                         )
                                     offsetY =
                                         offsetY.coerceIn(
                                             -(bounds.bottom + NODE_RADIUS) * pxPerDp,
-                                            size.height.toFloat() / scale -
-                                                    bounds.top * pxPerDp,
+                                            size.height.toFloat() / scale - bounds.top * pxPerDp,
                                         )
                                 }
                                 viewModel.offsetXCanvas = offsetX
@@ -258,13 +249,14 @@ fun Machine.MachineEditor(
                         }
                         // Tool gestures (inner = gets events first in Main pass)
                         .pointerInput(activeTool, isEditing) {
-                            if (!isEditing) return@pointerInput
+                            if (!isEditing) {
+                                return@pointerInput
+                            }
                             when (activeTool) {
                                 MachineEditMode.ADD_STATE,
                                 MachineEditMode.ADD_TRANSITION,
                                 MachineEditMode.SELECT,
-                                MachineEditMode.REMOVE,
-                                    ->
+                                MachineEditMode.REMOVE ->
                                     awaitEachGesture {
                                         val down = awaitFirstDown()
                                         // Don't consume down - let detectTransformGestures pan/zoom
@@ -273,7 +265,9 @@ fun Machine.MachineEditor(
                                         while (true) {
                                             val event = awaitPointerEvent()
                                             // Multi-touch (pinch zoom) - not a tap
-                                            if (event.changes.size > 1) break
+                                            if (event.changes.size > 1) {
+                                                break
+                                            }
                                             val change = event.changes.firstOrNull() ?: break
                                             if (!change.pressed) {
                                                 if (
@@ -286,8 +280,8 @@ fun Machine.MachineEditor(
                                                 break
                                             }
                                             if (
-                                                (change.position - down.position)
-                                                    .getDistance() > touchSlop
+                                                (change.position - down.position).getDistance() >
+                                                    touchSlop
                                             ) {
                                                 break
                                             }
@@ -299,11 +293,11 @@ fun Machine.MachineEditor(
                                                     val tapOffset =
                                                         Offset(
                                                             gestureOffset.x /
-                                                                    (scale * density.density) -
-                                                                    offsetX / density.density,
+                                                                (scale * density.density) -
+                                                                offsetX / density.density,
                                                             gestureOffset.y /
-                                                                    (scale * density.density) -
-                                                                    offsetY / density.density,
+                                                                (scale * density.density) -
+                                                                offsetY / density.density,
                                                         )
                                                     dialogRequest.value =
                                                         DialogRequest.ForState(tapOffset, null)
@@ -312,21 +306,19 @@ fun Machine.MachineEditor(
                                                 MachineEditMode.ADD_TRANSITION -> {
                                                     val tapXDp =
                                                         gestureOffset.x /
-                                                                (scale * density.density) -
-                                                                offsetX / density.density
+                                                            (scale * density.density) -
+                                                            offsetX / density.density
                                                     val tapYDp =
                                                         gestureOffset.y /
-                                                                (scale * density.density) -
-                                                                offsetY / density.density
+                                                            (scale * density.density) -
+                                                            offsetY / density.density
                                                     val positions = viewModel.statePositions
                                                     val closestStateEntry =
                                                         positions.minByOrNull { (_, offset) ->
                                                             val dx =
-                                                                offset.x + NODE_RADIUS / 2 -
-                                                                        tapXDp
+                                                                offset.x + NODE_RADIUS / 2 - tapXDp
                                                             val dy =
-                                                                offset.y + NODE_RADIUS / 2 -
-                                                                        tapYDp
+                                                                offset.y + NODE_RADIUS / 2 - tapYDp
                                                             dx * dx + dy * dy
                                                         }
                                                     closestStateEntry?.let { (stateIndex, _) ->
@@ -341,13 +333,10 @@ fun Machine.MachineEditor(
                                                 }
 
                                                 MachineEditMode.SELECT,
-                                                MachineEditMode.REMOVE,
-                                                    -> {
+                                                MachineEditMode.REMOVE -> {
                                                     val pxPerDp = density.density
-                                                    val tapPxX =
-                                                        gestureOffset.x / scale - offsetX
-                                                    val tapPxY =
-                                                        gestureOffset.y / scale - offsetY
+                                                    val tapPxX = gestureOffset.x / scale - offsetX
+                                                    val tapPxY = gestureOffset.y / scale - offsetY
                                                     val positions = viewModel.statePositions
 
                                                     // Check nodes first (circular hitbox)
@@ -358,14 +347,14 @@ fun Machine.MachineEditor(
                                                                     ?: return@firstOrNull false
                                                             val cx =
                                                                 (position.x + NODE_RADIUS / 2) *
-                                                                        pxPerDp
+                                                                    pxPerDp
                                                             val cy =
                                                                 (position.y + NODE_RADIUS / 2) *
-                                                                        pxPerDp
+                                                                    pxPerDp
                                                             val dx = tapPxX - cx
                                                             val dy = tapPxY - cy
                                                             dx * dx + dy * dy <
-                                                                    NODE_RADIUS * NODE_RADIUS
+                                                                NODE_RADIUS * NODE_RADIUS
                                                         }
 
                                                     if (hitState != null) {
@@ -380,7 +369,7 @@ fun Machine.MachineEditor(
                                                             MachineEditMode.REMOVE -> {
                                                                 removeState(hitState)
                                                                 viewModel.statePositions.remove(
-                                                                    hitState.index,
+                                                                    hitState.index
                                                                 )
                                                                 viewModel.markDirty()
                                                                 onRecompose()
@@ -388,9 +377,7 @@ fun Machine.MachineEditor(
 
                                                             MachineEditMode.MOVE,
                                                             MachineEditMode.ADD_STATE,
-                                                            MachineEditMode.ADD_TRANSITION,
-                                                                -> {
-                                                            }
+                                                            MachineEditMode.ADD_TRANSITION -> {}
                                                         }
                                                         return@awaitEachGesture
                                                     }
@@ -398,15 +385,17 @@ fun Machine.MachineEditor(
                                                     // Check transitions (path hitbox)
                                                     val paths = transitionPathsState.value
                                                     for ((index, path) in paths.withIndex()) {
-                                                        if (index >= transitions.size) break
+                                                        if (index >= transitions.size) {
+                                                            break
+                                                        }
                                                         if (
                                                             path != null &&
-                                                            isPathHit(
-                                                                path.arrowBody,
-                                                                tapPxX,
-                                                                tapPxY,
-                                                                TAP_RADIUS,
-                                                            )
+                                                                isPathHit(
+                                                                    path.arrowBody,
+                                                                    tapPxX,
+                                                                    tapPxY,
+                                                                    TAP_RADIUS,
+                                                                )
                                                         ) {
                                                             val transition = transitions[index]
                                                             when (activeTool) {
@@ -414,26 +403,25 @@ fun Machine.MachineEditor(
                                                                     dialogRequest.value =
                                                                         DialogRequest.ForTransition(
                                                                             getStateByIndex(
-                                                                                transition
-                                                                                    .fromState,
+                                                                                transition.fromState
                                                                             ),
                                                                             getStateByIndex(
-                                                                                transition
-                                                                                    .toState,
+                                                                                transition.toState
                                                                             ),
-                                                                            transition.name,
+                                                                            transition.read,
                                                                         )
 
                                                                 MachineEditMode.REMOVE -> {
                                                                     transitions
                                                                         .filter {
                                                                             it.fromState ==
-                                                                                    transition
-                                                                                        .fromState &&
-                                                                                    it.toState ==
+                                                                                transition
+                                                                                    .fromState &&
+                                                                                it.toState ==
                                                                                     transition
                                                                                         .toState
-                                                                        }.forEach {
+                                                                        }
+                                                                        .forEach {
                                                                             removeTransition(it)
                                                                         }
                                                                     viewModel.markDirty()
@@ -442,9 +430,7 @@ fun Machine.MachineEditor(
 
                                                                 MachineEditMode.MOVE,
                                                                 MachineEditMode.ADD_STATE,
-                                                                MachineEditMode.ADD_TRANSITION,
-                                                                    -> {
-                                                                }
+                                                                MachineEditMode.ADD_TRANSITION -> {}
                                                             }
                                                             break
                                                         }
@@ -464,19 +450,20 @@ fun Machine.MachineEditor(
                                         val tapPxY = down.position.y / scale - offsetY
                                         val positions = viewModel.statePositions
                                         val hitIndex =
-                                            states.firstOrNull { state ->
-                                                val position =
-                                                    positions[state.index]
-                                                        ?: return@firstOrNull false
-                                                val cx =
-                                                    (position.x + NODE_RADIUS / 2) * pxPerDp
-                                                val cy =
-                                                    (position.y + NODE_RADIUS / 2) * pxPerDp
-                                                val dx = tapPxX - cx
-                                                val dy = tapPxY - cy
-                                                dx * dx + dy * dy <
-                                                        NODE_RADIUS * NODE_RADIUS
-                                            }?.index
+                                            states
+                                                .firstOrNull { state ->
+                                                    val position =
+                                                        positions[state.index]
+                                                            ?: return@firstOrNull false
+                                                    val cx =
+                                                        (position.x + NODE_RADIUS / 2) * pxPerDp
+                                                    val cy =
+                                                        (position.y + NODE_RADIUS / 2) * pxPerDp
+                                                    val dx = tapPxX - cx
+                                                    val dy = tapPxY - cy
+                                                    dx * dx + dy * dy < NODE_RADIUS * NODE_RADIUS
+                                                }
+                                                ?.index
 
                                         if (hitIndex != null) {
                                             down.consume()
@@ -496,7 +483,8 @@ fun Machine.MachineEditor(
                                                 }
                                             } while (event.changes.any { it.pressed })
                                         }
-                                        // No node hit - fall through, detectTransformGestures handles pan/zoom
+                                        // No node hit - fall through, detectTransformGestures
+                                        // handles pan/zoom
                                     }
                             }
                         }
@@ -507,7 +495,7 @@ fun Machine.MachineEditor(
                             scaleX = scale
                             scaleY = scale
                             transformOrigin = TransformOrigin(0f, 0f)
-                        },
+                        }
                 ) {
                     val positions = viewModel.statePositions
 
@@ -557,18 +545,14 @@ fun Machine.MachineEditor(
                 text = name,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(top = 8.dp, start = 8.dp),
+                modifier = Modifier.align(Alignment.TopStart).padding(top = 8.dp, start = 8.dp),
             )
 
             Text(
                 text = determinismLabel() ?: "",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 8.dp, end = 8.dp),
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp),
             )
 
             // Empty state hint
@@ -576,7 +560,7 @@ fun Machine.MachineEditor(
                 Text(
                     text =
                         stringResource(
-                            if (isEditing) R.string.tap_to_add_states else R.string.no_states,
+                            if (isEditing) R.string.tap_to_add_states else R.string.no_states
                         ),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -632,14 +616,9 @@ fun Machine.MachineEditor(
                 visible = !isEditing,
                 exit = shrinkVertically(shrinkTowards = Alignment.Top),
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(cellSize + cellPadding * 2)
-                ) {
+                Box(modifier = Modifier.fillMaxWidth().height(cellSize + cellPadding * 2)) {
                     key(recomposeKey) {
-                        val pdaSnapshot =
-                            viewModel.inspectedSnapshot as? NodeSnapshot.PdaSnapshot
+                        val pdaSnapshot = viewModel.inspectedSnapshot as? NodeSnapshot.PdaSnapshot
                         Stack(overrideSymbols = pdaSnapshot?.stack)
                     }
                 }

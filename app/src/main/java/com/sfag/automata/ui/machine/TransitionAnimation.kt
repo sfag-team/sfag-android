@@ -48,11 +48,7 @@ fun TransitionAnimation(
         val circleColor = MaterialTheme.colorScheme.onSurface
         val innerColor = MaterialTheme.colorScheme.surfaceContainerLowest
 
-        data class AnimEntry(
-            val path: Path,
-            val bigR: Float,
-            val smallR: Float,
-        )
+        data class AnimEntry(val path: Path, val bigR: Float, val smallR: Float)
 
         val animEntries =
             transitionRefs.mapNotNull { ref ->
@@ -68,11 +64,9 @@ fun TransitionAnimation(
 
         Canvas(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .offset {
-                        IntOffset(offsetXCanvas.roundToInt(), offsetYCanvas.roundToInt())
-                    },
+                Modifier.fillMaxSize().offset {
+                    IntOffset(offsetXCanvas.roundToInt(), offsetYCanvas.roundToInt())
+                }
         ) {
             for (entry in animEntries) {
                 val position = getCurrentPositionByPath(entry.path, progress.value)

@@ -1,10 +1,10 @@
 package com.sfag.main.data
 
-import org.w3c.dom.Document
-import org.w3c.dom.Element
 import java.io.InputStream
 import java.util.Locale
 import javax.xml.parsers.DocumentBuilderFactory
+import org.w3c.dom.Document
+import org.w3c.dom.Element
 
 /** Generic XML utilities used across the app. */
 object XmlUtils {
@@ -34,10 +34,8 @@ object XmlUtils {
      * Emits a self-closing XML tag for empty values, or a full tag with escaped content otherwise.
      * e.g. xmlTag("read", "") -> "<read/>", xmlTag("read", "a") -> "<read>a</read>"
      */
-    fun xmlTag(
-        tag: String,
-        value: String,
-    ): String = if (value.isEmpty()) "<$tag/>" else "<$tag>${escapeXml(value)}</$tag>"
+    fun xmlTag(tag: String, value: String): String =
+        if (value.isEmpty()) "<$tag/>" else "<$tag>${escapeXml(value)}</$tag>"
 
     /**
      * Formats a float value with 2 decimal places for consistent XML output. Uses Locale.US to

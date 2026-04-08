@@ -48,9 +48,7 @@ private enum class GrammarMode {
 }
 
 @Composable
-fun GrammarScreen(
-    navBack: () -> Unit,
-) {
+fun GrammarScreen(navBack: () -> Unit) {
     val grammarViewModel: GrammarViewModel = hiltViewModel()
     val inputsViewModel: MultiInputViewModel = hiltViewModel()
     val context = LocalContext.current
@@ -61,9 +59,8 @@ fun GrammarScreen(
     val scope = rememberCoroutineScope()
     val importErrorMsg = stringResource(R.string.file_import_error)
     val importLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.OpenDocument(),
-        ) { uri: Uri? ->
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) {
+            uri: Uri? ->
             uri?.let {
                 try {
                     grammarViewModel.loadFromJffUri(context, it)
@@ -76,7 +73,7 @@ fun GrammarScreen(
     val exportErrorMsg = stringResource(R.string.file_export_error)
     val exportLauncher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.CreateDocument(JFF_SAVE_MIME_TYPE),
+            contract = ActivityResultContracts.CreateDocument(JFF_SAVE_MIME_TYPE)
         ) { uri: Uri? ->
             try {
                 uri?.let {
@@ -98,8 +95,7 @@ fun GrammarScreen(
         when (currentMode.value) {
             GrammarMode.GRAMMAR_EDITOR -> navBack()
             GrammarMode.SINGLE_INPUT,
-            GrammarMode.MULTI_INPUT,
-                -> currentMode.value = GrammarMode.GRAMMAR_EDITOR
+            GrammarMode.MULTI_INPUT -> currentMode.value = GrammarMode.GRAMMAR_EDITOR
         }
     }
     Scaffold(
@@ -109,24 +105,24 @@ fun GrammarScreen(
                 currentMode = currentMode,
                 grammarViewModel = grammarViewModel,
                 onImport = { importLauncher.launch(JFF_OPEN_MIME_TYPES) },
-                onExport = { exportLauncher.launch("grammar.jff") }
+                onExport = { exportLauncher.launch("grammar.jff") },
             )
         },
-        snackbarHost = { DefaultSnackbarHost(snackbarHostState) }
+        snackbarHost = { DefaultSnackbarHost(snackbarHostState) },
     ) { padding ->
         when (currentMode.value) {
             GrammarMode.GRAMMAR_EDITOR ->
                 GrammarEditor(
                     grammarViewModel,
                     snackbarHostState,
-                    modifier = Modifier.padding(padding)
+                    modifier = Modifier.padding(padding),
                 )
 
             GrammarMode.SINGLE_INPUT ->
                 SingleInputView(
                     grammarViewModel,
                     initialInput = selectedInput.value,
-                    modifier = Modifier.padding(padding)
+                    modifier = Modifier.padding(padding),
                 )
 
             GrammarMode.MULTI_INPUT ->
@@ -137,17 +133,13 @@ fun GrammarScreen(
                         selectedInput.value = input
                         currentMode.value = GrammarMode.SINGLE_INPUT
                     },
-                    modifier = Modifier.padding(padding)
+                    modifier = Modifier.padding(padding),
                 )
         }
     }
 }
 
-private data class NavAction(
-    val dest: GrammarMode,
-    val icon: ImageVector,
-    val label: String,
-)
+private data class NavAction(val dest: GrammarMode, val icon: ImageVector, val label: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -183,26 +175,28 @@ private fun GrammarTopBar(
                     NavAction(
                         GrammarMode.GRAMMAR_EDITOR,
                         Icons.Default.Build,
-                        stringResource(R.string.grammar_editor)
+                        stringResource(R.string.grammar_editor),
                     ),
                     NavAction(
                         GrammarMode.SINGLE_INPUT,
                         Icons.Default.PlayArrow,
-                        stringResource(R.string.single_input)
+                        stringResource(R.string.single_input),
                     ),
                     NavAction(
                         GrammarMode.MULTI_INPUT,
                         Icons.AutoMirrored.Filled.List,
-                        stringResource(R.string.multi_input)
+                        stringResource(R.string.multi_input),
                     ),
                 )
             navActions.forEach { navItem ->
                 IconButton(
                     onClick = {
-                        if (currentMode.value != navItem.dest && grammarViewModel.isGrammarFinished) {
+                        if (
+                            currentMode.value != navItem.dest && grammarViewModel.isGrammarFinished
+                        ) {
                             currentMode.value = navItem.dest
                         }
-                    },
+                    }
                 ) {
                     Icon(
                         imageVector = navItem.icon,

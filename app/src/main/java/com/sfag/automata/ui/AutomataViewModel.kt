@@ -11,25 +11,22 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sfag.automata.data.AutomataStorage
 import com.sfag.automata.domain.machine.Machine
+import com.sfag.automata.domain.simulation.NodeSnapshot
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
-import com.sfag.automata.domain.tree.NodeSnapshot
 import com.sfag.main.config.INITIAL_ZOOM
 import com.sfag.main.data.Point2D
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 // JFLAP coordinate conversion (96 DPI desktop to 160 DPI Android dp) - protocol constant
 private const val JFLAP_TO_DP = 160f / 96f
 
 @HiltViewModel
-class AutomataViewModel
-@Inject
-internal constructor(
-    private val storage: AutomataStorage,
-) : ViewModel() {
+class AutomataViewModel @Inject internal constructor(private val storage: AutomataStorage) :
+    ViewModel() {
     // The single current machine - observed by the Activity to key the composition.
     var currentMachine by mutableStateOf<Machine?>(null)
         private set
@@ -48,6 +45,7 @@ internal constructor(
     // Historical node inspection
     var inspectedNodeId by mutableStateOf<Int?>(null)
         private set
+
     var inspectedSnapshot by mutableStateOf<NodeSnapshot?>(null)
         private set
 
@@ -75,13 +73,10 @@ internal constructor(
     }
 
     /**
-     * Sets the active machine and resets view to default scale + center.
-     * JFLAP coordinates (96 DPI) are scaled to dp (160 DPI) via JFLAP_TO_DP.
+     * Sets the active machine and resets view to default scale + center. JFLAP coordinates (96 DPI)
+     * are scaled to dp (160 DPI) via JFLAP_TO_DP.
      */
-    fun setCurrentMachine(
-        machine: Machine,
-        positions: Map<Int, Point2D> = emptyMap(),
-    ) {
+    fun setCurrentMachine(machine: Machine, positions: Map<Int, Point2D> = emptyMap()) {
         clearInspection()
         currentMachine = machine
         machine.setInitialStateAsCurrent()
@@ -126,20 +121,12 @@ internal constructor(
         }
 
     /** Updates a single state's position (called on drag). */
-    fun updateStatePosition(
-        stateIndex: Int,
-        delta: Offset,
-    ) {
-        statePositions[stateIndex]?.let {
-            statePositions[stateIndex] = it + delta
-        }
+    fun updateStatePosition(stateIndex: Int, delta: Offset) {
+        statePositions[stateIndex]?.let { statePositions[stateIndex] = it + delta }
     }
 
     /** Assigns a position to a newly created state. */
-    fun addStatePosition(
-        stateIndex: Int,
-        offset: Offset,
-    ) {
+    fun addStatePosition(stateIndex: Int, offset: Offset) {
         statePositions[stateIndex] = offset
     }
 

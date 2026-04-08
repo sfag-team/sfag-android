@@ -3,21 +3,12 @@ package com.sfag.grammar.domain.grammar
 import com.sfag.main.config.MAX_GRAMMAR_STEPS
 import com.sfag.main.config.Symbols
 
-private data class ParseState(
-    val previousState: String,
-    val appliedRule: GrammarRule,
-)
+private data class ParseState(val previousState: String, val appliedRule: GrammarRule)
 
-data class DerivationStep(
-    val previous: String,
-    val derived: String,
-    val appliedRule: GrammarRule,
-)
+data class DerivationStep(val previous: String, val derived: String, val appliedRule: GrammarRule)
 
 sealed class ParseResult {
-    data class Success(
-        val steps: List<DerivationStep>,
-    ) : ParseResult()
+    data class Success(val steps: List<DerivationStep>) : ParseResult()
 
     data object Rejected : ParseResult()
 
@@ -25,8 +16,8 @@ sealed class ParseResult {
 }
 
 /**
- * BFS brute-force parser. Uses CYK O(n³) pre-check for
- * CFG/Regular to reject quickly. Regular grammars are treated as a CFG subset.
+ * BFS brute-force parser. Uses CYK O(n³) pre-check for CFG/Regular to reject quickly. Regular
+ * grammars are treated as a CFG subset.
  */
 fun parse(
     input: String,
@@ -34,11 +25,15 @@ fun parse(
     terminals: Set<Char>,
     grammarType: GrammarType,
 ): ParseResult {
-    if (input != "" && input.any { it !in terminals }) return ParseResult.Rejected
+    if (input != "" && input.any { it !in terminals }) {
+        return ParseResult.Rejected
+    }
 
     // CYK pre-check for CFG/Regular - reject in O(n³) before BFS
     if (grammarType == GrammarType.CONTEXT_FREE || grammarType == GrammarType.REGULAR) {
-        if (!cykAccepts(input, rules)) return ParseResult.Rejected
+        if (!cykAccepts(input, rules)) {
+            return ParseResult.Rejected
+        }
     }
 
     val states = ArrayDeque<String>()
@@ -59,7 +54,9 @@ fun parse(
         steps++
         for (rule in rules) {
             var newState = currentState.replaceFirst(rule.left, rule.right)
-            if (newState == currentState && !currentState.contains(rule.left)) continue
+            if (newState == currentState && !currentState.contains(rule.left)) {
+                continue
+            }
             newState = newState.replace(Symbols.EPSILON, "")
 
             if (newState == input) {
@@ -69,10 +66,14 @@ fun parse(
                 return ParseResult.Success(reconstructDerivation(newState, stateHistory))
             }
 
-            if (!rules.any { newState.contains(it.left) }) continue
+            if (!rules.any { newState.contains(it.left) }) {
+                continue
+            }
 
             if (!stateHistory.containsKey(newState)) {
-                if (minimumLength(newState, minLengths) > input.length) continue
+                if (minimumLength(newState, minLengths) > input.length) {
+                    continue
+                }
                 states.add(newState)
                 stateHistory[newState] = ParseState(currentState, rule)
             }
@@ -90,25 +91,19 @@ private fun reconstructDerivation(
     var currentState = finalState
 
     while (currentState != "S") {
-        if (!visited.add(currentState)) break
+        if (!visited.add(currentState)) {
+            break
+        }
         val step = stateHistory[currentState] ?: break
         derivationSteps.add(
-            DerivationStep(
-                step.previousState,
-                derived = currentState,
-                step.appliedRule
-            )
+            DerivationStep(step.previousState, derived = currentState, step.appliedRule)
         )
         currentState = step.previousState
     }
     return derivationSteps.reversed()
 }
 
-fun findReplacementIndex(
-    rule: GrammarRule,
-    previous: String,
-    current: String,
-): Int {
+fun findReplacementIndex(rule: GrammarRule, previous: String, current: String): Int {
     val left = rule.left
     val right = rule.right.replace(Symbols.EPSILON, "")
     for (i in previous.indices) {
@@ -122,9 +117,7 @@ fun findReplacementIndex(
     return -1
 }
 
-/**
- * Precompute the minimum terminal length each nonterminal can derive via fixed-point iteration.
- */
+/** Precompute the minimum terminal length each nonterminal can derive via fixed-point iteration. */
 private fun computeMinLengths(rules: List<GrammarRule>): Map<String, Int> {
     val nonTerminals = rules.map { it.left }.toSet()
     val minLengths = nonTerminals.associateWith { Int.MAX_VALUE / 2 }.toMutableMap()
@@ -146,7 +139,9 @@ private fun computeMinLengths(rules: List<GrammarRule>): Map<String, Int> {
                             } else {
                                 1
                             }
-                        if (sum >= Int.MAX_VALUE / 2) break
+                        if (sum >= Int.MAX_VALUE / 2) {
+                            break
+                        }
                     }
                     sum
                 }
@@ -163,20 +158,21 @@ private fun computeMinLengths(rules: List<GrammarRule>): Map<String, Int> {
  * Compute the minimum possible terminal length of a sentential form. Each terminal counts as 1,
  * each nonterminal counts as its precomputed minimum.
  */
-private fun minimumLength(
-    derivation: String,
-    minLengths: Map<String, Int>,
-): Int {
+private fun minimumLength(derivation: String, minLengths: Map<String, Int>): Int {
     var sum = 0
     for (c in derivation) {
-        if (c.toString() == Symbols.EPSILON) continue
+        if (c.toString() == Symbols.EPSILON) {
+            continue
+        }
         sum +=
             if (c.isUpperCase()) {
                 minLengths[c.toString()] ?: 1
             } else {
                 1
             }
-        if (sum >= Int.MAX_VALUE / 2) return sum
+        if (sum >= Int.MAX_VALUE / 2) {
+            return sum
+        }
     }
     return sum
 }

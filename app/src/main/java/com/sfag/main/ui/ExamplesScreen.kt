@@ -32,8 +32,7 @@ fun ExamplesScreen(
 ) {
     Column(
         modifier =
-            Modifier
-                .fillMaxSize()
+            Modifier.fillMaxSize()
                 .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                 .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -76,9 +75,7 @@ private fun ExamplesSection(
     ) {
         Text(text = title, style = MaterialTheme.typography.titleLarge)
         LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+            modifier = Modifier.fillMaxWidth().weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),
@@ -87,8 +84,7 @@ private fun ExamplesSection(
                 val description = example.second
                 Column(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
+                        Modifier.fillMaxWidth()
                             .heightIn(min = 96.dp)
                             .clip(MaterialTheme.shapes.small)
                             .background(MaterialTheme.colorScheme.secondaryContainer)
@@ -122,16 +118,13 @@ private object ExampleSources {
             "automata/a-n.jff" to ExampleDescription("a^n", "Deterministic finite automaton"),
             "automata/3k-1.jff" to ExampleDescription("3k +1", "Deterministic finite automaton"),
             "automata/ends-dfa.jff" to
-                    ExampleDescription("Ends 01 or 10", "Deterministic finite automaton"),
+                ExampleDescription("Ends 01 or 10", "Deterministic finite automaton"),
             "automata/ends-nfa.jff" to
-                    ExampleDescription("Ends 01 or 10", "Non-deterministic finite automaton"),
+                ExampleDescription("Ends 01 or 10", "Non-deterministic finite automaton"),
             "automata/an-bn-pda.jff" to
-                    ExampleDescription("a^n b^n", "Deterministic pushdown automaton"),
+                ExampleDescription("a^n b^n", "Deterministic pushdown automaton"),
             "automata/wcw-r.jff" to ExampleDescription("wcwR", "Deterministic pushdown automaton"),
-            "automata/ww-r.jff" to ExampleDescription(
-                "wwR",
-                "Non-deterministic pushdown automaton"
-            ),
+            "automata/ww-r.jff" to ExampleDescription("wwR", "Non-deterministic pushdown automaton"),
         )
 
     val grammarExamples =
@@ -139,7 +132,7 @@ private object ExampleSources {
             "grammar/g-reg.jff" to ExampleDescription("a^n", "Regular grammar"),
             "grammar/g-cf.jff" to ExampleDescription("a^n b^n", "Context-free grammar"),
             "grammar/ab_norm.jff" to
-                    ExampleDescription("Normalized a^n b^n", "Context-free grammar"),
+                ExampleDescription("Normalized a^n b^n", "Context-free grammar"),
             "grammar/g-cs.jff" to ExampleDescription("a^n b^n c^n", "Context-sensitive grammar"),
             "grammar/gram-3kplus1-a.jff" to ExampleDescription("3k+1 a", "Regular grammar"),
             "grammar/gram-01.jff" to ExampleDescription("Ends 01 or 10", "Regular grammar"),
@@ -147,7 +140,4 @@ private object ExampleSources {
         )
 }
 
-private data class ExampleDescription(
-    val name: String,
-    val description: String,
-)
+private data class ExampleDescription(val name: String, val description: String)

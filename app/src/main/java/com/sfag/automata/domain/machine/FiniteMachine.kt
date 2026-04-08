@@ -3,7 +3,6 @@ package com.sfag.automata.domain.machine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.TransitionRef
-import com.sfag.automata.domain.tree.NodeSnapshot
 import com.sfag.main.config.MAX_FA_PDA_CONFIGS
 
 data class FaConfig(val stateIndex: Int, val inputOffset: Int = 0)
@@ -29,16 +28,15 @@ class FiniteMachine(
 
     override fun advanceSimulation(): Simulation {
         if (currentConfigs.isEmpty()) {
-            if (!ensureCurrentState()) return Simulation.Ended(SimulationOutcome.ACTIVE)
+            if (!ensureCurrentState()) {
+                return Simulation.Ended(SimulationOutcome.ACTIVE)
+            }
             getStateByIndexOrNull(currentState!!)?.isCurrent = true
         }
         return calculateAllPathsStep()
     }
 
-    override fun canReachFinalState(
-        input: StringBuilder,
-        fromInit: Boolean,
-    ): Boolean? {
+    override fun canReachFinalState(input: StringBuilder, fromInit: Boolean): Boolean? {
         data class Config(val stateIndex: Int, val inputIndex: Int)
 
         val startIndex = findStartStateIndex(fromInit) ?: return false
@@ -50,12 +48,14 @@ class FiniteMachine(
                     if (config.inputIndex < input.length) {
                         transitions.filter {
                             it.fromState == config.stateIndex &&
-                                    (it.name.isEmpty() || remaining.startsWith(it.name))
+                                (it.read.isEmpty() || remaining.startsWith(it.read))
                         }
                     } else {
-                        transitions.filter { it.fromState == config.stateIndex && it.name.isEmpty() }
+                        transitions.filter {
+                            it.fromState == config.stateIndex && it.read.isEmpty()
+                        }
                     }
-                possibleTransitions.map { Config(it.toState, config.inputIndex + it.name.length) }
+                possibleTransitions.map { Config(it.toState, config.inputIndex + it.read.length) }
             },
             isAccepted = { config ->
                 val state = getStateByIndexOrNull(config.stateIndex)
@@ -63,23 +63,6 @@ class FiniteMachine(
             },
             maxConfigs = MAX_FA_PDA_CONFIGS,
         )
-    }
-
-    override fun snapshotActiveNodes(): Map<Int, NodeSnapshot> {
-        val active = tree.getActiveNodes()
-        val remaining = currentConfigs.toMutableList()
-        val result = mutableMapOf<Int, NodeSnapshot>()
-        for (node in active) {
-            val state = states.firstOrNull { it.name == node.stateName } ?: continue
-            val matchIndex = remaining.indexOfFirst { it.stateIndex == state.index }
-            if (matchIndex >= 0) {
-                val config = remaining.removeAt(matchIndex)
-                result[node.id] = NodeSnapshot.FaSnapshot(
-                    inputConsumed = fullInput.length - remainingInput.length + config.inputOffset,
-                )
-            }
-        }
-        return result
     }
 
     override fun removeTransition(transition: Transition) {
@@ -100,17 +83,15 @@ class FiniteMachine(
         states.firstOrNull { it.initial }?.index?.let { currentConfigs.add(FaConfig(it)) }
     }
 
-    fun addNewTransition(
-        name: String,
-        fromState: State,
-        toState: State,
-    ) {
+    fun addNewTransition(read: String, fromState: State, toState: State) {
         val alreadyExists =
             transitions.any { transition ->
-                transition.fromState == fromState.index && transition.toState == toState.index && transition.name == name
+                transition.fromState == fromState.index &&
+                    transition.toState == toState.index &&
+                    transition.read == read
             }
         if (!alreadyExists) {
-            transitions.add(FiniteTransition(name, fromState.index, toState.index))
+            transitions.add(FiniteTransition(fromState.index, toState.index, read))
         }
     }
 
@@ -121,7 +102,7 @@ class FiniteMachine(
         for (config in currentConfigs) {
             val state = getStateByIndex(config.stateIndex)
             for (transition in getMatchingTransitions(state, config.inputOffset)) {
-                if (transition.name.isEmpty()) {
+                if (transition.read.isEmpty()) {
                     epsilonTransitions.add(config to transition)
                 } else {
                     inputTransitions.add(config to transition)
@@ -134,10 +115,7 @@ class FiniteMachine(
             val newConfigs =
                 epsilonTransitions
                     .map { (config, transition) ->
-                        FaConfig(
-                            transition.toState,
-                            config.inputOffset
-                        )
+                        FaConfig(transition.toState, config.inputOffset)
                     }
                     .filter { it !in currentConfigs }
                     .toSet()
@@ -155,10 +133,23 @@ class FiniteMachine(
                             )
                         }
 
+                // Only keep configs that also have input alternatives
+                val configsWithEpsilon = epsilonTransitions.map { it.first }.toSet()
+                val configsWithInput = inputTransitions.map { it.first }.toSet()
+                val configsToKeep = configsWithEpsilon.intersect(configsWithInput)
+                val configsToRemove = configsWithEpsilon - configsToKeep
+                val activeStates = configsToKeep.map { it.stateIndex }.toSet()
+
                 return Simulation.Step(
                     transitionRefs = transitionRefs,
-                    keepActive = true,
+                    activeStates = activeStates,
                     onAllComplete = {
+                        for (config in configsToRemove) {
+                            currentConfigs.remove(config)
+                            if (currentConfigs.none { it.stateIndex == config.stateIndex }) {
+                                getStateByIndexOrNull(config.stateIndex)?.isCurrent = false
+                            }
+                        }
                         for (config in newConfigs) {
                             currentConfigs.add(config)
                             getStateByIndexOrNull(config.stateIndex)?.isCurrent = true
@@ -173,33 +164,36 @@ class FiniteMachine(
             val acceptingConfigs =
                 currentConfigs.filter { config ->
                     getStateByIndex(config.stateIndex).final &&
-                            config.inputOffset >= remainingInput.length
+                        config.inputOffset >= remainingInput.length
                 }
             val anyAccepting = acceptingConfigs.isNotEmpty()
             return Simulation.Ended(
-                outcome = if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
-                isNodeAccepting = if (anyAccepting) { node ->
-                    val state = states.firstOrNull { it.name == node.stateName }
-                    state != null && acceptingConfigs.any { it.stateIndex == state.index }
-                } else null,
+                outcome =
+                    if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
+                isNodeAccepting =
+                    if (anyAccepting)
+                        { node ->
+                            val state = states.firstOrNull { it.name == node.stateName }
+                            state != null && acceptingConfigs.any { it.stateIndex == state.index }
+                        }
+                    else null,
             )
         }
 
         // Process ALL input transitions - fire all lengths simultaneously
         val transitionRefs =
-            inputTransitions
-                .map { (config, transition) ->
-                    TransitionRef(
-                        fromStateIndex = config.stateIndex,
-                        toStateIndex = transition.toState,
-                        transitionIndex = transitions.indexOf(transition),
-                    )
-                }
+            inputTransitions.map { (config, transition) ->
+                TransitionRef(
+                    fromStateIndex = config.stateIndex,
+                    toStateIndex = transition.toState,
+                    transitionIndex = transitions.indexOf(transition),
+                )
+            }
 
         val newConfigs =
             inputTransitions
                 .map { (config, transition) ->
-                    FaConfig(transition.toState, config.inputOffset + transition.name.length)
+                    FaConfig(transition.toState, config.inputOffset + transition.read.length)
                 }
                 .toSet()
 
@@ -234,8 +228,7 @@ class FiniteMachine(
                 ""
             }
         return transitions.filter {
-            it.fromState == fromState.index &&
-                    (it.name.isEmpty() || remaining.startsWith(it.name))
+            it.fromState == fromState.index && (it.read.isEmpty() || remaining.startsWith(it.read))
         }
     }
 }

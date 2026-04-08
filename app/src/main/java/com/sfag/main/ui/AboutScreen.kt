@@ -47,7 +47,7 @@ import java.util.Locale
 
 private enum class AboutSection {
     AUTOMATA,
-    GRAMMAR
+    GRAMMAR,
 }
 
 @Composable
@@ -55,18 +55,16 @@ fun AboutScreen(navBack: () -> Unit) {
     var selected by remember { mutableStateOf(AboutSection.AUTOMATA) }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+        modifier =
+            Modifier.fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
     ) {
         Image(
             painter = painterResource(id = R.drawable.logo_wide),
             contentDescription = "Logo",
-            modifier = Modifier
-                .padding(top = 16.dp, bottom = 8.dp)
-                .height(60.dp)
+            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp).height(60.dp),
         )
 
         Spacer(Modifier.height(16.dp))
@@ -74,25 +72,22 @@ fun AboutScreen(navBack: () -> Unit) {
         SectionCard {
             Text(
                 text = stringResource(R.string.about_description),
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
 
         Spacer(Modifier.height(20.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             SegmentedButton(
                 text = stringResource(R.string.about_automata_tab),
-                active = selected == AboutSection.AUTOMATA
+                active = selected == AboutSection.AUTOMATA,
             ) {
                 selected = AboutSection.AUTOMATA
             }
             SegmentedButton(
                 text = stringResource(R.string.about_grammar_tab),
-                active = selected == AboutSection.GRAMMAR
+                active = selected == AboutSection.GRAMMAR,
             ) {
                 selected = AboutSection.GRAMMAR
             }
@@ -110,7 +105,7 @@ fun AboutScreen(navBack: () -> Unit) {
         SectionCard {
             Text(
                 stringResource(R.string.authors_label),
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
             )
             Spacer(Modifier.height(8.dp))
             AuthorList(
@@ -121,7 +116,7 @@ fun AboutScreen(navBack: () -> Unit) {
                     "Juraj Lopusek (2026)",
                     "Martin Lukacka (2026)",
                     "Samuel Strecko (2026)",
-                    "Slavomir Tung Le Minh (2026)"
+                    "Slavomir Tung Le Minh (2026)",
                 )
             )
         }
@@ -131,7 +126,7 @@ fun AboutScreen(navBack: () -> Unit) {
         SectionCard {
             Text(
                 stringResource(R.string.supervisor_label),
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
             )
             Text("doc. Mgr. Daniela Chuda, PhD.", style = MaterialTheme.typography.bodyMedium)
         }
@@ -144,7 +139,7 @@ fun AboutScreen(navBack: () -> Unit) {
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text("FEI STU Bratislava", style = MaterialTheme.typography.labelMedium)
             Text("AutoGram simulator v2.3 ©2026", style = MaterialTheme.typography.labelSmall)
@@ -159,7 +154,7 @@ private fun AutomataSection() {
     SectionCard {
         Text(
             text = stringResource(R.string.about_automata_features),
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
         )
         Spacer(Modifier.height(8.dp))
         FeatureList(
@@ -168,7 +163,7 @@ private fun AutomataSection() {
                 stringResource(R.string.feature_determinism),
                 stringResource(R.string.feature_formal_definition),
                 stringResource(R.string.feature_visualize_derivation),
-                stringResource(R.string.feature_multi_input_short)
+                stringResource(R.string.feature_multi_input_short),
             )
         )
     }
@@ -188,7 +183,7 @@ private fun GrammarSection() {
                 stringResource(R.string.feature_grammar_type),
                 stringResource(R.string.feature_formal_grammar),
                 stringResource(R.string.feature_visualize_grammar),
-                stringResource(R.string.feature_multi_grammar)
+                stringResource(R.string.feature_multi_grammar),
             )
         )
     }
@@ -198,8 +193,12 @@ private fun GrammarSection() {
 private fun SegmentedButton(text: String, active: Boolean, onClick: () -> Unit) {
     FilledTonalButton(
         onClick = onClick,
-        colors = if (active) ButtonDefaults.filledTonalButtonColors()
-        else ButtonDefaults.outlinedButtonColors()
+        colors =
+            if (active) {
+                ButtonDefaults.filledTonalButtonColors()
+            } else {
+                ButtonDefaults.outlinedButtonColors()
+            },
     ) {
         Text(text)
     }
@@ -210,11 +209,9 @@ private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(2.dp),
     ) {
-        Column(Modifier.padding(16.dp)) {
-            content()
-        }
+        Column(Modifier.padding(16.dp)) { content() }
     }
 }
 
@@ -224,7 +221,7 @@ private fun AuthorList(authors: List<String>) {
         authors.chunked(2).forEach { row ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(row[0], style = MaterialTheme.typography.bodyMedium)
                 if (row.size > 1) {
@@ -239,8 +236,8 @@ private fun AuthorList(authors: List<String>) {
 
 @Composable
 private fun LanguageSelector() {
-    val currentLanguage = AppCompatDelegate.getApplicationLocales().get(0)?.language
-        ?: Locale.getDefault().language
+    val currentLanguage =
+        AppCompatDelegate.getApplicationLocales().get(0)?.language ?: Locale.getDefault().language
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -248,30 +245,30 @@ private fun LanguageSelector() {
                 imageVector = Icons.Default.Language,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
             )
             Spacer(Modifier.size(8.dp))
             Text(
                 text = stringResource(R.string.select_language),
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             LanguageButton(
                 text = stringResource(R.string.language_slovak),
                 isSelected = currentLanguage == "sk",
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 changeLanguage("sk")
             }
             LanguageButton(
                 text = stringResource(R.string.language_english),
                 isSelected = currentLanguage == "en",
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 changeLanguage("en")
             }
@@ -284,25 +281,33 @@ private fun LanguageButton(
     text: String,
     isSelected: Boolean,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Box(
-        modifier = modifier
-            .height(40.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(
-                if (isSelected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.surfaceContainerHigh
-            )
-            .clickable { onClick() }
-            .padding(horizontal = 12.dp),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .height(40.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(
+                    if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHigh
+                    }
+                )
+                .clickable { onClick() }
+                .padding(horizontal = 12.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
-            color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-            else MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.labelLarge
+            color =
+                if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            style = MaterialTheme.typography.labelLarge,
         )
     }
 }
@@ -316,7 +321,7 @@ private fun changeLanguage(languageCode: String) {
 private fun FeatureList(items: List<String>) {
     Column(
         modifier = Modifier.padding(horizontal = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         items.forEach { Text(text = "- $it", style = MaterialTheme.typography.bodySmall) }
     }

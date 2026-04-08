@@ -17,8 +17,8 @@ import com.sfag.main.data.Point2D
 import com.sfag.main.data.XmlUtils
 import com.sfag.main.data.XmlUtils.getChildText
 import com.sfag.main.data.XmlUtils.hasChild
-import org.w3c.dom.Element
 import java.io.InputStream
+import org.w3c.dom.Element
 
 /** Parsed contents of a .jff file - states, transitions, and positions. */
 internal data class Jff(
@@ -57,8 +57,7 @@ internal data class Jff(
                             positions[state.index] = position
                         }
 
-                    "transition" ->
-                        parseTransition(element, jffTag)?.let { transitions.add(it) }
+                    "transition" -> parseTransition(element, jffTag)?.let { transitions.add(it) }
                 }
             }
 
@@ -89,10 +88,7 @@ internal data class Jff(
             return state to Point2D(x, y)
         }
 
-        private fun parseTransition(
-            element: Element,
-            jffTag: String,
-        ): Transition? {
+        private fun parseTransition(element: Element, jffTag: String): Transition? {
             val fromState = element.getChildText("from")?.toIntOrNull()
             val toState = element.getChildText("to")?.toIntOrNull()
 
@@ -104,14 +100,14 @@ internal data class Jff(
             val readSymbol = JffUtils.normalizeEpsilon(element.getChildText("read") ?: "")
 
             return when (jffTag) {
-                "fa" -> FiniteTransition(readSymbol, fromState, toState)
+                "fa" -> FiniteTransition(fromState, toState, readSymbol)
                 "pda" -> {
                     val pop = JffUtils.normalizeEpsilon(element.getChildText("pop") ?: "")
                     val push = JffUtils.normalizeEpsilon(element.getChildText("push") ?: "")
                     PushdownTransition(
-                        name = readSymbol,
                         fromState = fromState,
                         toState = toState,
+                        read = readSymbol,
                         pop = pop,
                         push = push,
                     )
@@ -122,14 +118,14 @@ internal data class Jff(
                     val turingRead =
                         if (readText.isNullOrEmpty()) Symbols.BLANK_CHAR.toString() else readText
                     val writeText = element.getChildText("write")?.trim()
-                    val writeSymbol =
+                    val write =
                         if (writeText.isNullOrEmpty()) Symbols.BLANK_CHAR else writeText.first()
                     val directionSymbol = element.getChildText("move")?.trim() ?: "R"
                     TuringTransition(
-                        name = turingRead,
                         fromState = fromState,
                         toState = toState,
-                        writeSymbol = writeSymbol,
+                        read = turingRead,
+                        write = write,
                         direction = TapeDirection.fromSymbol(directionSymbol),
                     )
                 }
@@ -160,8 +156,7 @@ internal fun Jff.toMachine(
             PushdownMachine(
                 name = name,
                 states = states.toMutableList(),
-                pdaTransitions =
-                    transitions.filterIsInstance<PushdownTransition>().toMutableList(),
+                pdaTransitions = transitions.filterIsInstance<PushdownTransition>().toMutableList(),
                 savedInputs = savedInputs,
             )
 

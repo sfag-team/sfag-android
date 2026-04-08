@@ -49,14 +49,10 @@ import kotlinx.coroutines.withContext
 
 /** Full-screen input editor. */
 @Composable
-fun Machine.InputEditor(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val savedInputs =
-        remember {
-            this@InputEditor.savedInputs.map { StringBuilder(it.toString()) }.toMutableList()
-        }
+fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val savedInputs = remember {
+        this@InputEditor.savedInputs.map { StringBuilder(it.toString()) }.toMutableList()
+    }
     val criteria = remember { (this as? PushdownMachine)?.acceptanceCriteria }
 
     var recomposeKey by remember { mutableIntStateOf(0) }
@@ -69,8 +65,7 @@ fun Machine.InputEditor(
 
     Column(
         modifier =
-            Modifier
-                .fillMaxSize()
+            Modifier.fillMaxSize()
                 .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -79,8 +74,7 @@ fun Machine.InputEditor(
         // TOP: PDA acceptance criteria + text field card
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
+                Modifier.fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
                     .padding(16.dp),
@@ -134,9 +128,7 @@ fun Machine.InputEditor(
 
             DefaultTextField(
                 value = newFullInput.value,
-                onValueChange = { value ->
-                    newFullInput.value = value
-                },
+                onValueChange = { value -> newFullInput.value = value },
                 modifier = Modifier.fillMaxWidth(),
                 label = stringResource(R.string.tape_input),
                 labelColor = validationColor,
@@ -146,7 +138,7 @@ fun Machine.InputEditor(
                         onClick = {
                             this@InputEditor.savedInputs.add(StringBuilder(newFullInput.value))
                             recomposeKey++
-                        },
+                        }
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.add),
@@ -167,15 +159,15 @@ fun Machine.InputEditor(
                 onClick = {
                     // Restore original state
                     this@InputEditor.savedInputs.clear()
-                    this@InputEditor.savedInputs.addAll(savedInputs.map { StringBuilder(it.toString()) })
+                    this@InputEditor.savedInputs.addAll(
+                        savedInputs.map { StringBuilder(it.toString()) }
+                    )
                     if (criteria != null && this@InputEditor is PushdownMachine) {
                         acceptanceCriteria = criteria
                     }
                     onDismiss()
                 },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp),
+                modifier = Modifier.weight(1f).height(48.dp),
                 shape = MaterialTheme.shapes.medium,
             ) {
                 Text(stringResource(R.string.cancel_button))
@@ -196,17 +188,14 @@ fun Machine.InputEditor(
         key(recomposeKey) {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
+                    Modifier.fillMaxWidth()
                         .weight(1f)
                         .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.surfaceContainer),
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
             ) {
                 if (this@InputEditor.savedInputs.isEmpty()) {
                     Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
@@ -217,9 +206,7 @@ fun Machine.InputEditor(
                     }
                 } else {
                     LazyColumn(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding =
                             PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
@@ -247,22 +234,19 @@ fun Machine.InputEditor(
                                 text = savedText.ifEmpty { Symbols.EPSILON },
                                 backgroundColor = bgColor,
                                 textColor = textColor,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = 48.dp),
-                                onClick = {
-                                    newFullInput.value = savedInput.toString()
-                                },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                                onClick = { newFullInput.value = savedInput.toString() },
                                 trailingContent = {
                                     IconButton(
                                         onClick = {
                                             this@InputEditor.savedInputs.remove(savedInput)
                                             recomposeKey++
-                                        },
+                                        }
                                     ) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.delete),
-                                            contentDescription = stringResource(R.string.remove_item),
+                                            contentDescription =
+                                                stringResource(R.string.remove_item),
                                             modifier = Modifier.size(24.dp),
                                         )
                                     }

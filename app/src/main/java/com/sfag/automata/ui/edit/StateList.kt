@@ -31,8 +31,7 @@ fun Machine.StateList(
     key(recomposeKey.intValue) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
+                Modifier.fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
                     .padding(16.dp),
@@ -41,12 +40,10 @@ fun Machine.StateList(
         ) {
             Text(
                 stringResource(R.string.machine_state),
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
             )
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(rowHeight * 3 + 8.dp * 2),
+                modifier = Modifier.fillMaxWidth().height(rowHeight * 3 + 8.dp * 2),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(states) { state ->
@@ -55,8 +52,8 @@ fun Machine.StateList(
                     ListRow(
                         text =
                             state.name +
-                                    (if (state.initial) "  |  $initialLabel" else "") +
-                                    (if (state.final) "  |  $finalLabel" else ""),
+                                (if (state.initial) "  |  $initialLabel" else "") +
+                                (if (state.final) "  |  $finalLabel" else ""),
                         onClick = { onClickState(state) },
                         onRemove = onRemoveState?.let { { it(state) } },
                     )

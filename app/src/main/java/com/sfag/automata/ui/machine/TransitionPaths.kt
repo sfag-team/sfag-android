@@ -51,14 +51,8 @@ private class MutableGeometry(
 )
 
 /** Converts a dp position (top-left of state box) to screen-pixel center of the node. */
-private fun toScreenCenter(
-    position: Offset,
-    pxPerDp: Float,
-): Offset =
-    Offset(
-        (position.x + NODE_RADIUS / 2f) * pxPerDp,
-        (position.y + NODE_RADIUS / 2f) * pxPerDp,
-    )
+private fun toScreenCenter(position: Offset, pxPerDp: Float): Offset =
+    Offset((position.x + NODE_RADIUS / 2f) * pxPerDp, (position.y + NODE_RADIUS / 2f) * pxPerDp)
 
 /**
  * Computes transition paths for all transitions. Returns a list indexed by transition index;
@@ -85,14 +79,15 @@ fun Machine.computeTransitionPaths(
                     .mapNotNull { other ->
                         when {
                             other.fromState == transition.fromState &&
-                                    other.toState != transition.fromState -> other.toState
+                                other.toState != transition.fromState -> other.toState
 
                             other.toState == transition.fromState &&
-                                    other.fromState != transition.fromState -> other.fromState
+                                other.fromState != transition.fromState -> other.fromState
 
                             else -> null
                         }
-                    }.distinct()
+                    }
+                    .distinct()
             // Sum vertical direction to each connected state (-dy/distance):
             // positive = more above, negative = more below. Loop goes away from heavier side.
             var verticalBalance = 0f
@@ -101,7 +96,9 @@ fun Machine.computeTransitionPaths(
                 val dx = position.x - startPosition.x
                 val dy = position.y - startPosition.y
                 val dist = sqrt(dx * dx + dy * dy)
-                if (dist > 0.001f) verticalBalance -= dy / dist
+                if (dist > 0.001f) {
+                    verticalBalance -= dy / dist
+                }
             }
             val loopSign = if (verticalBalance > 0.5f) 1f else -1f
 
@@ -121,13 +118,15 @@ fun Machine.computeTransitionPaths(
                     perpY = loopSign,
                     isSelfLoop = true,
                     loopSign = loopSign,
-                ),
+                )
             )
         } else {
             val chordDx = endCenter.x - startCenter.x
             val chordDy = endCenter.y - startCenter.y
             val chordLen = sqrt(chordDx * chordDx + chordDy * chordDy)
-            if (chordLen < 0.1f) continue
+            if (chordLen < 0.1f) {
+                continue
+            }
 
             val chordDirX = chordDx / chordLen
             val chordDirY = chordDy / chordLen
@@ -148,7 +147,7 @@ fun Machine.computeTransitionPaths(
                     nodeCenterY = startCenter.y,
                     perpX = chordDirY,
                     perpY = -chordDirX,
-                ),
+                )
             )
         }
     }
@@ -212,16 +211,15 @@ private fun buildSelfLoopPath(geometry: MutableGeometry): TransitionPath {
     val startAngle = -geometry.loopSign * attachAngle
     val sweepAngle = geometry.loopSign * (180f + 2f * attachAngle)
 
-    val oval = Rect(
-        left = geometry.nodeCenterX - arcRadius,
-        top = arcCenterY - arcRadius,
-        right = geometry.nodeCenterX + arcRadius,
-        bottom = arcCenterY + arcRadius,
-    )
+    val oval =
+        Rect(
+            left = geometry.nodeCenterX - arcRadius,
+            top = arcCenterY - arcRadius,
+            right = geometry.nodeCenterX + arcRadius,
+            bottom = arcCenterY + arcRadius,
+        )
 
-    val arrowBody = Path().apply {
-        arcTo(oval, startAngle, sweepAngle, forceMoveTo = true)
-    }
+    val arrowBody = Path().apply { arcTo(oval, startAngle, sweepAngle, forceMoveTo = true) }
 
     return TransitionPath(
         arrowBody = arrowBody,
@@ -234,13 +232,11 @@ private fun buildSelfLoopPath(geometry: MutableGeometry): TransitionPath {
 }
 
 private fun buildRegularPath(geometry: MutableGeometry): TransitionPath {
-    val arrowBody = Path().apply {
-        moveTo(geometry.startX, geometry.startY)
-        quadraticTo(
-            geometry.controlX, geometry.controlY,
-            geometry.endX, geometry.endY,
-        )
-    }
+    val arrowBody =
+        Path().apply {
+            moveTo(geometry.startX, geometry.startY)
+            quadraticTo(geometry.controlX, geometry.controlY, geometry.endX, geometry.endY)
+        }
 
     val bezierMidX = 0.25f * geometry.startX + 0.5f * geometry.controlX + 0.25f * geometry.endX
     val bezierMidY = 0.25f * geometry.startY + 0.5f * geometry.controlY + 0.25f * geometry.endY
@@ -266,7 +262,9 @@ internal fun isPathHit(path: Path, tapX: Float, tapY: Float, threshold: Float): 
         pathMeasure.getPosTan(distance, point, null)
         val dx = tapX - point[0]
         val dy = tapY - point[1]
-        if (dx * dx + dy * dy < thresholdSq) return true
+        if (dx * dx + dy * dy < thresholdSq) {
+            return true
+        }
         distance += threshold
     }
     pathMeasure.getPosTan(length, point, null)
@@ -279,10 +277,7 @@ internal fun isPathHit(path: Path, tapX: Float, tapY: Float, threshold: Float): 
  * Returns the position along [path] at [progress] in [0, 1]. Uses Android PathMeasure for accuracy
  * on Bézier curves.
  */
-internal fun getCurrentPositionByPath(
-    path: Path,
-    progress: Float,
-): Offset {
+internal fun getCurrentPositionByPath(path: Path, progress: Float): Offset {
     val pathMeasure = android.graphics.PathMeasure(path.asAndroidPath(), false)
     val point2D = FloatArray(2)
     pathMeasure.getPosTan(pathMeasure.length * progress.coerceIn(0f, 1f), point2D, null)
@@ -297,7 +292,9 @@ private fun spreadConnections(
 ) {
     val groups =
         geometries.groupBy { if (isEnd) it.transition.fromState else it.transition.toState }
-    if (groups.size < 2) return
+    if (groups.size < 2) {
+        return
+    }
 
     val minSep = minSepDeg * PI / 180.0
     val twoPi = 2 * PI
@@ -319,7 +316,9 @@ private fun spreadConnections(
         for (j in angles.indices) {
             val next = (j + 1) % angles.size
             var diff = angles[next] - angles[j]
-            if (next == 0) diff += twoPi
+            if (next == 0) {
+                diff += twoPi
+            }
             if (diff < minSep) {
                 val push = (minSep - diff) / 2.0
                 angles[j] -= push

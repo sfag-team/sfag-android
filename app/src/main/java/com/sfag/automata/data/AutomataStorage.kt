@@ -22,14 +22,13 @@ internal data class StoredMachine(
 )
 
 /** File-based storage for automata using .jff files */
-class AutomataStorage
-@Inject
-constructor(
-    @param:ApplicationContext private val context: Context,
-) {
-    private val storageDir = File(context.filesDir, "automata").also {
-        if (!it.exists()) it.mkdirs()
-    }
+class AutomataStorage @Inject constructor(@param:ApplicationContext private val context: Context) {
+    private val storageDir =
+        File(context.filesDir, "automata").also {
+            if (!it.exists()) {
+                it.mkdirs()
+            }
+        }
 
     private val jffFile = File(storageDir, "__current.jff")
     private val metaFile = File(storageDir, "__current.meta")
@@ -60,14 +59,19 @@ constructor(
     fun hasStoredMachine(): Boolean = jffFile.exists()
 
     internal fun loadMachine(): StoredMachine? {
-        if (!jffFile.exists()) return null
+        if (!jffFile.exists()) {
+            return null
+        }
 
         return try {
             val jff = jffFile.inputStream().use { Jff.parse(it) }
             val metaLines = if (metaFile.exists()) metaFile.readLines() else emptyList()
 
             val canvasParts =
-                metaLines.lastOrNull { it.startsWith(CANVAS_TAG) }?.removePrefix(CANVAS_TAG)?.split(",")
+                metaLines
+                    .lastOrNull { it.startsWith(CANVAS_TAG) }
+                    ?.removePrefix(CANVAS_TAG)
+                    ?.split(",")
             val offsetX = canvasParts?.getOrNull(0)?.toFloatOrNull() ?: 0f
             val offsetY = canvasParts?.getOrNull(1)?.toFloatOrNull() ?: 0f
             val scale = canvasParts?.getOrNull(2)?.toFloatOrNull() ?: INITIAL_ZOOM
@@ -76,13 +80,14 @@ constructor(
             val dirty = dirtyLine?.removePrefix(DIRTY_TAG)?.toBooleanStrictOrNull() ?: false
 
             val name = metaLines.firstOrNull() ?: ""
-            val savedInputs = metaLines
-                .drop(1)
-                .filter {
-                    it.isNotEmpty() && !it.startsWith(CANVAS_TAG) && !it.startsWith(DIRTY_TAG)
-                }
-                .map { StringBuilder(it) }
-                .toMutableList()
+            val savedInputs =
+                metaLines
+                    .drop(1)
+                    .filter {
+                        it.isNotEmpty() && !it.startsWith(CANVAS_TAG) && !it.startsWith(DIRTY_TAG)
+                    }
+                    .map { StringBuilder(it) }
+                    .toMutableList()
 
             StoredMachine(
                 jff.toMachine(name, savedInputs),
@@ -90,7 +95,7 @@ constructor(
                 offsetX,
                 offsetY,
                 scale,
-                dirty
+                dirty,
             )
         } catch (e: Exception) {
             Log.e("AutomataStorage", "Failed to load machine", e)

@@ -26,8 +26,7 @@ fun PushdownMachine.Stack(overrideSymbols: List<Char>? = null) {
     val displaySymbols = overrideSymbols ?: symbolStack
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
+            Modifier.fillMaxWidth()
                 .height(cellSize + cellPadding * 2)
                 .padding(horizontal = cellPadding),
         verticalAlignment = Alignment.CenterVertically,

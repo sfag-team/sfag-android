@@ -96,14 +96,10 @@ fun SingleInputView(
     LaunchedEffect(Unit) {
         if (initialInput != null) {
             isParsing = true
-            parseResult = withContext(Dispatchers.Default) {
-                parse(
-                    initialInput,
-                    rules,
-                    terminals,
-                    grammarType
-                )
-            }
+            parseResult =
+                withContext(Dispatchers.Default) {
+                    parse(initialInput, rules, terminals, grammarType)
+                }
             isParsed = true
             isParsing = false
             isTableShown = true
@@ -120,11 +116,16 @@ fun SingleInputView(
     // Defer tree layout until the user opens the tree view
     val treeData =
         remember(parseResult, isTreeShown) {
-            if (!isTreeShown) return@remember null
+            if (!isTreeShown) {
+                return@remember null
+            }
             steps?.let {
                 val root = buildTree(it)
                 val pos =
-                    if (grammarType == GrammarType.UNRESTRICTED || grammarType == GrammarType.CONTEXT_SENSITIVE) {
+                    if (
+                        grammarType == GrammarType.UNRESTRICTED ||
+                            grammarType == GrammarType.CONTEXT_SENSITIVE
+                    ) {
                         layoutPrettyTreeUnrestricted(root)
                     } else {
                         layoutPrettyTreeRestricted(root)
@@ -143,10 +144,7 @@ fun SingleInputView(
             modifier = Modifier.padding(horizontal = 16.dp),
         )
         HorizontalDivider(
-            modifier = Modifier
-                .height(4.dp)
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+            modifier = Modifier.height(4.dp).fillMaxWidth().padding(horizontal = 16.dp),
             color = MaterialTheme.colorScheme.primary,
         )
         Row(
@@ -160,9 +158,7 @@ fun SingleInputView(
                     inputText = it
                 },
                 placeholder = { Text(stringResource(R.string.terminal_placeholder)) },
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(top = 4.dp),
+                modifier = Modifier.weight(1f).padding(top = 4.dp),
                 singleLine = true,
                 colors =
                     TextFieldDefaults.colors(
@@ -187,7 +183,7 @@ fun SingleInputView(
                         isParsed = true
                         isParsing = false
                     }
-                },
+                }
             ) {
                 Icon(
                     Icons.Default.CheckCircle,
@@ -198,9 +194,7 @@ fun SingleInputView(
         }
         if (isParsing) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
@@ -211,11 +205,10 @@ fun SingleInputView(
                 var treeStep by remember { mutableIntStateOf(0) }
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxSize()
+                        Modifier.fillMaxSize()
                             .padding(top = 8.dp)
                             .background(MaterialTheme.colorScheme.surfaceDim)
-                            .zIndex(1f),
+                            .zIndex(1f)
                 ) {
                     TreeView(
                         tree,
@@ -225,7 +218,7 @@ fun SingleInputView(
                         offsetY,
                         treeStep,
                         grammarType,
-                        canvasSize
+                        canvasSize,
                     )
                     if (treeStep == 0) {
                         LaunchedEffect(treeStep) {
@@ -243,10 +236,7 @@ fun SingleInputView(
                     }
                     if (treeStep == 1 + steps.size) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .zIndex(2f)
-                                .padding(bottom = 64.dp),
+                            modifier = Modifier.fillMaxSize().zIndex(2f).padding(bottom = 64.dp),
                             contentAlignment = Alignment.BottomCenter,
                         ) {
                             Column(
@@ -270,24 +260,20 @@ fun SingleInputView(
                     }
                     IconButton(
                         onClick = { isTreeShown = false },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp),
+                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                     ) {
                         Icon(
                             Icons.Default.Close,
-                            contentDescription = stringResource(R.string.close_tree)
+                            contentDescription = stringResource(R.string.close_tree),
                         )
                     }
                     IconButton(
                         onClick = { treeStep = 0 },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(4.dp),
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(4.dp),
                     ) {
                         Icon(
                             Icons.Default.Refresh,
-                            contentDescription = stringResource(R.string.reset_simulation)
+                            contentDescription = stringResource(R.string.reset_simulation),
                         )
                     }
                     IconButton(
@@ -311,9 +297,7 @@ fun SingleInputView(
                             }
                         },
                         modifier =
-                            Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(end = 30.dp, bottom = 4.dp),
+                            Modifier.align(Alignment.BottomEnd).padding(end = 30.dp, bottom = 4.dp),
                     ) {
                         Icon(ChevronRight, contentDescription = stringResource(R.string.next_step))
                     }
@@ -336,13 +320,12 @@ fun SingleInputView(
                             }
                         },
                         modifier =
-                            Modifier
-                                .align(Alignment.BottomStart)
+                            Modifier.align(Alignment.BottomStart)
                                 .padding(start = 30.dp, bottom = 4.dp),
                     ) {
                         Icon(
                             ChevronLeft,
-                            contentDescription = stringResource(R.string.previous_step)
+                            contentDescription = stringResource(R.string.previous_step),
                         )
                     }
                 }
@@ -351,11 +334,7 @@ fun SingleInputView(
             val acceptedText = stringResource(R.string.input_accepted)
             val notAcceptedText = stringResource(R.string.input_not_accepted)
             val inconclusiveText = stringResource(R.string.input_inconclusive)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 16.dp)
-            ) {
+            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp)) {
                 val inputSpanStyle =
                     MaterialTheme.typography.titleLarge
                         .toSpanStyle()
@@ -365,18 +344,15 @@ fun SingleInputView(
                         Text(
                             text =
                                 buildAnnotatedString {
-                                    withStyle(style = inputSpanStyle) {
-                                        append("\"$testedInput\"")
-                                    }
+                                    withStyle(style = inputSpanStyle) { append("\"$testedInput\"") }
                                     append(acceptedText)
                                 },
                             modifier =
-                                Modifier
-                                    .weight(1f)
+                                Modifier.weight(1f)
                                     .background(
                                         color =
                                             MaterialTheme.extendedColorScheme.accepted
-                                                .colorContainer,
+                                                .colorContainer
                                     ),
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -387,18 +363,15 @@ fun SingleInputView(
                         Text(
                             text =
                                 buildAnnotatedString {
-                                    withStyle(style = inputSpanStyle) {
-                                        append("\"$testedInput\"")
-                                    }
+                                    withStyle(style = inputSpanStyle) { append("\"$testedInput\"") }
                                     append(notAcceptedText)
                                 },
                             modifier =
-                                Modifier
-                                    .weight(1f)
+                                Modifier.weight(1f)
                                     .background(
                                         color =
                                             MaterialTheme.extendedColorScheme.rejected
-                                                .colorContainer,
+                                                .colorContainer
                                     ),
                             textAlign = TextAlign.Center,
                         )
@@ -408,16 +381,13 @@ fun SingleInputView(
                         Text(
                             text =
                                 buildAnnotatedString {
-                                    withStyle(style = inputSpanStyle) {
-                                        append("\"$testedInput\"")
-                                    }
+                                    withStyle(style = inputSpanStyle) { append("\"$testedInput\"") }
                                     append(inconclusiveText)
                                 },
                             modifier =
-                                Modifier
-                                    .weight(1f)
+                                Modifier.weight(1f)
                                     .background(
-                                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        color = MaterialTheme.colorScheme.surfaceContainerHigh
                                     ),
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -430,19 +400,15 @@ fun SingleInputView(
             if (steps != null) {
                 // Visual options
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp, horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(
-                        12.dp,
-                        Alignment.CenterHorizontally
-                    ),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
                 ) {
                     IconButton(
                         onClick = {
                             isTableShown = false
                             isLinearShown = true
-                        },
+                        }
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowForward,
@@ -454,7 +420,7 @@ fun SingleInputView(
                         onClick = {
                             isLinearShown = false
                             isTableShown = true
-                        },
+                        }
                     ) {
                         Icon(
                             Icons.Default.Menu,
@@ -466,7 +432,7 @@ fun SingleInputView(
                         Icon(
                             NetworkNode,
                             stringResource(R.string.tree_derivation),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
@@ -515,13 +481,13 @@ private fun LinearDerivation(steps: List<DerivationStep>, modifier: Modifier = M
             // ε handling in derivation
             text =
                 "S => " +
-                        steps.joinToString(" => ") {
-                            if (it.derived == Symbols.EPSILON) {
-                                Symbols.EPSILON
-                            } else {
-                                it.derived.replace(Symbols.EPSILON, "")
-                            }
-                        },
+                    steps.joinToString(" => ") {
+                        if (it.derived == Symbols.EPSILON) {
+                            Symbols.EPSILON
+                        } else {
+                            it.derived.replace(Symbols.EPSILON, "")
+                        }
+                    },
             style = MaterialTheme.typography.bodyMedium,
         )
     }
@@ -539,35 +505,23 @@ private fun StateTable(steps: List<DerivationStep>, modifier: Modifier = Modifie
                     MaterialTheme.colorScheme.surfaceContainerHigh,
                     MaterialTheme.shapes.medium,
                 )
-                .padding(8.dp),
+                .padding(8.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            IconButton(
-                onClick = { if (currentStep > 1) currentStep-- },
-            ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+            IconButton(onClick = { if (currentStep > 1) currentStep-- }) {
                 Icon(ChevronLeft, contentDescription = stringResource(R.string.previous_step))
             }
-            IconButton(
-                onClick = { if (currentStep < steps.size) currentStep++ },
-            ) {
+            IconButton(onClick = { if (currentStep < steps.size) currentStep++ }) {
                 Icon(ChevronRight, contentDescription = stringResource(R.string.next_step))
             }
-            IconButton(
-                onClick = { currentStep = steps.size },
-            ) {
+            IconButton(onClick = { currentStep = steps.size }) {
                 Icon(
                     KeyboardDoubleArrowRight,
-                    contentDescription = stringResource(R.string.jump_to_end)
+                    contentDescription = stringResource(R.string.jump_to_end),
                 )
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(R.string.applied_rule),
                 modifier = Modifier.weight(1f),
@@ -589,7 +543,7 @@ private fun StateTable(steps: List<DerivationStep>, modifier: Modifier = Modifie
                     findReplacementIndex(
                         derivation.appliedRule,
                         derivation.previous,
-                        derivation.derived
+                        derivation.derived,
                     )
 
                 val right =
@@ -599,28 +553,25 @@ private fun StateTable(steps: List<DerivationStep>, modifier: Modifier = Modifie
                         derivation.appliedRule.right.replace(Symbols.EPSILON, "")
                     }
 
-                val annotatedString =
-                    buildAnnotatedString {
-                        if (diffIndex >= 0) {
-                            append(derivation.previous.replace(Symbols.EPSILON, "").take(diffIndex))
-                        }
-                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                            append(right)
-                        }
-                        if (diffIndex >= 0) {
-                            append(
-                                derivation.previous
-                                    .replace(Symbols.EPSILON, "")
-                                    .drop(diffIndex + derivation.appliedRule.left.length),
-                            )
-                        }
+                val annotatedString = buildAnnotatedString {
+                    if (diffIndex >= 0) {
+                        append(derivation.previous.replace(Symbols.EPSILON, "").take(diffIndex))
                     }
+                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                        append(right)
+                    }
+                    if (diffIndex >= 0) {
+                        append(
+                            derivation.previous
+                                .replace(Symbols.EPSILON, "")
+                                .drop(diffIndex + derivation.appliedRule.left.length)
+                        )
+                    }
+                }
 
                 HorizontalDivider()
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(

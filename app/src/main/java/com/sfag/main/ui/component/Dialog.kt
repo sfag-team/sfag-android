@@ -63,16 +63,8 @@ fun DefaultDialog(
 }
 
 @Composable
-fun CancelButton(
-    onClick: () -> Unit,
-    label: String = stringResource(R.string.cancel_button),
-) {
-    OutlinedButton(
-        onClick = onClick,
-        shape = MaterialTheme.shapes.medium,
-    ) {
-        Text(label)
-    }
+fun CancelButton(onClick: () -> Unit, label: String = stringResource(R.string.cancel_button)) {
+    OutlinedButton(onClick = onClick, shape = MaterialTheme.shapes.medium) { Text(label) }
 }
 
 @Composable
@@ -81,11 +73,7 @@ fun ConfirmButton(
     label: String = stringResource(R.string.save_button),
     enabled: Boolean = true,
 ) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        shape = MaterialTheme.shapes.medium,
-    ) {
+    Button(onClick = onClick, enabled = enabled, shape = MaterialTheme.shapes.medium) {
         Text(label)
     }
 }
@@ -113,11 +101,7 @@ fun ImportButton(
     modifier: Modifier = Modifier,
     label: String = stringResource(R.string.import_button),
 ) {
-    Button(
-        onClick = onClick,
-        modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
-    ) {
+    Button(onClick = onClick, modifier = modifier, shape = MaterialTheme.shapes.medium) {
         Text(label)
     }
 }

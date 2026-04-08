@@ -16,11 +16,7 @@ import androidx.compose.ui.unit.Density
 
 private const val REFERENCE_WIDTH_DP = 412f
 
-@Immutable
-data class ExtendedColorScheme(
-    val accepted: ColorFamily,
-    val rejected: ColorFamily,
-)
+@Immutable data class ExtendedColorScheme(val accepted: ColorFamily, val rejected: ColorFamily)
 
 private val lightScheme =
     lightColorScheme(
@@ -386,10 +382,7 @@ fun AppTheme(content: @Composable () -> Unit) {
     val density = LocalDensity.current.density
     val screenWidthDp = LocalWindowInfo.current.containerSize.width / density
     val scaleFactor = (screenWidthDp / REFERENCE_WIDTH_DP).coerceIn(0.85f, 1.15f)
-    val scaledDensity = Density(
-        density = density * scaleFactor,
-        fontScale = 1f,
-    )
+    val scaledDensity = Density(density = density * scaleFactor, fontScale = 1f)
     CompositionLocalProvider(
         LocalExtendedColors provides extendedLight,
         LocalDensity provides scaledDensity,

@@ -66,13 +66,11 @@ fun Tape(
     blankChar: Char = ' ',
 ) {
     val density = LocalDensity.current
-    val cellStepPx =
-        remember(density) { with(density) { (cellSize + cellPadding).roundToPx() } }
+    val cellStepPx = remember(density) { with(density) { (cellSize + cellPadding).roundToPx() } }
 
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
+            Modifier.fillMaxWidth()
                 .height(cellSize + cellPadding * 2)
                 .padding(horizontal = cellPadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -81,8 +79,7 @@ fun Tape(
         if (onEdit != null) {
             Box(
                 modifier =
-                    Modifier
-                        .size(cellSize)
+                    Modifier.size(cellSize)
                         .clip(MaterialTheme.shapes.small)
                         .background(MaterialTheme.colorScheme.secondaryContainer)
                         .clickable { onEdit() },
@@ -111,8 +108,7 @@ fun Tape(
             // Number of cells that fit across half the visible width.
             // scrollOffset = -(halfCells * step) aims for the center of the viewport.
             // Natural clamping creates symmetric left/right drift at tape edges.
-            val halfCells =
-                ((maxWidth / (cellSize + cellPadding)).toInt() / 2).coerceAtLeast(1)
+            val halfCells = ((maxWidth / (cellSize + cellPadding)).toInt() / 2).coerceAtLeast(1)
 
             LaunchedEffect(adjustedHead, halfCells) {
                 if (displaySymbols.isNotEmpty() && adjustedHead in displaySymbols.indices) {
@@ -226,15 +222,14 @@ internal fun Cell(
 
     Box(
         modifier =
-            Modifier
-                .size(size)
+            Modifier.size(size)
                 .clip(MaterialTheme.shapes.small)
                 .then(
                     if (isHead) {
                         Modifier.border(2.dp, headColor, MaterialTheme.shapes.small)
                     } else {
                         Modifier
-                    },
+                    }
                 )
                 .background(bgColor),
         contentAlignment = Alignment.Center,

@@ -29,7 +29,7 @@ sealed class Simulation {
      */
     class Step(
         val transitionRefs: List<TransitionRef>,
-        val keepActive: Boolean = false,
+        val activeStates: Set<Int> = emptySet(),
         val onAllComplete: () -> Unit,
     ) : Simulation()
 }

@@ -73,11 +73,7 @@ fun GrammarEditor(
             modifier = Modifier.padding(top = 8.dp, start = 24.dp, end = 24.dp),
         )
         // LazyColumn for displaying rules and input fields
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 16.dp),
-        ) {
+        LazyColumn(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
             items(rules) { rule ->
                 if (editingRule == rule) {
                     var editLeft by remember(rule) { mutableStateOf(TextFieldValue(rule.left)) }
@@ -129,24 +125,19 @@ fun GrammarEditor(
                     )
                 }
                 Button(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     onClick = { grammarViewModel.toggleGrammarFinished() },
                 ) {
                     Text(
-                        if (isGrammarFinished) stringResource(R.string.edit_grammar) else stringResource(
-                            R.string.editing_done
-                        )
+                        if (isGrammarFinished) stringResource(R.string.edit_grammar)
+                        else stringResource(R.string.editing_done)
                     )
                 }
             }
         }
         Box(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
             FormalDefinitionView(nonTerminals, terminals, grammarType)
@@ -170,9 +161,7 @@ private fun AddRule(
     val invalidCharsError = stringResource(R.string.invalid_chars_error)
     val nonTerminalMissingError = stringResource(R.string.non_terminal_missing)
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(60.dp),
+        modifier = Modifier.fillMaxWidth().height(60.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -182,33 +171,28 @@ private fun AddRule(
             placeholder = { Text(stringResource(R.string.left_side)) },
             singleLine = true,
             modifier =
-                Modifier
-                    .weight(1f)
-                    .onFocusChanged { focusState ->
-                        if (focusState.isFocused) onFieldFocusChange("left")
-                    },
+                Modifier.weight(1f).onFocusChanged { focusState ->
+                    if (focusState.isFocused) {
+                        onFieldFocusChange("left")
+                    }
+                },
         )
-        Text(
-            Symbols.ARROW,
-            style = MaterialTheme.typography.headlineMedium,
-        )
+        Text(Symbols.ARROW, style = MaterialTheme.typography.headlineMedium)
         OutlinedTextField(
             value = rightText,
             onValueChange = { onRightChange(it) },
             placeholder = { Text(stringResource(R.string.right_side)) },
             singleLine = true,
             modifier =
-                Modifier
-                    .weight(1f)
-                    .onFocusChanged { focusState ->
-                        if (focusState.isFocused) onFieldFocusChange("right")
-                    },
+                Modifier.weight(1f).onFocusChanged { focusState ->
+                    if (focusState.isFocused) {
+                        onFieldFocusChange("right")
+                    }
+                },
         )
         Column(
             verticalArrangement = Arrangement.spacedBy(3.dp),
-            modifier = Modifier
-                .fillMaxHeight()
-                .width(48.dp),
+            modifier = Modifier.fillMaxHeight().width(48.dp),
         ) {
             FilledTonalButton(
                 onClick = {
@@ -218,7 +202,7 @@ private fun AddRule(
                                 TextFieldValue(
                                     leftText.text + "|",
                                     TextRange(leftText.text.length + 1),
-                                ),
+                                )
                             )
 
                         "right" ->
@@ -226,13 +210,11 @@ private fun AddRule(
                                 TextFieldValue(
                                     rightText.text + "|",
                                     TextRange(rightText.text.length + 1),
-                                ),
+                                )
                             )
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                modifier = Modifier.fillMaxWidth().weight(1f),
                 contentPadding = PaddingValues(0.dp),
                 shape = MaterialTheme.shapes.extraSmall,
             ) {
@@ -247,7 +229,7 @@ private fun AddRule(
                                 TextFieldValue(
                                     leftText.text + Symbols.EPSILON,
                                     TextRange(leftText.text.length + 1),
-                                ),
+                                )
                             )
 
                         "right" ->
@@ -255,13 +237,11 @@ private fun AddRule(
                                 TextFieldValue(
                                     rightText.text + Symbols.EPSILON,
                                     TextRange(rightText.text.length + 1),
-                                ),
+                                )
                             )
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                modifier = Modifier.fillMaxWidth().weight(1f),
                 contentPadding = PaddingValues(0.dp),
                 shape = MaterialTheme.shapes.extraSmall,
             ) {
@@ -275,17 +255,13 @@ private fun AddRule(
                     leftText.text.all {
                         it.isLetterOrDigit() || it == '|' || "$it" == Symbols.EPSILON
                     } &&
-                            rightText.text.all {
-                                it.isLetterOrDigit() || it == '|' || "$it" == Symbols.EPSILON
-                            }
+                        rightText.text.all {
+                            it.isLetterOrDigit() || it == '|' || "$it" == Symbols.EPSILON
+                        }
                 if (!validChars) {
-                    scope.launch {
-                        snackbarHostState.showSnackbar(invalidCharsError)
-                    }
+                    scope.launch { snackbarHostState.showSnackbar(invalidCharsError) }
                 } else if (!leftText.text.any { it.isUpperCase() }) {
-                    scope.launch {
-                        snackbarHostState.showSnackbar(nonTerminalMissingError)
-                    }
+                    scope.launch { snackbarHostState.showSnackbar(nonTerminalMissingError) }
                 } else {
                     onAddRule()
                     focusManager.clearFocus()
