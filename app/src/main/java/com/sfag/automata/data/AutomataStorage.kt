@@ -9,6 +9,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 
+private const val NAME_TAG = "__name:"
+private const val INPUT_TAG = "__input:"
 private const val CANVAS_TAG = "__canvas:"
 private const val DIRTY_TAG = "__dirty:"
 
@@ -33,28 +35,30 @@ class AutomataStorage @Inject constructor(@param:ApplicationContext private val 
     private val jffFile = File(storageDir, "__current.jff")
     private val metaFile = File(storageDir, "__current.meta")
 
-    internal fun saveMachine(
-        machine: Machine,
-        positions: Map<Int, Point2D>,
-        offsetX: Float,
-        offsetY: Float,
-        scale: Float,
-        dirty: Boolean,
-    ): Boolean =
+    /** Writes pre-built JFF and metadata strings to disk. Call from IO thread. */
+    internal fun saveRaw(jffContent: String, metadata: String): Boolean =
         try {
-            jffFile.writeText(machine.exportToJff(positions))
-            val metadata = buildString {
-                appendLine(machine.name)
-                machine.savedInputs.forEach { appendLine(it.toString()) }
-                appendLine("$CANVAS_TAG$offsetX,$offsetY,$scale")
-                appendLine("$DIRTY_TAG$dirty")
-            }
+            jffFile.writeText(jffContent)
             metaFile.writeText(metadata)
             true
         } catch (e: Exception) {
             Log.e("AutomataStorage", "Failed to save machine", e)
             false
         }
+
+    /** Builds the metadata string for a machine. Safe to call from main thread. */
+    internal fun buildMetadata(
+        machine: Machine,
+        offsetX: Float,
+        offsetY: Float,
+        scale: Float,
+        dirty: Boolean,
+    ): String = buildString {
+        appendLine("$NAME_TAG${machine.name.replace('\n', ' ')}")
+        machine.savedInputs.forEach { appendLine("$INPUT_TAG$it") }
+        appendLine("$CANVAS_TAG$offsetX,$offsetY,$scale")
+        appendLine("$DIRTY_TAG$dirty")
+    }
 
     fun hasStoredMachine(): Boolean = jffFile.exists()
 
@@ -79,14 +83,12 @@ class AutomataStorage @Inject constructor(@param:ApplicationContext private val 
             val dirtyLine = metaLines.lastOrNull { it.startsWith(DIRTY_TAG) }
             val dirty = dirtyLine?.removePrefix(DIRTY_TAG)?.toBooleanStrictOrNull() ?: false
 
-            val name = metaLines.firstOrNull() ?: ""
+            val nameLine = metaLines.firstOrNull { it.startsWith(NAME_TAG) }
+            val name = nameLine?.removePrefix(NAME_TAG) ?: metaLines.firstOrNull() ?: ""
             val savedInputs =
                 metaLines
-                    .drop(1)
-                    .filter {
-                        it.isNotEmpty() && !it.startsWith(CANVAS_TAG) && !it.startsWith(DIRTY_TAG)
-                    }
-                    .map { StringBuilder(it) }
+                    .filter { it.startsWith(INPUT_TAG) }
+                    .map { StringBuilder(it.removePrefix(INPUT_TAG)) }
                     .toMutableList()
 
             StoredMachine(

@@ -27,7 +27,7 @@ fun TransitionAnimation(
     transitionPaths: List<TransitionPath?>,
     offsetXCanvas: Float,
     offsetYCanvas: Float,
-    duration: Int = 500,
+    duration: Int = 400,
     onAnimationsEnd: () -> Unit,
 ) {
     if (transitionRefs.isEmpty()) {

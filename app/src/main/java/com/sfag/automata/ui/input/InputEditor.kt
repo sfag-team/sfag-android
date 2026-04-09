@@ -35,6 +35,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.sfag.R
+import com.sfag.automata.domain.common.checkAcceptance
 import com.sfag.automata.domain.machine.AcceptanceCriteria
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
@@ -106,6 +107,7 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                                 } else {
                                     AcceptanceCriteria.BY_EMPTY_STACK
                                 }
+                            recomposeKey++
                         },
                         modifier = Modifier.weight(1f),
                     )
@@ -113,11 +115,12 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
             }
 
             // Text field + add button
+            val currentCriteria = (this@InputEditor as? PushdownMachine)?.acceptanceCriteria
             var isInputAccepted by remember { mutableStateOf<Boolean?>(null) }
-            LaunchedEffect(newFullInput.value, recomposeKey) {
+            LaunchedEffect(newFullInput.value, recomposeKey, currentCriteria) {
                 val text = newFullInput.value
                 isInputAccepted =
-                    withContext(Dispatchers.Default) { isAccepted(StringBuilder(text)) }
+                    withContext(Dispatchers.Default) { checkAcceptance(StringBuilder(text)) }
             }
             val validationColor =
                 when (isInputAccepted) {
@@ -213,19 +216,19 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                     ) {
                         items(this@InputEditor.savedInputs.toList()) { savedInput ->
                             val savedText = savedInput.toString()
-                            var isAccepted by remember(savedText) { mutableStateOf<Boolean?>(null) }
+                            var accepted by remember(savedText) { mutableStateOf<Boolean?>(null) }
                             LaunchedEffect(savedText) {
-                                isAccepted =
-                                    withContext(Dispatchers.Default) { isAccepted(savedInput) }
+                                accepted =
+                                    withContext(Dispatchers.Default) { checkAcceptance(savedInput) }
                             }
                             val bgColor =
-                                when (isAccepted) {
+                                when (accepted) {
                                     true -> acceptedFill
                                     false -> rejectedFill
                                     null -> MaterialTheme.colorScheme.surfaceContainerHigh
                                 }
                             val textColor =
-                                when (isAccepted) {
+                                when (accepted) {
                                     true -> acceptedColor
                                     false -> rejectedColor
                                     null -> MaterialTheme.colorScheme.onSurface

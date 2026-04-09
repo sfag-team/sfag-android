@@ -146,8 +146,7 @@ fun FiniteMachine.Tape(
     headColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     val symbols = fullInput
-    val headIndex =
-        (symbols.length - remainingInput.length).coerceIn(0, (symbols.length - 1).coerceAtLeast(0))
+    val headIndex = (symbols.length - remainingInput.length).coerceIn(0, symbols.length)
 
     Tape(
         symbols = symbols.toList(),
@@ -167,8 +166,7 @@ fun PushdownMachine.Tape(
     headColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     val symbols = fullInput
-    val headIndex =
-        (symbols.length - remainingInput.length).coerceIn(0, (symbols.length - 1).coerceAtLeast(0))
+    val headIndex = (symbols.length - remainingInput.length).coerceIn(0, symbols.length)
 
     Tape(
         symbols = symbols.toList(),

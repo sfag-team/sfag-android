@@ -404,12 +404,8 @@ fun AutomataScreen(
                                             }
 
                                             is Simulation.Step -> {
-                                                machine.tree.expandFromStep(
-                                                    simulation.transitionRefs,
-                                                    machine.states,
-                                                    simulation.activeStates,
-                                                )
                                                 currentMode.value = Mode.SIMULATION_STEP
+                                                recomposeKey.intValue++
                                                 val capturedPositions =
                                                     viewModel.statePositions.toMap()
                                                 animationOverlay.value = {
@@ -425,6 +421,11 @@ fun AutomataScreen(
                                                         offsetXCanvas = viewModel.offsetXCanvas,
                                                         offsetYCanvas = viewModel.offsetYCanvas,
                                                         onAnimationsEnd = {
+                                                            machine.tree.expandFromStep(
+                                                                simulation.transitionRefs,
+                                                                machine.states,
+                                                                simulation.activeStates,
+                                                            )
                                                             simulation.onAllComplete()
                                                             machine.tree.attachSnapshots(
                                                                 machine.snapshotActiveNodes()

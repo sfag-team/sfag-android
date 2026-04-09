@@ -3,7 +3,6 @@ package com.sfag.automata.domain.machine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.TransitionRef
-import com.sfag.main.config.MAX_TURING_CONFIGS
 import com.sfag.main.config.Symbols
 
 /**
@@ -75,44 +74,6 @@ class TuringMachine(
                 toState.isCurrent = true
                 currentState = toState.index
             },
-        )
-    }
-
-    override fun canReachFinalState(input: StringBuilder, fromInit: Boolean): Boolean? {
-        data class Config(val stateIndex: Int, val tape: List<Char>, val headPosition: Int)
-
-        val initialTape = if (input.isEmpty()) listOf(blankSymbol) else input.toList()
-        val startIndex = findStartStateIndex(fromInit) ?: return false
-        return bfsReachability(
-            initialConfigs = listOf(Config(startIndex, initialTape, 0)),
-            expand = { config ->
-                val tape = config.tape.toMutableList()
-                val head = config.headPosition
-                while (head >= tape.size) {
-                    tape.add(blankSymbol)
-                }
-                val symbol = tape.getOrNull(head) ?: blankSymbol
-                turingTransitions
-                    .filter { it.fromState == config.stateIndex && it.read.firstOrNull() == symbol }
-                    .map { transition ->
-                        val newTape = tape.toMutableList()
-                        newTape[head] = transition.write
-                        var newHead =
-                            head +
-                                when (transition.direction) {
-                                    TapeDirection.LEFT -> -1
-                                    TapeDirection.RIGHT -> 1
-                                    TapeDirection.STAY -> 0
-                                }
-                        if (newHead < 0) {
-                            newTape.add(0, blankSymbol)
-                            newHead = 0
-                        }
-                        Config(transition.toState, newTape, newHead)
-                    }
-            },
-            isAccepted = { config -> getStateByIndexOrNull(config.stateIndex)?.final == true },
-            maxConfigs = MAX_TURING_CONFIGS,
         )
     }
 

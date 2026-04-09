@@ -10,6 +10,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sfag.automata.data.AutomataStorage
+import com.sfag.automata.data.exportToJff
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.simulation.NodeSnapshot
 import com.sfag.automata.domain.simulation.Simulation
@@ -88,14 +89,17 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
 
     /** Persists the current machine to the fixed auto-save slot. */
     fun autoSave(machine: Machine) {
-        val positions = getPositions()
-        val offsetX = offsetXCanvas
-        val offsetY = offsetYCanvas
-        val scale = scaleCanvas
-        val dirty = hasUnsavedChanges
-        viewModelScope.launch(Dispatchers.IO) {
-            storage.saveMachine(machine, positions, offsetX, offsetY, scale, dirty)
-        }
+        // Capture all mutable state on the main thread to avoid concurrent reads
+        val jffContent = machine.exportToJff(getPositions())
+        val metadata =
+            storage.buildMetadata(
+                machine,
+                offsetXCanvas,
+                offsetYCanvas,
+                scaleCanvas,
+                hasUnsavedChanges,
+            )
+        viewModelScope.launch(Dispatchers.IO) { storage.saveRaw(jffContent, metadata) }
     }
 
     /** Loads the auto-saved machine. Returns true on success. */

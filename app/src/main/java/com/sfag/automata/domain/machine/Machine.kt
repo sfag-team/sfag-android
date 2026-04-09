@@ -25,8 +25,6 @@ sealed class Machine(
 
     abstract fun advanceSimulation(): Simulation
 
-    abstract fun canReachFinalState(input: StringBuilder, fromInit: Boolean): Boolean?
-
     abstract fun removeTransition(transition: Transition)
 
     open fun addNewState(state: State) {
@@ -36,8 +34,6 @@ sealed class Machine(
         }
         states.add(state)
     }
-
-    open fun isAccepted(input: StringBuilder): Boolean? = canReachFinalState(input, true)
 
     open fun resetSimulation() {
         val initialStateIndex = states.firstOrNull { it.initial }?.index
@@ -103,47 +99,5 @@ sealed class Machine(
             currentState = states.firstOrNull { it.initial }?.index
         }
         return currentState != null
-    }
-
-    protected fun findStartStateIndex(fromInit: Boolean): Int? =
-        if (fromInit) {
-            states.firstOrNull { it.initial }?.index
-        } else {
-            currentState ?: states.firstOrNull { it.initial }?.index
-        }
-
-    /**
-     * Generic BFS reachability check. Explores configurations breadth-first using a visited set
-     * (configs must implement structural equality via data class).
-     *
-     * @return true = accepted, false = rejected (exhausted), null = inconclusive (limit hit)
-     */
-    protected fun <Config> bfsReachability(
-        initialConfigs: List<Config>,
-        expand: (Config) -> List<Config>,
-        isAccepted: (Config) -> Boolean,
-        maxConfigs: Int,
-    ): Boolean? {
-        val visited = mutableSetOf<Config>()
-        var current = initialConfigs.toMutableList()
-
-        while (current.isNotEmpty() && visited.size < maxConfigs) {
-            val next = mutableListOf<Config>()
-            for (config in current) {
-                if (!visited.add(config)) {
-                    continue
-                }
-                if (visited.size > maxConfigs) {
-                    break
-                }
-                if (isAccepted(config)) {
-                    return true
-                }
-                next.addAll(expand(config))
-            }
-            current = next
-        }
-
-        return if (current.isEmpty()) false else null
     }
 }

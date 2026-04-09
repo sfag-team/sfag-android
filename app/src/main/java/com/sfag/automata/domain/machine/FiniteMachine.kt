@@ -3,7 +3,6 @@ package com.sfag.automata.domain.machine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.TransitionRef
-import com.sfag.main.config.MAX_FA_PDA_CONFIGS
 
 data class FaConfig(val stateIndex: Int, val inputOffset: Int = 0)
 
@@ -34,35 +33,6 @@ class FiniteMachine(
             getStateByIndexOrNull(currentState!!)?.isCurrent = true
         }
         return calculateAllPathsStep()
-    }
-
-    override fun canReachFinalState(input: StringBuilder, fromInit: Boolean): Boolean? {
-        data class Config(val stateIndex: Int, val inputIndex: Int)
-
-        val startIndex = findStartStateIndex(fromInit) ?: return false
-        return bfsReachability(
-            initialConfigs = listOf(Config(startIndex, 0)),
-            expand = { config ->
-                val remaining = input.substring(minOf(config.inputIndex, input.length))
-                val possibleTransitions =
-                    if (config.inputIndex < input.length) {
-                        transitions.filter {
-                            it.fromState == config.stateIndex &&
-                                (it.read.isEmpty() || remaining.startsWith(it.read))
-                        }
-                    } else {
-                        transitions.filter {
-                            it.fromState == config.stateIndex && it.read.isEmpty()
-                        }
-                    }
-                possibleTransitions.map { Config(it.toState, config.inputIndex + it.read.length) }
-            },
-            isAccepted = { config ->
-                val state = getStateByIndexOrNull(config.stateIndex)
-                config.inputIndex == input.length && state?.final == true
-            },
-            maxConfigs = MAX_FA_PDA_CONFIGS,
-        )
     }
 
     override fun removeTransition(transition: Transition) {
@@ -96,71 +66,17 @@ class FiniteMachine(
     }
 
     private fun calculateAllPathsStep(): Simulation {
-        val epsilonTransitions = mutableListOf<Pair<FaConfig, Transition>>()
-        val inputTransitions = mutableListOf<Pair<FaConfig, Transition>>()
+        val allTransitions = mutableListOf<Pair<FaConfig, Transition>>()
 
         for (config in currentConfigs) {
             val state = getStateByIndex(config.stateIndex)
             for (transition in getMatchingTransitions(state, config.inputOffset)) {
-                if (transition.read.isEmpty()) {
-                    epsilonTransitions.add(config to transition)
-                } else {
-                    inputTransitions.add(config to transition)
-                }
+                allTransitions.add(config to transition)
             }
         }
 
-        // Process epsilon transitions first: add reachable configs that aren't already current
-        if (epsilonTransitions.isNotEmpty()) {
-            val newConfigs =
-                epsilonTransitions
-                    .map { (config, transition) ->
-                        FaConfig(transition.toState, config.inputOffset)
-                    }
-                    .filter { it !in currentConfigs }
-                    .toSet()
-            if (newConfigs.isNotEmpty()) {
-                val transitionRefs =
-                    epsilonTransitions
-                        .filter { (config, transition) ->
-                            FaConfig(transition.toState, config.inputOffset) in newConfigs
-                        }
-                        .map {
-                            TransitionRef(
-                                it.first.stateIndex,
-                                it.second.toState,
-                                transitions.indexOf(it.second),
-                            )
-                        }
-
-                // Only keep configs that also have input alternatives
-                val configsWithEpsilon = epsilonTransitions.map { it.first }.toSet()
-                val configsWithInput = inputTransitions.map { it.first }.toSet()
-                val configsToKeep = configsWithEpsilon.intersect(configsWithInput)
-                val configsToRemove = configsWithEpsilon - configsToKeep
-                val activeStates = configsToKeep.map { it.stateIndex }.toSet()
-
-                return Simulation.Step(
-                    transitionRefs = transitionRefs,
-                    activeStates = activeStates,
-                    onAllComplete = {
-                        for (config in configsToRemove) {
-                            currentConfigs.remove(config)
-                            if (currentConfigs.none { it.stateIndex == config.stateIndex }) {
-                                getStateByIndexOrNull(config.stateIndex)?.isCurrent = false
-                            }
-                        }
-                        for (config in newConfigs) {
-                            currentConfigs.add(config)
-                            getStateByIndexOrNull(config.stateIndex)?.isCurrent = true
-                        }
-                    },
-                )
-            }
-        }
-
-        // No input transitions available - check acceptance
-        if (inputTransitions.isEmpty()) {
+        // No transitions available - check acceptance
+        if (allTransitions.isEmpty()) {
             val acceptingConfigs =
                 currentConfigs.filter { config ->
                     getStateByIndex(config.stateIndex).final &&
@@ -180,9 +96,9 @@ class FiniteMachine(
             )
         }
 
-        // Process ALL input transitions - fire all lengths simultaneously
+        // Fire all transitions (epsilon + input) simultaneously
         val transitionRefs =
-            inputTransitions.map { (config, transition) ->
+            allTransitions.map { (config, transition) ->
                 TransitionRef(
                     fromStateIndex = config.stateIndex,
                     toStateIndex = transition.toState,
@@ -191,17 +107,36 @@ class FiniteMachine(
             }
 
         val newConfigs =
-            inputTransitions
+            allTransitions
                 .map { (config, transition) ->
                     FaConfig(transition.toState, config.inputOffset + transition.read.length)
                 }
                 .toSet()
 
-        // Advance shared input by minimum new offset
+        // Detect no-progress loop (e.g. q0 -e-> q1 -e-> q0 cycling)
+        if (newConfigs == currentConfigs.toSet()) {
+            val acceptingConfigs =
+                currentConfigs.filter { config ->
+                    getStateByIndex(config.stateIndex).final &&
+                        config.inputOffset >= remainingInput.length
+                }
+            val anyAccepting = acceptingConfigs.isNotEmpty()
+            return Simulation.Ended(
+                outcome =
+                    if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
+                isNodeAccepting =
+                    if (anyAccepting)
+                        { node ->
+                            val state = states.firstOrNull { it.name == node.stateName }
+                            state != null && acceptingConfigs.any { it.stateIndex == state.index }
+                        }
+                    else null,
+            )
+        }
+
+        // Consume input now so the tape head advances at animation start
         val minOffset = newConfigs.minOf { it.inputOffset }
         consumeInput(minOffset)
-
-        // Adjust offsets relative to new input position
         val adjustedConfigs =
             newConfigs.map { FaConfig(it.stateIndex, it.inputOffset - minOffset) }.toSet()
 

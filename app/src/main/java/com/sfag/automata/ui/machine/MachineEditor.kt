@@ -121,11 +121,7 @@ fun Machine.MachineEditor(
                             infiniteLeft = true,
                         )
                     } else if (snapshot != null) {
-                        val headIndex =
-                            snapshot.inputConsumed.coerceIn(
-                                0,
-                                (fullInput.length - 1).coerceAtLeast(0),
-                            )
+                        val headIndex = snapshot.inputConsumed.coerceIn(0, fullInput.length)
                         Tape(
                             symbols = fullInput.toList(),
                             headIndex = headIndex,
@@ -515,6 +511,7 @@ fun Machine.MachineEditor(
                                     positions = positions,
                                     offsetX = offsetX,
                                     offsetY = offsetY,
+                                    isEditing = true,
                                 )
                             }
                         }
