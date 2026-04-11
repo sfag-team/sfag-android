@@ -14,7 +14,7 @@ private const val RESTRICTED_LAYER_HEIGHT = 150f
 class NodeLayout(
     var x: Float = Float.NaN,
     var y: Float = 0f,
-    val depth: MutableSet<Float> = LinkedHashSet()
+    val depth: MutableSet<Float> = LinkedHashSet(),
 )
 
 internal fun buildTree(steps: List<DerivationStep>): TreeNode {
@@ -23,7 +23,9 @@ internal fun buildTree(steps: List<DerivationStep>): TreeNode {
 
     for ((stepIndex, step) in steps.withIndex()) {
         val replaceIndex = findReplacementIndex(step.appliedRule, step.previous, step.derived)
-        if (replaceIndex < 0 || replaceIndex + step.appliedRule.left.length > currentLeaves.size) continue
+        if (replaceIndex < 0 || replaceIndex + step.appliedRule.left.length > currentLeaves.size) {
+            continue
+        }
         val newChildren =
             step.appliedRule.right.mapTo(LinkedHashSet()) { symbol ->
                 TreeNode(stepIndex + 1, symbol, LinkedHashSet(), LinkedHashSet())
@@ -44,18 +46,14 @@ internal fun buildTree(steps: List<DerivationStep>): TreeNode {
 internal fun layoutPrettyTreeUnrestricted(
     root: TreeNode,
     nodeSpacing: Float = UNRESTRICTED_NODE_SPACING,
-    layerHeight: Float = UNRESTRICTED_LAYER_HEIGHT
+    layerHeight: Float = UNRESTRICTED_LAYER_HEIGHT,
 ): Map<TreeNode, NodeLayout> {
     val positions = IdentityHashMap<TreeNode, NodeLayout>()
 
     fun pos(node: TreeNode) = positions.getOrPut(node) { NodeLayout() }
     var nextX = 0f
 
-    fun firstWalk(
-        node: TreeNode,
-        depth: Int = 0,
-        visited: MutableSet<TreeNode> = mutableSetOf()
-    ) {
+    fun firstWalk(node: TreeNode, depth: Int = 0, visited: MutableSet<TreeNode> = mutableSetOf()) {
         if (!visited.add(node)) {
             val nodePos = pos(node)
             val maxParentDepth = node.parents.flatMap { pos(it).depth }.maxOrNull()
@@ -94,8 +92,7 @@ internal fun layoutPrettyTreeUnrestricted(
             if (firstChild.parents.size == 1) {
                 pos(node).x = (pos(firstChild).x + pos(lastChild).x) / 2
             } else {
-                @Suppress("NAME_SHADOWING")
-                val parentCount = lastChild.parents.size
+                @Suppress("NAME_SHADOWING") val parentCount = lastChild.parents.size
                 val nodeIndex = lastChild.parents.indexOf(node)
                 val centerOffset = (parentCount - 1) / 2f
                 val offset = (nodeIndex - centerOffset) * nodeSpacing
@@ -108,9 +105,11 @@ internal fun layoutPrettyTreeUnrestricted(
     fun secondWalk(
         node: TreeNode,
         layerHeight: Float,
-        visited: MutableSet<TreeNode> = mutableSetOf()
+        visited: MutableSet<TreeNode> = mutableSetOf(),
     ) {
-        if (!visited.add(node)) return
+        if (!visited.add(node)) {
+            return
+        }
         node.children.forEach { secondWalk(it, layerHeight, visited) }
         if (node.children.isNotEmpty()) {
             val commonDepth =
@@ -131,17 +130,14 @@ internal fun layoutPrettyTreeUnrestricted(
 internal fun layoutPrettyTreeRestricted(
     root: TreeNode,
     nodeSpacing: Float = RESTRICTED_NODE_SPACING,
-    layerHeight: Float = RESTRICTED_LAYER_HEIGHT
+    layerHeight: Float = RESTRICTED_LAYER_HEIGHT,
 ): Map<TreeNode, NodeLayout> {
     val positions = IdentityHashMap<TreeNode, NodeLayout>()
 
     fun pos(node: TreeNode) = positions.getOrPut(node) { NodeLayout() }
     var nextX = 0f
 
-    fun firstWalk(
-        node: TreeNode,
-        depth: Int = 0
-    ) {
+    fun firstWalk(node: TreeNode, depth: Int = 0) {
         pos(node).depth.add(depth * layerHeight)
 
         val children = node.children

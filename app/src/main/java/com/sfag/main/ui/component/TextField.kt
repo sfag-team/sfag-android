@@ -31,10 +31,10 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun DefaultTextField(
-    label: String,
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    label: String = "",
     requirementText: String = "",
     suffix: String = "",
     labelColor: Color? = null,
@@ -103,18 +103,18 @@ private class SuffixVisualTransformation(
     private val suffixColor: Color,
 ) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
-        val transformedText =
-            buildAnnotatedString {
-                append(text)
-                withStyle(style = SpanStyle(color = suffixColor)) { append(suffix) }
-            }
+        val transformedText = buildAnnotatedString {
+            append(text)
+            withStyle(style = SpanStyle(color = suffixColor)) { append(suffix) }
+        }
         return TransformedText(
             text = transformedText,
             offsetMapping =
                 object : OffsetMapping {
                     override fun originalToTransformed(offset: Int): Int = offset
 
-                    override fun transformedToOriginal(offset: Int): Int = offset.coerceAtMost(text.length)
+                    override fun transformedToOriginal(offset: Int): Int =
+                        offset.coerceAtMost(text.length)
                 },
         )
     }
@@ -124,19 +124,20 @@ private class SuffixVisualTransformation(
 fun ImmutableTextField(
     text: String,
     modifier: Modifier = Modifier,
-    backgroundColor: Color?,
+    backgroundColor: Color? = null,
     textColor: Color = MaterialTheme.colorScheme.onSurface,
     style: TextStyle = MaterialTheme.typography.titleLarge,
-    onClick: (() -> Unit)?,
-    trailingContent: (@Composable () -> Unit)?,
+    onClick: (() -> Unit)? = null,
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     Box(
         modifier =
             modifier
                 .clip(MaterialTheme.shapes.extraSmall)
                 .then(
-                    if (backgroundColor != null) Modifier.background(backgroundColor) else Modifier,
-                ).then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+                    if (backgroundColor != null) Modifier.background(backgroundColor) else Modifier
+                )
+                .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
                 .padding(start = 16.dp, end = if (trailingContent != null) 4.dp else 16.dp),
         contentAlignment = Alignment.CenterStart,
     ) {

@@ -3,44 +3,42 @@ package com.sfag.automata.domain.machine
 import com.sfag.main.config.Symbols
 
 sealed class Transition {
-    abstract var name: String
     abstract val fromState: Int
     abstract val toState: Int
+    abstract var read: String
 
     abstract fun displayLabel(): String
 
-    protected fun nameOrEpsilon(): String = name.ifEmpty { Symbols.EPSILON }
+    protected fun displayEpsilon(value: String): String = value.ifEmpty { Symbols.EPSILON }
 }
 
 data class FiniteTransition(
-    override var name: String,
     override val fromState: Int,
     override val toState: Int,
+    override var read: String,
 ) : Transition() {
-    override fun displayLabel(): String = nameOrEpsilon()
+    override fun displayLabel(): String = displayEpsilon(read)
 }
 
 data class PushdownTransition(
-    override var name: String,
     override val fromState: Int,
     override val toState: Int,
+    override var read: String,
     var pop: String,
     var push: String,
 ) : Transition() {
     override fun displayLabel(): String {
-        val popStr = pop.ifEmpty { Symbols.EPSILON }
-        val pushStr = push.ifEmpty { Symbols.EPSILON }
-        return "${nameOrEpsilon()}, $popStr;$pushStr"
+        val readLabel = displayEpsilon(read)
+        val popLabel = displayEpsilon(pop)
+        val pushLabel = displayEpsilon(push)
+        return "$readLabel, $popLabel ${Symbols.ARROW} $pushLabel"
     }
 }
 
-enum class TapeDirection(
-    val symbol: String,
-) {
+enum class TapeDirection(val symbol: String) {
     LEFT("L"),
     RIGHT("R"),
-    STAY("S"),
-    ;
+    STAY("S");
 
     override fun toString(): String = symbol
 
@@ -56,11 +54,14 @@ enum class TapeDirection(
 }
 
 data class TuringTransition(
-    override var name: String,
     override val fromState: Int,
     override val toState: Int,
-    var writeSymbol: Char,
+    override var read: String,
+    var write: Char,
     var direction: TapeDirection,
 ) : Transition() {
-    override fun displayLabel(): String = "${nameOrEpsilon()}/$writeSymbol,${direction.symbol}"
+    override fun displayLabel(): String {
+        val readLabel = displayEpsilon(read)
+        return "$readLabel/$write,${direction.symbol}"
+    }
 }

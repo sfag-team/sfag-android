@@ -7,12 +7,12 @@ import com.sfag.main.config.Symbols
  * CNF internally, then runs the O(n^3) algorithm. Returns true if the grammar generates the input
  * string.
  */
-fun cykAccepts(
-    input: String,
-    originalRules: List<GrammarRule>,
-): Boolean {
+fun cykAccepts(input: String, originalRules: List<GrammarRule>): Boolean {
     if (input.isEmpty()) {
-        val individual = originalRules.flatMap { rule -> rule.right.split('|').map { GrammarRule(rule.left, it) } }
+        val individual =
+            originalRules.flatMap { rule ->
+                rule.right.split('|').map { GrammarRule(rule.left, it) }
+            }
         return canDeriveEmpty("S", individual, mutableSetOf())
     }
 
@@ -39,8 +39,8 @@ fun cykAccepts(
                 for (rule in cnfRules) {
                     if (
                         rule.right.size == 2 &&
-                        rule.right[0] in table[i][k] &&
-                        rule.right[1] in table[i + k + 1][len - k - 1]
+                            rule.right[0] in table[i][k] &&
+                            rule.right[1] in table[i + k + 1][len - k - 1]
                     ) {
                         table[i][len].add(rule.left)
                     }
@@ -57,23 +57,20 @@ private fun canDeriveEmpty(
     rules: List<GrammarRule>,
     visited: MutableSet<String>,
 ): Boolean {
-    if (!visited.add(symbol)) return false
+    if (!visited.add(symbol)) {
+        return false
+    }
     return rules.any { rule ->
         rule.left == symbol &&
-            (
-                rule.right == Symbols.EPSILON ||
-                    rule.right.all { c ->
-                        c.isUpperCase() && canDeriveEmpty(c.toString(), rules, visited)
-                    }
-            )
+            (rule.right == Symbols.EPSILON ||
+                rule.right.all { c ->
+                    c.isUpperCase() && canDeriveEmpty(c.toString(), rules, visited)
+                })
     }
 }
 
 // Internal CNF rule: right is either [terminal] or [nonterminal, nonterminal]
-private data class CnfRule(
-    val left: String,
-    val right: List<String>,
-)
+private data class CnfRule(val left: String, val right: List<String>)
 
 private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
     var nextId = 0
@@ -91,7 +88,8 @@ private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
                         CnfRule(rule.left, rhs.map { it.toString() })
                     }
                 }
-            }.toMutableList()
+            }
+            .toMutableList()
 
     // Step 1: Eliminate epsilon-productions
     val nullable = mutableSetOf<String>()
@@ -110,12 +108,16 @@ private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
 
     val expanded = mutableListOf<CnfRule>()
     for (rule in rules) {
-        if (rule.right == listOf(Symbols.EPSILON)) continue
+        if (rule.right == listOf(Symbols.EPSILON)) {
+            continue
+        }
         val nullablePositions = rule.right.indices.filter { rule.right[it] in nullable }
         for (mask in 0 until (1 shl nullablePositions.size)) {
             val omit = mutableSetOf<Int>()
             for (bit in nullablePositions.indices) {
-                if (mask and (1 shl bit) != 0) omit.add(nullablePositions[bit])
+                if (mask and (1 shl bit) != 0) {
+                    omit.add(nullablePositions[bit])
+                }
             }
             val newRight = rule.right.filterIndexed { index, _ -> index !in omit }
             if (newRight.isNotEmpty()) {
@@ -158,7 +160,9 @@ private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
     rules =
         rules
             .map { rule ->
-                if (rule.right.size < 2) return@map rule
+                if (rule.right.size < 2) {
+                    return@map rule
+                }
                 val newRight =
                     rule.right.map { symbol ->
                         if (
@@ -174,7 +178,8 @@ private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
                         }
                     }
                 CnfRule(rule.left, newRight)
-            }.toMutableList()
+            }
+            .toMutableList()
     rules.addAll(terminalRules)
 
     // Step 4: Break rules with 3+ symbols into binary chains
@@ -190,7 +195,7 @@ private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
                 currentLeft = newNonTerminal
             }
             binaryRules.add(
-                CnfRule(currentLeft, listOf(rule.right[rule.right.size - 2], rule.right.last())),
+                CnfRule(currentLeft, listOf(rule.right[rule.right.size - 2], rule.right.last()))
             )
         }
     }

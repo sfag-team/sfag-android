@@ -40,8 +40,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.withSave
 import com.sfag.grammar.domain.grammar.GrammarType
 import com.sfag.grammar.domain.tree.TreeNode
-import com.sfag.main.config.MANUAL_MAX_ZOOM
-import com.sfag.main.config.MANUAL_MIN_ZOOM
+import com.sfag.main.config.MAX_ZOOM
+import com.sfag.main.config.MIN_ZOOM
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
@@ -60,7 +60,7 @@ fun TreeView(
     offsetY: Animatable<Float, AnimationVector1D>,
     currentStep: Int,
     grammarType: GrammarType,
-    canvasSize: MutableState<Size>
+    canvasSize: MutableState<Size>,
 ) {
     fun pos(node: TreeNode) = positions[node]!!
 
@@ -69,7 +69,10 @@ fun TreeView(
             val collected = mutableSetOf<TreeNode>()
             root.collect(collected, currentStep)
             val filtered = collected.filter { positions[it] != null }.toMutableSet()
-            if (grammarType == GrammarType.UNRESTRICTED || grammarType == GrammarType.CONTEXT_SENSITIVE) {
+            if (
+                grammarType == GrammarType.UNRESTRICTED ||
+                    grammarType == GrammarType.CONTEXT_SENSITIVE
+            ) {
                 filtered
                     .sortedWith(compareBy({ pos(it).depth.max() }, { pos(it).x }))
                     .toCollection(LinkedHashSet())
@@ -114,8 +117,8 @@ fun TreeView(
                         TextStyle(
                             fontSize = TREE_NODE_TEXT_SIZE,
                             color = textColor,
-                            textAlign = TextAlign.Center
-                        )
+                            textAlign = TextAlign.Center,
+                        ),
                 )
             }
         }
@@ -127,13 +130,12 @@ fun TreeView(
             allNodes.forEach { node ->
                 if (node.children.isNotEmpty() && node.children.first().step <= currentStep) {
                     for (child in node.children) {
-                        if (!visited.add(child)) continue
+                        if (!visited.add(child)) {
+                            continue
+                        }
                         val px =
                             if (child.parents.size > 1) {
-                                child.parents
-                                    .map { pos(it).x }
-                                    .average()
-                                    .toFloat()
+                                child.parents.map { pos(it).x }.average().toFloat()
                             } else {
                                 pos(node).x
                             }
@@ -152,7 +154,7 @@ fun TreeView(
                     left = allNodes.minOf { pos(it).x },
                     top = allNodes.minOf { pos(it).y },
                     right = allNodes.maxOf { pos(it).x },
-                    bottom = allNodes.maxOf { pos(it).y }
+                    bottom = allNodes.maxOf { pos(it).y },
                 )
             } else {
                 null
@@ -174,37 +176,40 @@ fun TreeView(
             animationSpec =
                 infiniteRepeatable(
                     animation = tween(durationMillis = 1000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart
+                    repeatMode = RepeatMode.Restart,
                 ),
-            label = "phase"
+            label = "phase",
         )
     Canvas(
         modifier =
-            Modifier
-                .fillMaxSize()
+            Modifier.fillMaxSize()
                 .onSizeChanged { layoutSize ->
                     canvasSize.value = Size(layoutSize.width.toFloat(), layoutSize.height.toFloat())
-                }.pointerInput(Unit) {
+                }
+                .pointerInput(Unit) {
                     coroutineScope {
                         detectTransformGestures { _, pan, zoom, _ ->
-                            scale.value =
-                                (scale.value * zoom).coerceIn(MANUAL_MIN_ZOOM, MANUAL_MAX_ZOOM)
+                            scale.value = (scale.value * zoom).coerceIn(MIN_ZOOM, MAX_ZOOM)
                             var newX = offsetX.value + pan.x
                             var newY = offsetY.value + pan.y
                             val bounds = treeBounds
                             val viewportSize = canvasSize.value
-                            if (bounds != null && viewportSize.width > 0f && viewportSize.height > 0f) {
+                            if (
+                                bounds != null &&
+                                    viewportSize.width > 0f &&
+                                    viewportSize.height > 0f
+                            ) {
                                 val nodeR = TREE_NODE_RADIUS
                                 val currentScale = scale.value
                                 newX =
                                     newX.coerceIn(
                                         -(bounds.right + nodeR) * currentScale,
-                                        viewportSize.width - (bounds.left - nodeR) * currentScale
+                                        viewportSize.width - (bounds.left - nodeR) * currentScale,
                                     )
                                 newY =
                                     newY.coerceIn(
                                         -(bounds.bottom + nodeR) * currentScale,
-                                        viewportSize.height - (bounds.top - nodeR) * currentScale
+                                        viewportSize.height - (bounds.top - nodeR) * currentScale,
                                     )
                             }
                             launch {
@@ -213,11 +218,15 @@ fun TreeView(
                             }
                         }
                     }
-                }.clipToBounds()
+                }
+                .clipToBounds()
     ) {
         val pathEffect =
             if (hasHighlight) {
-                PathEffect.dashPathEffect(floatArrayOf(DASH_INTERVAL, DASH_INTERVAL), phaseState.value)
+                PathEffect.dashPathEffect(
+                    floatArrayOf(DASH_INTERVAL, DASH_INTERVAL),
+                    phaseState.value,
+                )
             } else {
                 null
             }
@@ -238,18 +247,14 @@ fun TreeView(
                     animationHighlightColor = highlightColor,
                     groupingRectColor = groupingRectColor,
                     edgeColor = edgeColor,
-                    nodeTextColor = nodeTextColor
+                    nodeTextColor = nodeTextColor,
                 )
             }
         }
     }
 }
 
-private data class Edge(
-    val parentX: Float,
-    val parentY: Float,
-    val child: TreeNode
-)
+private data class Edge(val parentX: Float, val parentY: Float, val child: TreeNode)
 
 private fun DrawScope.drawTree(
     nodes: Collection<TreeNode>,
@@ -264,7 +269,7 @@ private fun DrawScope.drawTree(
     animationHighlightColor: Color,
     groupingRectColor: Color,
     edgeColor: Color,
-    nodeTextColor: Color
+    nodeTextColor: Color,
 ) {
 
     for (edge in edges) {
@@ -272,34 +277,33 @@ private fun DrawScope.drawTree(
     }
 
     nodes.forEach { node ->
-        val nodePos = pos[node]!!
+        val nodePos = pos[node] ?: return@forEach
 
         if (
             node.children.isNotEmpty() &&
-            node.children
-                .first()
-                .parents.size > 1 &&
-            currentStep >= node.children.first().step &&
-            node.children
-                .first()
-                .parents
-                .first() == node
+                node.children.first().parents.size > 1 &&
+                currentStep >= node.children.first().step &&
+                node.children.first().parents.first() == node
         ) {
-            drawRoundRect(
-                color = groupingRectColor,
-                topLeft = Offset(nodePos.x - GROUPING_RECT_PADDING - nodeRadius, nodePos.y - GROUPING_RECT_PADDING - nodeRadius),
-                size =
-                    Size(
-                        pos[node.children
-                                .first()
-                                .parents
-                                .last()]!!
-                        .x + nodeRadius + GROUPING_RECT_PADDING -
-                            (nodePos.x - GROUPING_RECT_PADDING - nodeRadius),
-                        nodePos.y + nodeRadius + GROUPING_RECT_PADDING - (nodePos.y - GROUPING_RECT_PADDING - nodeRadius)
-                    ),
-                cornerRadius = CornerRadius(nodeRadius, nodeRadius)
-            )
+            val lastParentPos = pos[node.children.first().parents.last()]
+            if (lastParentPos != null) {
+                drawRoundRect(
+                    color = groupingRectColor,
+                    topLeft =
+                        Offset(
+                            nodePos.x - GROUPING_RECT_PADDING - nodeRadius,
+                            nodePos.y - GROUPING_RECT_PADDING - nodeRadius,
+                        ),
+                    size =
+                        Size(
+                            lastParentPos.x + nodeRadius + GROUPING_RECT_PADDING -
+                                (nodePos.x - GROUPING_RECT_PADDING - nodeRadius),
+                            nodePos.y + nodeRadius + GROUPING_RECT_PADDING -
+                                (nodePos.y - GROUPING_RECT_PADDING - nodeRadius),
+                        ),
+                    cornerRadius = CornerRadius(nodeRadius, nodeRadius),
+                )
+            }
         }
 
         val color =
@@ -314,14 +318,14 @@ private fun DrawScope.drawTree(
                 animationHighlightColor,
                 center = Offset(nodePos.x, nodePos.y),
                 radius = nodeRadius,
-                style = Stroke(width = HIGHLIGHT_STROKE_WIDTH, pathEffect = highlightEffect)
+                style = Stroke(width = HIGHLIGHT_STROKE_WIDTH, pathEffect = highlightEffect),
             )
         } else if (node.step == currentStep) {
             drawCircle(
                 nodeTextColor,
                 center = Offset(nodePos.x, nodePos.y),
                 radius = nodeRadius,
-                style = Stroke(width = HIGHLIGHT_STROKE_WIDTH, pathEffect = highlightEffect)
+                style = Stroke(width = HIGHLIGHT_STROKE_WIDTH, pathEffect = highlightEffect),
             )
         }
 
@@ -333,8 +337,8 @@ private fun DrawScope.drawTree(
                 topLeft =
                     Offset(
                         nodePos.x - textLayoutResult.size.width / 2,
-                        nodePos.y - textLayoutResult.size.height / 2
-                    )
+                        nodePos.y - textLayoutResult.size.height / 2,
+                    ),
             )
         }
     }
@@ -348,36 +352,33 @@ internal suspend fun focusNodeAnimated(
     offsetY: Animatable<Float, AnimationVector1D>,
     scale: Float,
     canvasWidth: Float,
-    canvasHeight: Float
+    canvasHeight: Float,
 ) {
     val allNodes = mutableSetOf<TreeNode>()
     root.collect(allNodes, currentStep)
     val targetNode = allNodes.find { it.step == currentStep }
 
     if (targetNode != null) {
+        val nodePos = pos[targetNode] ?: return
         val targetX =
             if (currentStep != 0 && targetNode.parents.size >= 2) {
-                (pos[targetNode.parents.first()]!!.x + pos[targetNode.parents.last()]!!.x) / 2
-            } else if (currentStep != 0) {
-                (
-                    pos[targetNode.parents
-                            .first()
-                            .children
-                            .first()]!!.x +
-                        pos[targetNode.parents
-                                .first()
-                                .children
-                                .last()]!!.x
-                ) / 2
+                val firstPos = pos[targetNode.parents.first()] ?: nodePos
+                val lastPos = pos[targetNode.parents.last()] ?: nodePos
+                (firstPos.x + lastPos.x) / 2
+            } else if (currentStep != 0 && targetNode.parents.isNotEmpty()) {
+                val parent = targetNode.parents.first()
+                val firstChildPos = pos[parent.children.first()] ?: nodePos
+                val lastChildPos = pos[parent.children.last()] ?: nodePos
+                (firstChildPos.x + lastChildPos.x) / 2
             } else {
-                pos[targetNode]!!.x
+                nodePos.x
             }
 
         val targetY =
             if (currentStep != 0 && targetNode.parents.isNotEmpty()) {
-                pos[targetNode.parents.first()]!!.y
+                (pos[targetNode.parents.first()] ?: nodePos).y
             } else {
-                pos[targetNode]!!.y
+                nodePos.y
             }
 
         offsetX.animateTo(canvasWidth / 2f - targetX * scale)
@@ -391,10 +392,12 @@ private fun DrawScope.drawEdge(
     child: TreeNode,
     pos: Map<TreeNode, NodeLayout>,
     color: Color,
-    strokeWidth: Float = 5f
+    strokeWidth: Float = 5f,
 ) {
     val childPos = pos[child] ?: return
-    if (childPos.depth.isEmpty()) return
+    if (childPos.depth.isEmpty()) {
+        return
+    }
 
     val minDepth = childPos.depth.min()
     val maxDepth = childPos.depth.max()
@@ -403,7 +406,7 @@ private fun DrawScope.drawEdge(
         color = color,
         start = Offset(parentX, parentY),
         end = Offset(childPos.x, minDepth),
-        strokeWidth = strokeWidth
+        strokeWidth = strokeWidth,
     )
 
     if (childPos.y == maxDepth) {
@@ -411,7 +414,7 @@ private fun DrawScope.drawEdge(
             color = color,
             start = Offset(childPos.x, minDepth),
             end = Offset(childPos.x, maxDepth),
-            strokeWidth = strokeWidth
+            strokeWidth = strokeWidth,
         )
     }
 }

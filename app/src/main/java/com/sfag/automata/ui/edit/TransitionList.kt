@@ -31,25 +31,29 @@ fun Machine.TransitionList(
     key(recomposeKey.intValue) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
+                Modifier.fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
                     .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(stringResource(R.string.machine_transition), style = MaterialTheme.typography.titleLarge)
+            Text(
+                stringResource(R.string.machine_transition),
+                style = MaterialTheme.typography.titleLarge,
+            )
             LazyColumn(
-                modifier = Modifier.fillMaxWidth().height(160.dp),
+                modifier = Modifier.fillMaxWidth().height(rowHeight * 3 + 8.dp * 2),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(transitions) { transition ->
                     ListRow(
                         text =
-                            "${getStateByIndex(
-                                transition.fromState,
-                            ).name} -> ${getStateByIndex(transition.toState).name}  |  ${transition.displayLabel()}",
+                            "${
+                                getStateByIndex(
+                                    transition.fromState
+                                ).name
+                            } -> ${getStateByIndex(transition.toState).name}  |  ${transition.displayLabel()}",
                         onClick = { onClickTransition(transition) },
                         onRemove = onRemoveTransition?.let { { it(transition) } },
                     )

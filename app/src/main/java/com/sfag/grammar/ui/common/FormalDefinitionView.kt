@@ -13,11 +13,7 @@ import com.sfag.R
 import com.sfag.grammar.domain.grammar.GrammarType
 
 @Composable
-fun FormalDefinitionView(
-    nonTerminals: Set<Char>,
-    terminals: Set<Char>,
-    grammarType: GrammarType?,
-) {
+fun FormalDefinitionView(nonTerminals: Set<Char>, terminals: Set<Char>, grammarType: GrammarType?) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text(
             text = "G = (N, T, P, S)",

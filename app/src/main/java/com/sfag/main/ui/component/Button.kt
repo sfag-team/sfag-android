@@ -23,11 +23,11 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun DefaultButton(
+    onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
     height: Dp = 48.dp,
     enabled: Boolean = true,
-    onClick: () -> Unit,
 ) {
     val enabledColors =
         ButtonDefaults.buttonColors(
@@ -59,13 +59,13 @@ fun DefaultButton(
  */
 @Composable
 fun DefaultIconButton(
+    onClick: () -> Unit,
     icon: Int,
     modifier: Modifier = Modifier,
     contentDescription: String = "",
     height: Dp = 56.dp,
     iconSize: Dp = 32.dp,
     isActive: Boolean = false,
-    onClick: () -> Unit,
 ) {
     Box(
         modifier =
@@ -77,8 +77,9 @@ fun DefaultIconButton(
                         MaterialTheme.colorScheme.primary
                     } else {
                         MaterialTheme.colorScheme.secondaryContainer
-                    },
-                ).clickable(onClick = onClick),
+                    }
+                )
+                .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

@@ -3,66 +3,69 @@ package com.sfag.automata.domain.common
 import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
+import com.sfag.automata.domain.machine.Transition
 import com.sfag.automata.domain.machine.TuringMachine
-import com.sfag.main.config.Symbols.isEpsilonLabel
 
 fun Machine.determinismLabel(): String? {
-    val det = checkDeterminism() ?: return null
-    val prefix = if (det) "D" else "N"
-    return "$prefix$typeLabel"
+    return when (isDeterministic()) {
+        true -> "D$typeLabel"
+        false -> "N$typeLabel"
+        null -> null
+    }
 }
 
-fun Machine.checkDeterminism(): Boolean? =
-    when (this) {
-        is FiniteMachine -> checkFiniteDeterminism()
-        is PushdownMachine -> checkPushdownDeterminism()
-        is TuringMachine -> checkTuringDeterminism()
+fun Machine.isDeterministic(): Boolean? {
+    if (states.isEmpty() && transitions.isEmpty()) {
+        return null
     }
+    if (states.none { it.initial }) {
+        return null
+    }
+    if (states.count { it.initial } != 1) {
+        return false
+    }
+    return when (this) {
+        is FiniteMachine -> {
+            if (transitions.any { it.read.isEmpty() }) {
+                return false
+            }
+            !transitions.hasPairwiseConflict { t1, t2 ->
+                t1.read.startsWith(t2.read) || t2.read.startsWith(t1.read)
+            }
+        }
 
-private fun FiniteMachine.checkFiniteDeterminism(): Boolean? {
-    if (states.isEmpty() && transitions.isEmpty()) return null
-    if (states.none { it.initial }) return null
-    if (states.count { it.initial } != 1) return false
-    val seenLabels = mutableSetOf<Pair<Int, String>>()
-    for (transition in transitions) {
-        val label = transition.name.trim()
-        if (label.isEmpty() || isEpsilonLabel(label)) return false
-        if (!seenLabels.add(transition.fromState to label)) return false
+        is PushdownMachine ->
+            !pdaTransitions.hasPairwiseConflict { t1, t2 ->
+                val inputOverlap =
+                    t1.read.isEmpty() ||
+                        t2.read.isEmpty() ||
+                        t1.read.startsWith(t2.read) ||
+                        t2.read.startsWith(t1.read)
+                val popOverlap =
+                    t1.pop.isEmpty() ||
+                        t2.pop.isEmpty() ||
+                        t1.pop.startsWith(t2.pop) ||
+                        t2.pop.startsWith(t1.pop)
+                inputOverlap && popOverlap
+            }
+
+        is TuringMachine ->
+            !turingTransitions.hasPairwiseConflict { t1, t2 ->
+                t1.read.startsWith(t2.read) || t2.read.startsWith(t1.read)
+            }
     }
-    return true
 }
 
-private fun PushdownMachine.checkPushdownDeterminism(): Boolean? {
-    if (states.isEmpty() && transitions.isEmpty()) return null
-    if (states.none { it.initial }) return null
-    if (states.count { it.initial } != 1) return false
-    val seenLabels = mutableSetOf<Triple<Int, String, String>>()
-    val epsilonPairs = mutableSetOf<Pair<Int, String>>()
-    val nonEpsilonPairs = mutableSetOf<Pair<Int, String>>()
-    for (transition in pdaTransitions) {
-        val input = transition.name.trim()
-        val pop = transition.pop
-        if (!seenLabels.add(Triple(transition.fromState, input, pop))) return false
-        val statePop = transition.fromState to pop
-        if (input.isEmpty() || isEpsilonLabel(input)) {
-            if (statePop in nonEpsilonPairs) return false
-            epsilonPairs.add(statePop)
-        } else {
-            if (statePop in epsilonPairs) return false
-            nonEpsilonPairs.add(statePop)
+private fun <T : Transition> List<T>.hasPairwiseConflict(conflicts: (T, T) -> Boolean): Boolean {
+    val byState = groupBy { it.fromState }
+    for ((_, group) in byState) {
+        for (i in group.indices) {
+            for (j in i + 1 until group.size) {
+                if (conflicts(group[i], group[j])) {
+                    return true
+                }
+            }
         }
     }
-    return true
-}
-
-private fun TuringMachine.checkTuringDeterminism(): Boolean? {
-    if (states.isEmpty() && transitions.isEmpty()) return null
-    if (states.none { it.initial }) return null
-    if (states.count { it.initial } != 1) return false
-    val seenLabels = mutableSetOf<Pair<Int, String>>()
-    for (transition in turingTransitions) {
-        val readSymbol = transition.name.trim()
-        if (!seenLabels.add(transition.fromState to readSymbol)) return false
-    }
-    return true
+    return false
 }

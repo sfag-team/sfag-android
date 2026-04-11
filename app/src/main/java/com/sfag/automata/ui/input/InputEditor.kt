@@ -1,4 +1,4 @@
-package com.sfag.automata.ui
+package com.sfag.automata.ui.input
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -49,14 +49,10 @@ import kotlinx.coroutines.withContext
 
 /** Full-screen input editor. */
 @Composable
-fun Machine.InputScreen(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val savedInputs =
-        remember {
-            this@InputScreen.savedInputs.map { StringBuilder(it.toString()) }.toMutableList()
-        }
+fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val savedInputs = remember {
+        this@InputEditor.savedInputs.map { StringBuilder(it.toString()) }.toMutableList()
+    }
     val criteria = remember { (this as? PushdownMachine)?.acceptanceCriteria }
 
     var recomposeKey by remember { mutableIntStateOf(0) }
@@ -69,8 +65,7 @@ fun Machine.InputScreen(
 
     Column(
         modifier =
-            Modifier
-                .fillMaxSize()
+            Modifier.fillMaxSize()
                 .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -79,15 +74,14 @@ fun Machine.InputScreen(
         // TOP: PDA acceptance criteria + text field card
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
+                Modifier.fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
                     .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // PDA acceptance criteria
-            if (this@InputScreen is PushdownMachine) {
+            if (this@InputEditor is PushdownMachine) {
                 val listOfCriteria =
                     listOf(
                         AcceptanceCriteria.BY_FINAL_STATE.text,
@@ -105,15 +99,16 @@ fun Machine.InputScreen(
                     DropdownSelector(
                         items = listOfCriteria,
                         defaultSelectedIndex = listOfCriteria.indexOf(acceptanceCriteria.text),
+                        onSelectItem = { newCriteria ->
+                            acceptanceCriteria =
+                                if (newCriteria == AcceptanceCriteria.BY_FINAL_STATE.text) {
+                                    AcceptanceCriteria.BY_FINAL_STATE
+                                } else {
+                                    AcceptanceCriteria.BY_EMPTY_STACK
+                                }
+                        },
                         modifier = Modifier.weight(1f),
-                    ) { newCriteria ->
-                        acceptanceCriteria =
-                            if (newCriteria == AcceptanceCriteria.BY_FINAL_STATE.text) {
-                                AcceptanceCriteria.BY_FINAL_STATE
-                            } else {
-                                AcceptanceCriteria.BY_EMPTY_STACK
-                            }
-                    }
+                    )
                 }
             }
 
@@ -132,20 +127,18 @@ fun Machine.InputScreen(
                 }
 
             DefaultTextField(
+                value = newFullInput.value,
+                onValueChange = { value -> newFullInput.value = value },
                 modifier = Modifier.fillMaxWidth(),
                 label = stringResource(R.string.tape_input),
-                value = newFullInput.value,
                 labelColor = validationColor,
                 textColor = validationColor,
-                onValueChange = { value ->
-                    newFullInput.value = value
-                },
                 trailingIcon = {
                     IconButton(
                         onClick = {
-                            this@InputScreen.savedInputs.add(StringBuilder(newFullInput.value))
+                            this@InputEditor.savedInputs.add(StringBuilder(newFullInput.value))
                             recomposeKey++
-                        },
+                        }
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.add),
@@ -165,9 +158,11 @@ fun Machine.InputScreen(
             OutlinedButton(
                 onClick = {
                     // Restore original state
-                    this@InputScreen.savedInputs.clear()
-                    this@InputScreen.savedInputs.addAll(savedInputs.map { StringBuilder(it.toString()) })
-                    if (criteria != null && this@InputScreen is PushdownMachine) {
+                    this@InputEditor.savedInputs.clear()
+                    this@InputEditor.savedInputs.addAll(
+                        savedInputs.map { StringBuilder(it.toString()) }
+                    )
+                    if (criteria != null && this@InputEditor is PushdownMachine) {
                         acceptanceCriteria = criteria
                     }
                     onDismiss()
@@ -175,15 +170,15 @@ fun Machine.InputScreen(
                 modifier = Modifier.weight(1f).height(48.dp),
                 shape = MaterialTheme.shapes.medium,
             ) {
-                Text(stringResource(R.string.dismiss_button))
+                Text(stringResource(R.string.cancel_button))
             }
             DefaultButton(
-                text = stringResource(R.string.confirm_button),
-                modifier = Modifier.weight(1f),
                 onClick = {
                     loadInput(newFullInput.value)
                     onConfirm()
                 },
+                text = stringResource(R.string.ok_button),
+                modifier = Modifier.weight(1f),
             )
         }
 
@@ -193,13 +188,12 @@ fun Machine.InputScreen(
         key(recomposeKey) {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
+                    Modifier.fillMaxWidth()
                         .weight(1f)
                         .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.surfaceContainer),
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
             ) {
-                if (this@InputScreen.savedInputs.isEmpty()) {
+                if (this@InputEditor.savedInputs.isEmpty()) {
                     Box(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentAlignment = Alignment.Center,
@@ -217,7 +211,7 @@ fun Machine.InputScreen(
                         contentPadding =
                             PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
                     ) {
-                        items(this@InputScreen.savedInputs.toList()) { savedInput ->
+                        items(this@InputEditor.savedInputs.toList()) { savedInput ->
                             val savedText = savedInput.toString()
                             var isAccepted by remember(savedText) { mutableStateOf<Boolean?>(null) }
                             LaunchedEffect(savedText) {
@@ -241,19 +235,18 @@ fun Machine.InputScreen(
                                 backgroundColor = bgColor,
                                 textColor = textColor,
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                                onClick = {
-                                    newFullInput.value = savedInput.toString()
-                                },
+                                onClick = { newFullInput.value = savedInput.toString() },
                                 trailingContent = {
                                     IconButton(
                                         onClick = {
-                                            this@InputScreen.savedInputs.remove(savedInput)
+                                            this@InputEditor.savedInputs.remove(savedInput)
                                             recomposeKey++
-                                        },
+                                        }
                                     ) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.delete),
-                                            contentDescription = stringResource(R.string.remove_item),
+                                            contentDescription =
+                                                stringResource(R.string.remove_item),
                                             modifier = Modifier.size(24.dp),
                                         )
                                     }

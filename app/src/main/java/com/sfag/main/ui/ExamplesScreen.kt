@@ -27,13 +27,12 @@ import com.sfag.main.config.Superscripts
 @Composable
 fun ExamplesScreen(
     navBack: () -> Unit,
-    navToAutomata: (machineUri: String, name: String) -> Unit,
-    navToGrammar: (grammarUri: String, name: String) -> Unit,
+    navToAutomata: (exampleUri: String, name: String) -> Unit,
+    navToGrammar: (exampleUri: String, name: String) -> Unit,
 ) {
     Column(
         modifier =
-            Modifier
-                .fillMaxSize()
+            Modifier.fillMaxSize()
                 .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                 .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -70,7 +69,7 @@ private fun ExamplesSection(
                 .fillMaxWidth()
                 .clip(MaterialTheme.shapes.medium)
                 .background(MaterialTheme.colorScheme.surfaceContainer)
-                .padding(top = 16.dp),
+                .padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -79,14 +78,13 @@ private fun ExamplesSection(
             modifier = Modifier.fillMaxWidth().weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
         ) {
             items(items) { example ->
                 val description = example.second
                 Column(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
+                        Modifier.fillMaxWidth()
                             .heightIn(min = 96.dp)
                             .clip(MaterialTheme.shapes.small)
                             .background(MaterialTheme.colorScheme.secondaryContainer)
@@ -142,7 +140,4 @@ private object ExampleSources {
         )
 }
 
-private data class ExampleDescription(
-    val name: String,
-    val description: String,
-)
+private data class ExampleDescription(val name: String, val description: String)

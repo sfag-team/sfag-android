@@ -27,17 +27,16 @@ import com.sfag.main.ui.component.DefaultButton
 fun HomeScreen(
     navToAutomata: () -> Unit,
     navToGrammar: () -> Unit,
-    navToExamplesScreen: () -> Unit,
+    navToExamples: () -> Unit,
     navToAbout: () -> Unit,
 ) {
     BoxWithConstraints(
         modifier =
-            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLowest),
+            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLowest)
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
+                Modifier.fillMaxWidth()
                     .defaultMinSize(minHeight = maxHeight)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp),
@@ -52,41 +51,36 @@ fun HomeScreen(
 
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
+                    Modifier.fillMaxWidth()
                         .clip(MaterialTheme.shapes.medium)
                         .background(MaterialTheme.colorScheme.surfaceContainer)
                         .padding(horizontal = 24.dp, vertical = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(32.dp),
             ) {
                 DefaultButton(
+                    onClick = { navToAutomata() },
                     text = stringResource(R.string.automata_simulator),
                     modifier = Modifier.fillMaxWidth(),
                     height = 56.dp,
-                ) {
-                    navToAutomata()
-                }
+                )
                 DefaultButton(
+                    onClick = { navToGrammar() },
                     text = stringResource(R.string.grammar_simulator),
                     modifier = Modifier.fillMaxWidth(),
                     height = 56.dp,
-                ) {
-                    navToGrammar()
-                }
+                )
                 DefaultButton(
+                    onClick = { navToExamples() },
                     text = stringResource(R.string.example_page),
                     modifier = Modifier.fillMaxWidth(),
                     height = 56.dp,
-                ) {
-                    navToExamplesScreen()
-                }
+                )
                 DefaultButton(
+                    onClick = { navToAbout() },
                     text = stringResource(R.string.about_page),
                     modifier = Modifier.fillMaxWidth(),
                     height = 56.dp,
-                ) {
-                    navToAbout()
-                }
+                )
             }
         }
     }

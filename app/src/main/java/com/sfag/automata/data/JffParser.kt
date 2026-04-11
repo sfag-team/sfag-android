@@ -13,11 +13,12 @@ import com.sfag.automata.domain.machine.TuringMachine
 import com.sfag.automata.domain.machine.TuringTransition
 import com.sfag.main.config.Symbols
 import com.sfag.main.data.JffUtils
-import com.sfag.main.data.JffUtils.getChildText
-import com.sfag.main.data.JffUtils.hasChild
 import com.sfag.main.data.Point2D
-import org.w3c.dom.Element
+import com.sfag.main.data.XmlUtils
+import com.sfag.main.data.XmlUtils.getChildText
+import com.sfag.main.data.XmlUtils.hasChild
 import java.io.InputStream
+import org.w3c.dom.Element
 
 /** Parsed contents of a .jff file - states, transitions, and positions. */
 internal data class Jff(
@@ -27,22 +28,20 @@ internal data class Jff(
     val positions: Map<Int, Point2D>,
 ) {
     companion object {
-        private const val TAG = "Jff"
-
         /** Parses a JFF XML stream and returns states, transitions, and state positions. */
         fun parse(inputStream: InputStream): Jff {
             val states = mutableListOf<State>()
             val transitions = mutableListOf<Transition>()
             val positions = mutableMapOf<Int, Point2D>()
 
-            val doc = JffUtils.parseXml(inputStream)
+            val doc = XmlUtils.parseXml(inputStream)
             val root = doc.documentElement
 
             val jffTag = JffUtils.getJffType(doc)
 
             val automaton = root.getElementsByTagName("automaton").item(0)
             if (automaton == null) {
-                Log.w(TAG, "No automaton element found in JFF file")
+                Log.e("JffParser", "No automaton element found in JFF file")
                 return Jff(jffTag, states, transitions, positions)
             }
 
@@ -57,8 +56,8 @@ internal data class Jff(
                             states.add(state)
                             positions[state.index] = position
                         }
-                    "transition" ->
-                        parseTransition(element, jffTag)?.let { transitions.add(it) }
+
+                    "transition" -> parseTransition(element, jffTag)?.let { transitions.add(it) }
                 }
             }
 
@@ -68,7 +67,7 @@ internal data class Jff(
         private fun parseState(element: Element): Pair<State, Point2D>? {
             val id = element.getAttribute("id").toIntOrNull()
             if (id == null) {
-                Log.w(TAG, "Invalid state ID: ${element.getAttribute("id")}")
+                Log.w("JffParser", "Invalid state ID: ${element.getAttribute("id")}")
                 return null
             }
 
@@ -89,51 +88,50 @@ internal data class Jff(
             return state to Point2D(x, y)
         }
 
-        private fun parseTransition(
-            element: Element,
-            jffTag: String,
-        ): Transition? {
+        private fun parseTransition(element: Element, jffTag: String): Transition? {
             val fromState = element.getChildText("from")?.toIntOrNull()
             val toState = element.getChildText("to")?.toIntOrNull()
 
             if (fromState == null || toState == null) {
-                Log.w(TAG, "Invalid transition: from=$fromState, to=$toState")
+                Log.w("JffParser", "Invalid transition: from=$fromState, to=$toState")
                 return null
             }
 
             val readSymbol = JffUtils.normalizeEpsilon(element.getChildText("read") ?: "")
 
             return when (jffTag) {
-                "fa" -> FiniteTransition(readSymbol, fromState, toState)
+                "fa" -> FiniteTransition(fromState, toState, readSymbol)
                 "pda" -> {
                     val pop = JffUtils.normalizeEpsilon(element.getChildText("pop") ?: "")
                     val push = JffUtils.normalizeEpsilon(element.getChildText("push") ?: "")
                     PushdownTransition(
-                        name = readSymbol,
                         fromState = fromState,
                         toState = toState,
+                        read = readSymbol,
                         pop = pop,
                         push = push,
                     )
                 }
+
                 "turing" -> {
                     val readText = element.getChildText("read")?.trim()
                     val turingRead =
                         if (readText.isNullOrEmpty()) Symbols.BLANK_CHAR.toString() else readText
                     val writeText = element.getChildText("write")?.trim()
-                    val writeSymbol =
+                    val write =
                         if (writeText.isNullOrEmpty()) Symbols.BLANK_CHAR else writeText.first()
                     val directionSymbol = element.getChildText("move")?.trim() ?: "R"
                     TuringTransition(
-                        name = turingRead,
                         fromState = fromState,
                         toState = toState,
-                        writeSymbol = writeSymbol,
+                        read = turingRead,
+                        write = write,
                         direction = TapeDirection.fromSymbol(directionSymbol),
                     )
                 }
+
                 else -> {
-                    Log.w(TAG, "Unknown JFF type: $jffTag")
+                    Log.e("JffParser", "Unknown JFF type: $jffTag")
                     null
                 }
             }
@@ -153,14 +151,15 @@ internal fun Jff.toMachine(
                 transitions = transitions.filterIsInstance<FiniteTransition>().toMutableList(),
                 savedInputs = savedInputs,
             )
+
         "pda" ->
             PushdownMachine(
                 name = name,
                 states = states.toMutableList(),
-                pdaTransitions =
-                    transitions.filterIsInstance<PushdownTransition>().toMutableList(),
+                pdaTransitions = transitions.filterIsInstance<PushdownTransition>().toMutableList(),
                 savedInputs = savedInputs,
             )
+
         "turing" ->
             TuringMachine(
                 name = name,
@@ -169,5 +168,6 @@ internal fun Jff.toMachine(
                     transitions.filterIsInstance<TuringTransition>().toMutableList(),
                 savedInputs = savedInputs,
             )
+
         else -> throw IllegalArgumentException("Unknown JFF type: $jffTag")
     }

@@ -1,8 +1,8 @@
 package com.sfag.automata.ui
 
-import androidx.activity.ComponentActivity
+import android.provider.OpenableColumns
+import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
@@ -39,6 +40,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -47,25 +49,31 @@ import com.sfag.R
 import com.sfag.automata.data.Jff
 import com.sfag.automata.data.exportToJff
 import com.sfag.automata.data.toMachine
-import com.sfag.automata.domain.common.checkDeterminism
 import com.sfag.automata.domain.common.getFormalDefinition
 import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
+import com.sfag.automata.domain.machine.MachineType
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.automata.domain.simulation.snapshotActiveNodes
+import com.sfag.automata.domain.tree.expandFromStep
+import com.sfag.automata.domain.tree.markSimulationEnd
 import com.sfag.automata.ui.common.FormalDefinitionView
 import com.sfag.automata.ui.edit.StateList
 import com.sfag.automata.ui.edit.TransitionList
+import com.sfag.automata.ui.input.InputEditor
 import com.sfag.automata.ui.machine.DialogRequest
-import com.sfag.automata.ui.machine.MachineView
+import com.sfag.automata.ui.machine.MachineEditor
 import com.sfag.automata.ui.machine.TransitionAnimation
 import com.sfag.automata.ui.machine.computeTransitionPaths
 import com.sfag.automata.ui.tree.TreeView
-import com.sfag.main.config.EXTRA_OPEN_FILE_PICKER
 import com.sfag.main.config.JFF_OPEN_MIME_TYPES
 import com.sfag.main.config.JFF_SAVE_MIME_TYPE
 import com.sfag.main.data.JffUtils
+import com.sfag.main.ui.component.CancelButton
+import com.sfag.main.ui.component.ConfirmButton
+import com.sfag.main.ui.component.CreateButton
 import com.sfag.main.ui.component.DefaultButton
 import com.sfag.main.ui.component.DefaultDialog
 import com.sfag.main.ui.component.DefaultIconButton
@@ -81,10 +89,6 @@ private enum class Mode {
 
 private sealed interface ActiveDialog {
     data object NewMachine : ActiveDialog
-
-    data class Rename(
-        val initialName: String,
-    ) : ActiveDialog
 }
 
 @Composable
@@ -93,71 +97,84 @@ fun AutomataScreen(
     modifier: Modifier = Modifier,
     navBack: () -> Unit,
 ) {
-    val activity = LocalActivity.current as? ComponentActivity ?: return
-    val viewModel: AutomataViewModel = hiltViewModel(activity)
-    val noInitialStateMsg = stringResource(R.string.no_initial_state)
+    val context = LocalContext.current
+    val viewModel: AutomataViewModel = hiltViewModel()
 
-    val initImportLauncher =
-        rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri ->
-            uri?.let {
-                activity.contentResolver.openInputStream(it)?.use { stream ->
-                    val jff = Jff.parse(stream)
-                    val newMachine = jff.toMachine("untitled")
-                    viewModel.setCurrentMachine(newMachine, jff.positions)
-                }
-            }
-        }
+    val importErrorMsg = stringResource(R.string.file_import_error)
+    val noInitialStateMsg = stringResource(R.string.no_initial_state)
+    val acceptedMsg = stringResource(R.string.accepted_in_states)
+    val rejectedMsg = stringResource(R.string.rejected_in_states)
 
     val machine = viewModel.currentMachine
     if (machine == null) {
-        val importMode = activity.intent?.getBooleanExtra(EXTRA_OPEN_FILE_PICKER, false) ?: false
-        if (importMode) {
-            LaunchedEffect(Unit) { initImportLauncher.launch(JFF_OPEN_MIME_TYPES) }
-        } else {
-            LaunchedEffect(Unit) { navBack() }
-        }
+        LaunchedEffect(Unit) { navBack() }
         return
     }
 
     key(machine) {
         val recomposeKey = remember { mutableIntStateOf(0) }
-
-        // Ensure initial state is highlighted and derivation tree is ready on screen entry
-        LaunchedEffect(machine) {
-            machine.setInitialStateAsCurrent()
-            recomposeKey.intValue++
-        }
-
         val currentMode = remember { mutableStateOf(Mode.SIMULATOR) }
+        var showUnsavedDialog by remember { mutableStateOf(viewModel.pendingExampleUri != null) }
+        var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
         var simulationOutcome by remember { mutableStateOf<SimulationOutcome?>(null) }
         val animationOverlay = remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
         val dialogRequest = remember { mutableStateOf<DialogRequest?>(null) }
         var snackbarMsg by remember { mutableStateOf<String?>(null) }
         var activeDialog by remember { mutableStateOf<ActiveDialog?>(null) }
+        val exportErrorMsg = stringResource(R.string.file_export_error)
 
         val exportLauncher =
             rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.CreateDocument(JFF_SAVE_MIME_TYPE),
+                contract = ActivityResultContracts.CreateDocument(JFF_SAVE_MIME_TYPE)
             ) { uri ->
-                uri?.let {
-                    activity.contentResolver.openOutputStream(it)?.use { stream ->
-                        stream.write(
-                            machine
-                                .exportToJff(viewModel.getPositions())
-                                .toByteArray(Charsets.UTF_8),
-                        )
+                try {
+                    uri?.let {
+                        context.contentResolver.openOutputStream(it)?.use { stream ->
+                            stream.write(
+                                machine
+                                    .exportToJff(viewModel.getPositions())
+                                    .toByteArray(Charsets.UTF_8)
+                            )
+                        }
+                        context.contentResolver
+                            .query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                            ?.use { cursor ->
+                                if (cursor.moveToFirst()) {
+                                    val fileName = cursor.getString(0) ?: return@use
+                                    machine.name = fileName.substringBeforeLast(".")
+                                    recomposeKey.intValue++
+                                }
+                            }
+                        viewModel.markSaved()
                     }
+                } catch (e: Exception) {
+                    Log.e("AutomataScreen", "Failed to export file", e)
+                    snackbarMsg = exportErrorMsg
                 }
             }
 
         val importLauncher =
-            rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri ->
+            rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) {
+                uri ->
                 uri?.let {
-                    activity.contentResolver.openInputStream(it)?.use { stream ->
-                        val jff = Jff.parse(stream)
-                        val newMachine = jff.toMachine("untitled")
-                        viewModel.autoSave(machine)
-                        viewModel.setCurrentMachine(newMachine, jff.positions)
+                    try {
+                        val fileName =
+                            context.contentResolver
+                                .query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                                ?.use { cursor ->
+                                    if (cursor.moveToFirst()) {
+                                        cursor.getString(0)?.substringBeforeLast(".")
+                                    } else {
+                                        null
+                                    }
+                                } ?: ""
+                        context.contentResolver.openInputStream(it)?.use { stream ->
+                            val jff = Jff.parse(stream)
+                            viewModel.setCurrentMachine(jff.toMachine(fileName), jff.positions)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AutomataScreen", "Failed to import file", e)
+                        snackbarMsg = importErrorMsg
                     }
                 }
             }
@@ -165,12 +182,19 @@ fun AutomataScreen(
         BackHandler {
             when (currentMode.value) {
                 Mode.SIMULATOR -> {
-                    viewModel.autoSave(machine)
-                    navBack()
+                    if (viewModel.hasUnsavedChanges) {
+                        pendingAction = { navBack() }
+                        showUnsavedDialog = true
+                    } else {
+                        viewModel.autoSave(machine)
+                        navBack()
+                    }
                 }
 
                 Mode.SIMULATION_STEP -> {
-                    // Ignore back during animation
+                    animationOverlay.value = null
+                    viewModel.autoSave(machine)
+                    navBack()
                 }
 
                 Mode.INPUT_EDITOR -> {
@@ -181,9 +205,9 @@ fun AutomataScreen(
 
                 Mode.MACHINE_EDITOR -> {
                     machine.setInitialStateAsCurrent()
-                    recomposeKey.intValue++
                     viewModel.autoSave(machine)
                     currentMode.value = Mode.SIMULATOR
+                    recomposeKey.intValue++
                 }
             }
         }
@@ -195,16 +219,13 @@ fun AutomataScreen(
             }
         }
 
-        val canvasScrollBlocker =
-            remember {
-                object : NestedScrollConnection {
-                    // Consume vertical scroll only; horizontal passes to tape-bar LazyRows
-                    override fun onPreScroll(
-                        available: Offset,
-                        source: NestedScrollSource,
-                    ): Offset = Offset(0f, available.y)
-                }
+        val canvasScrollBlocker = remember {
+            object : NestedScrollConnection {
+                // Consume vertical scroll only; horizontal passes to tape-bar LazyRows
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset =
+                    Offset(0f, available.y)
             }
+        }
 
         Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLowest)) {
             if (currentMode.value != Mode.INPUT_EDITOR) {
@@ -223,68 +244,75 @@ fun AutomataScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 DefaultButton(
+                                    onClick = {
+                                        JffUtils.shareFile(
+                                            context = context,
+                                            jffContent =
+                                                machine.exportToJff(viewModel.getPositions()),
+                                            filename = machine.name,
+                                        )
+                                    },
                                     text = stringResource(R.string.share_file),
                                     modifier = Modifier.weight(1f),
-                                ) {
-                                    JffUtils.shareFile(
-                                        context = activity,
-                                        jffContent =
-                                            machine.exportToJff(viewModel.getPositions()),
-                                        filename = machine.name,
-                                    )
-                                }
+                                )
 
                                 DefaultButton(
-                                    text = stringResource(R.string.export_file),
+                                    onClick = { exportLauncher.launch("${machine.name}.jff") },
+                                    text = stringResource(R.string.save_file),
                                     modifier = Modifier.weight(1f),
-                                ) {
-                                    exportLauncher.launch(
-                                        "${machine.name.ifEmpty { "untitled" }}.jff",
-                                    )
-                                }
+                                )
 
                                 DefaultButton(
-                                    text = stringResource(R.string.import_file),
+                                    onClick = {
+                                        if (viewModel.hasUnsavedChanges) {
+                                            pendingAction = {
+                                                importLauncher.launch(JFF_OPEN_MIME_TYPES)
+                                            }
+                                            showUnsavedDialog = true
+                                        } else {
+                                            importLauncher.launch(JFF_OPEN_MIME_TYPES)
+                                        }
+                                    },
+                                    text = stringResource(R.string.import_button),
                                     modifier = Modifier.weight(1f),
-                                ) {
-                                    importLauncher.launch(JFF_OPEN_MIME_TYPES)
-                                }
+                                )
 
                                 DefaultButton(
+                                    onClick = {
+                                        if (viewModel.hasUnsavedChanges) {
+                                            pendingAction = {
+                                                activeDialog = ActiveDialog.NewMachine
+                                            }
+                                            showUnsavedDialog = true
+                                        } else {
+                                            activeDialog = ActiveDialog.NewMachine
+                                        }
+                                    },
                                     text = stringResource(R.string.create_new),
                                     modifier = Modifier.weight(1f),
-                                ) {
-                                    activeDialog = ActiveDialog.NewMachine
-                                }
+                                )
                             }
 
                             Box(
                                 modifier =
-                                    Modifier
-                                        .fillMaxWidth()
+                                    Modifier.fillMaxWidth()
                                         .nestedScroll(canvasScrollBlocker)
                                         .clip(MaterialTheme.shapes.medium)
-                                        .background(MaterialTheme.colorScheme.surfaceContainer),
+                                        .background(MaterialTheme.colorScheme.surfaceContainer)
                             ) {
-                                machine.MachineView(
-                                    isEditing =
-                                        currentMode.value == Mode.MACHINE_EDITOR,
+                                machine.MachineEditor(
+                                    isEditing = currentMode.value == Mode.MACHINE_EDITOR,
                                     recomposeKey = recomposeKey.intValue,
                                     animationOverlay = animationOverlay.value,
                                     dialogRequest = dialogRequest,
                                     simulationOutcome = simulationOutcome,
                                     onEdit = {
-                                        if (
-                                            currentMode.value != Mode.SIMULATION_STEP
-                                        ) {
+                                        if (currentMode.value != Mode.SIMULATION_STEP) {
                                             simulationOutcome = null
                                             currentMode.value = Mode.INPUT_EDITOR
                                         }
                                     },
                                     onRecompose = { recomposeKey.intValue++ },
-                                    onClickName = {
-                                        activeDialog = ActiveDialog.Rename(machine.name.ifEmpty { "" })
-                                    },
                                 )
                             }
 
@@ -293,23 +321,36 @@ fun AutomataScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 DefaultIconButton(
+                                    onClick = {
+                                        if (currentMode.value == Mode.SIMULATION_STEP) {
+                                            return@DefaultIconButton
+                                        }
+                                        if (currentMode.value == Mode.MACHINE_EDITOR) {
+                                            machine.setInitialStateAsCurrent()
+                                            currentMode.value = Mode.SIMULATOR
+                                            recomposeKey.intValue++
+                                        } else {
+                                            currentMode.value = Mode.MACHINE_EDITOR
+                                        }
+                                    },
                                     icon = R.drawable.edit,
                                     modifier = Modifier.weight(1f),
-                                    isActive =
-                                        currentMode.value == Mode.MACHINE_EDITOR,
-                                ) {
-                                    if (currentMode.value == Mode.SIMULATION_STEP) {
-                                        return@DefaultIconButton
-                                    }
-                                    if (currentMode.value == Mode.MACHINE_EDITOR) {
-                                        machine.setInitialStateAsCurrent()
-                                        recomposeKey.intValue++
-                                        currentMode.value = Mode.SIMULATOR
-                                    } else {
-                                        currentMode.value = Mode.MACHINE_EDITOR
-                                    }
-                                }
+                                    isActive = currentMode.value == Mode.MACHINE_EDITOR,
+                                )
                                 DefaultIconButton(
+                                    onClick = {
+                                        if (currentMode.value == Mode.MACHINE_EDITOR) {
+                                            viewModel.machineAutoCenter = true
+                                            recomposeKey.intValue++
+                                        } else {
+                                            simulationOutcome = null
+                                            animationOverlay.value = null
+                                            viewModel.clearInspection()
+                                            machine.setInitialStateAsCurrent()
+                                            currentMode.value = Mode.SIMULATOR
+                                            recomposeKey.intValue++
+                                        }
+                                    },
                                     icon =
                                         if (currentMode.value == Mode.MACHINE_EDITOR) {
                                             R.drawable.center_focus
@@ -317,90 +358,90 @@ fun AutomataScreen(
                                             R.drawable.replay
                                         },
                                     modifier = Modifier.weight(1f),
-                                ) {
-                                    if (currentMode.value == Mode.MACHINE_EDITOR) {
-                                        viewModel.machineAutoCenter = true
-                                        recomposeKey.intValue++
-                                    } else {
-                                        simulationOutcome = null
-                                        animationOverlay.value = null
-                                        machine.setInitialStateAsCurrent()
-                                        recomposeKey.intValue++
-                                        currentMode.value = Mode.SIMULATOR
-                                    }
-                                }
+                                )
                                 DefaultIconButton(
-                                    icon = R.drawable.skip_next,
-                                    modifier = Modifier.weight(1f),
-                                ) {
-                                    if (currentMode.value == Mode.SIMULATION_STEP) {
-                                        return@DefaultIconButton
-                                    }
-                                    if (machine.states.none { it.initial }) {
-                                        snackbarMsg = noInitialStateMsg
-                                        return@DefaultIconButton
-                                    }
-                                    if (currentMode.value != Mode.SIMULATOR) {
-                                        currentMode.value = Mode.SIMULATOR
-                                    }
-                                    when (val simulation = viewModel.advanceSimulation()) {
-                                        is Simulation.Ended -> {
-                                            simulationOutcome = simulation.outcome
-                                            recomposeKey.intValue++
-                                            snackbarMsg =
-                                                when (simulation.outcome) {
-                                                    SimulationOutcome.ACCEPTED -> {
-                                                        val stateNames =
-                                                            machine.states
-                                                                .filter { it.isCurrent && it.final }
-                                                                .joinToString(", ") { it.name }
-                                                        activity.getString(
-                                                            R.string.accepted_in_states,
-                                                            stateNames,
-                                                        )
-                                                    }
-                                                    SimulationOutcome.REJECTED -> {
-                                                        val stateNames =
-                                                            machine.states
-                                                                .filter { it.isCurrent }
-                                                                .joinToString(", ") { it.name }
-                                                        activity.getString(
-                                                            R.string.rejected_in_states,
-                                                            stateNames,
-                                                        )
-                                                    }
-                                                    SimulationOutcome.ACTIVE,
-                                                    SimulationOutcome.DEAD,
-                                                    -> null
-                                                }
+                                    onClick = {
+                                        if (currentMode.value == Mode.SIMULATION_STEP) {
+                                            return@DefaultIconButton
                                         }
-                                        is Simulation.Step -> {
-                                            currentMode.value = Mode.SIMULATION_STEP
-                                            val capturedPositions = viewModel.statePositions.toMap()
-                                            animationOverlay.value = {
-                                                val animDensity = LocalDensity.current
-                                                val transitionPaths =
-                                                    machine.computeTransitionPaths(
-                                                        capturedPositions,
-                                                        animDensity,
-                                                    )
-                                                machine.TransitionAnimation(
-                                                    transitionRefs = simulation.transitionRefs,
-                                                    transitionPaths = transitionPaths,
-                                                    offsetXCanvas = viewModel.offsetXCanvas,
-                                                    offsetYCanvas = viewModel.offsetYCanvas,
-                                                    onAnimationsEnd = {
-                                                        simulation.onAllComplete()
-                                                        animationOverlay.value = null
-                                                        recomposeKey.intValue++
-                                                        currentMode.value =
-                                                            Mode.SIMULATOR
-                                                    },
+                                        if (machine.states.none { it.initial }) {
+                                            snackbarMsg = noInitialStateMsg
+                                            return@DefaultIconButton
+                                        }
+                                        if (currentMode.value != Mode.SIMULATOR) {
+                                            currentMode.value = Mode.SIMULATOR
+                                        }
+                                        when (val simulation = viewModel.advanceSimulation()) {
+                                            is Simulation.Ended -> {
+                                                machine.tree.markSimulationEnd(
+                                                    simulation.isNodeAccepting
                                                 )
+                                                viewModel.clearInspection()
+                                                simulationOutcome = simulation.outcome
+                                                recomposeKey.intValue++
+                                                snackbarMsg =
+                                                    when (simulation.outcome) {
+                                                        SimulationOutcome.ACCEPTED -> {
+                                                            val stateNames =
+                                                                machine.states
+                                                                    .filter {
+                                                                        it.isCurrent && it.final
+                                                                    }
+                                                                    .joinToString(", ") { it.name }
+                                                            acceptedMsg.format(stateNames)
+                                                        }
+
+                                                        SimulationOutcome.REJECTED -> {
+                                                            val stateNames =
+                                                                machine.states
+                                                                    .filter { it.isCurrent }
+                                                                    .joinToString(", ") { it.name }
+                                                            rejectedMsg.format(stateNames)
+                                                        }
+
+                                                        else -> null
+                                                    }
+                                            }
+
+                                            is Simulation.Step -> {
+                                                machine.tree.expandFromStep(
+                                                    simulation.transitionRefs,
+                                                    machine.states,
+                                                    simulation.activeStates,
+                                                )
+                                                currentMode.value = Mode.SIMULATION_STEP
+                                                val capturedPositions =
+                                                    viewModel.statePositions.toMap()
+                                                animationOverlay.value = {
+                                                    val animDensity = LocalDensity.current
+                                                    val transitionPaths =
+                                                        machine.computeTransitionPaths(
+                                                            capturedPositions,
+                                                            animDensity.density,
+                                                        )
+                                                    TransitionAnimation(
+                                                        transitionRefs = simulation.transitionRefs,
+                                                        transitionPaths = transitionPaths,
+                                                        offsetXCanvas = viewModel.offsetXCanvas,
+                                                        offsetYCanvas = viewModel.offsetYCanvas,
+                                                        onAnimationsEnd = {
+                                                            simulation.onAllComplete()
+                                                            machine.tree.attachSnapshots(
+                                                                machine.snapshotActiveNodes()
+                                                            )
+                                                            viewModel.clearInspection()
+                                                            animationOverlay.value = null
+                                                            currentMode.value = Mode.SIMULATOR
+                                                            recomposeKey.intValue++
+                                                        },
+                                                    )
+                                                }
                                             }
                                         }
-                                    }
-                                }
+                                    },
+                                    icon = R.drawable.skip_next,
+                                    modifier = Modifier.weight(1f),
+                                )
                             }
 
                             BottomScreenPart(
@@ -421,7 +462,7 @@ fun AutomataScreen(
                 enter = slideInVertically(initialOffsetY = { it }),
                 exit = slideOutVertically(targetOffsetY = { it }),
             ) {
-                machine.InputScreen(
+                machine.InputEditor(
                     onConfirm = {
                         viewModel.autoSave(machine)
                         currentMode.value = Mode.SIMULATOR
@@ -433,41 +474,55 @@ fun AutomataScreen(
                 )
             }
 
-            when (val dialog = activeDialog) {
-                is ActiveDialog.Rename -> {
-                    var editingName by remember(dialog) {
-                        mutableStateOf(dialog.initialName)
-                    }
-                    DefaultDialog(
-                        title = null,
-                        enabled = editingName.isNotBlank(),
-                        onDismiss = { activeDialog = null },
-                        onConfirm = {
-                            machine.name = editingName
-                            viewModel.autoSave(machine)
-                            activeDialog = null
-                        },
-                    ) {
-                        DefaultTextField(
-                            label = stringResource(R.string.machine_name),
-                            value = editingName,
-                            suffix = ".jff",
-                            modifier = Modifier.fillMaxWidth(),
-                            onValueChange = { editingName = it },
-                        ) {
-                            editingName.isNotBlank()
-                        }
-                    }
-                }
+            when (activeDialog) {
                 is ActiveDialog.NewMachine ->
                     NewMachineWindow { newMachine ->
                         activeDialog = null
-                        newMachine?.let {
-                            viewModel.autoSave(machine)
-                            viewModel.setCurrentMachine(it)
-                        }
+                        newMachine?.let { viewModel.setCurrentMachine(it) }
                     }
+
                 null -> {}
+            }
+            if (showUnsavedDialog) {
+                val proceed = {
+                    showUnsavedDialog = false
+                    val exampleUri = viewModel.pendingExampleUri
+                    if (exampleUri != null) {
+                        val exampleName = viewModel.pendingExampleName ?: ""
+                        viewModel.pendingExampleName = null
+                        viewModel.pendingExampleUri = null
+                        try {
+                            val jff = context.assets.open(exampleUri).use { Jff.parse(it) }
+                            viewModel.setCurrentMachine(jff.toMachine(exampleName), jff.positions)
+                        } catch (e: Exception) {
+                            Log.e("AutomataScreen", "Failed to load example: $exampleUri", e)
+                        }
+                    } else {
+                        pendingAction?.invoke()
+                    }
+                    pendingAction = null
+                }
+                DefaultDialog(
+                    onDismissRequest = {
+                        showUnsavedDialog = false
+                        pendingAction = null
+                    },
+                    title = stringResource(R.string.unsaved_changes),
+                    buttons = {
+                        CancelButton(
+                            onClick = { proceed() },
+                            label = stringResource(R.string.discard_button),
+                        )
+                        ConfirmButton(
+                            onClick = {
+                                viewModel.autoSave(machine)
+                                proceed()
+                            }
+                        )
+                    },
+                ) {
+                    Text(text = stringResource(R.string.unsaved_changes_message))
+                }
             }
         }
     }
@@ -494,6 +549,7 @@ private fun BottomScreenPart(
                     onRemoveState = { state ->
                         viewModel.statePositions.remove(state.index)
                         machine.removeState(state)
+                        viewModel.markDirty()
                         recomposeKey.intValue++
                     },
                 )
@@ -503,37 +559,33 @@ private fun BottomScreenPart(
                         val fromState = machine.getStateByIndex(transition.fromState)
                         val toState = machine.getStateByIndex(transition.toState)
                         dialogRequest.value =
-                            DialogRequest.ForTransition(fromState, toState, transition.name)
+                            DialogRequest.ForTransition(fromState, toState, transition.read)
                     },
                     onRemoveTransition = { transition ->
                         machine.removeTransition(transition)
+                        viewModel.markDirty()
                         recomposeKey.intValue++
                     },
                 )
             }
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                val showsTree = machine.checkDeterminism() == false
-                if (showsTree) {
-                    machine.TreeView(
-                        recomposeKey = recomposeKey.intValue,
-                        onSelectNode =
-                            if (machine is PushdownMachine) {
-                                { nodeId ->
-                                    machine.selectNode(nodeId)
-                                    recomposeKey.intValue++
-                                }
-                            } else {
-                                null
-                            },
-                    )
-                }
+                machine.TreeView(
+                    recomposeKey = recomposeKey.intValue,
+                    inspectedNodeId = viewModel.inspectedNodeId,
+                    onSelectNode = { nodeId ->
+                        viewModel.inspectNode(machine, nodeId)
+                        if (machine is PushdownMachine) {
+                            machine.selectNode(nodeId)
+                        }
+                        recomposeKey.intValue++
+                    },
+                )
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
+                        Modifier.fillMaxWidth()
                             .clip(MaterialTheme.shapes.medium)
-                            .background(MaterialTheme.colorScheme.surfaceContainer),
+                            .background(MaterialTheme.colorScheme.surfaceContainer)
                 ) {
                     FormalDefinitionView(machine.getFormalDefinition())
                 }
@@ -542,27 +594,25 @@ private fun BottomScreenPart(
     }
 }
 
-private enum class NewMachineChoice {
-    FINITE,
-    PUSHDOWN,
-}
-
 @Composable
 private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
-    var machineChoice by remember { mutableStateOf<NewMachineChoice?>(null) }
     var machineName by remember { mutableStateOf("") }
+    var machineType by remember { mutableStateOf<MachineType?>(null) }
 
     DefaultDialog(
-        title = null,
-        confirmLabel = stringResource(R.string.create_new),
-        enabled = machineChoice != null,
-        onDismiss = { onImport(null) },
-        onConfirm = {
-            when (machineChoice) {
-                NewMachineChoice.FINITE -> onImport(FiniteMachine(name = machineName))
-                NewMachineChoice.PUSHDOWN -> onImport(PushdownMachine(name = machineName))
-                null -> {}
-            }
+        onDismissRequest = { onImport(null) },
+        buttons = {
+            CancelButton(onClick = { onImport(null) })
+            CreateButton(
+                onClick = {
+                    when (machineType) {
+                        MachineType.FINITE -> onImport(FiniteMachine(name = machineName))
+                        MachineType.PUSHDOWN -> onImport(PushdownMachine(name = machineName))
+                        null -> {}
+                    }
+                },
+                enabled = machineType != null && machineName.isNotBlank(),
+            )
         },
     ) {
         Row(
@@ -573,25 +623,25 @@ private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
             ItemSpecificationIcon(
                 icon = R.drawable.finite_automata,
                 text = stringResource(R.string.finite_automaton),
-                isActive = machineChoice == NewMachineChoice.FINITE,
+                isActive = machineType == MachineType.FINITE,
             ) {
-                machineChoice = NewMachineChoice.FINITE
+                machineType = MachineType.FINITE
             }
             ItemSpecificationIcon(
                 icon = R.drawable.pushdown_automata,
                 text = stringResource(R.string.pushdown_automaton),
-                isActive = machineChoice == NewMachineChoice.PUSHDOWN,
+                isActive = machineType == MachineType.PUSHDOWN,
             ) {
-                machineChoice = NewMachineChoice.PUSHDOWN
+                machineType = MachineType.PUSHDOWN
             }
         }
 
         DefaultTextField(
-            label = stringResource(R.string.machine_name),
             value = machineName,
-            suffix = ".jff",
-            modifier = Modifier.fillMaxWidth(),
             onValueChange = { machineName = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = stringResource(R.string.machine_name),
+            suffix = ".jff",
         )
     }
 }

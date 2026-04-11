@@ -23,8 +23,10 @@ fun FormalDefinitionView(definition: FormalDefinition) {
             when {
                 definition.stackAlphabet != null ->
                     "M = (Q, ${Symbols.SIGMA}, ${Symbols.GAMMA}, ${Symbols.DELTA}, ${definition.initialStateName}, ${definition.initialStackSymbol ?: 'Z'}, F)"
+
                 definition.tapeAlphabet != null ->
                     "M = (Q, ${Symbols.SIGMA}, ${Symbols.GAMMA}, ${Symbols.DELTA}, ${definition.initialStateName}, ${definition.blankSymbol ?: Symbols.BLANK}, F)"
+
                 else ->
                     "M = (Q, ${Symbols.SIGMA}, ${Symbols.DELTA}, ${definition.initialStateName}, F)"
             }

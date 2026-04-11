@@ -1,4 +1,4 @@
-package com.sfag.grammar.ui
+package com.sfag.grammar.ui.input
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,11 +40,12 @@ import com.sfag.grammar.domain.grammar.GrammarType
 import com.sfag.grammar.domain.grammar.ParseResult
 import com.sfag.grammar.domain.grammar.cykAccepts
 import com.sfag.grammar.domain.grammar.parse
+import com.sfag.grammar.ui.GrammarViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
-fun MultiInputScreen(
+fun MultiInputView(
     grammarViewModel: GrammarViewModel,
     inputsViewModel: MultiInputViewModel,
     onTestInput: (String) -> Unit,
@@ -77,7 +78,9 @@ fun MultiInputScreen(
 
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(inputs.indices.toList()) { index ->
-                if (index in rowsToRemove) return@items
+                if (index in rowsToRemove) {
+                    return@items
+                }
                 TableRow(
                     inputText = inputs[index],
                     onValueChange = { newText ->
@@ -116,7 +119,9 @@ private fun TableRow(
             withContext(Dispatchers.Default) {
                 if (inputText.isNotEmpty() && inputText.any { it !in terminals }) {
                     false
-                } else if (grammarType == GrammarType.CONTEXT_FREE || grammarType == GrammarType.REGULAR) {
+                } else if (
+                    grammarType == GrammarType.CONTEXT_FREE || grammarType == GrammarType.REGULAR
+                ) {
                     cykAccepts(inputText, rules)
                 } else {
                     when (parse(inputText, rules, terminals, grammarType)) {
@@ -152,12 +157,14 @@ private fun TableRow(
         when {
             isValid == null && !isInconclusive ->
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+
             isInconclusive ->
                 Text(
                     text = "?",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+
             isValid == true -> {
                 Icon(
                     imageVector = Icons.Default.Check,
@@ -165,9 +172,13 @@ private fun TableRow(
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 IconButton(onClick = { onTestInput(inputText) }) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.see_derivation))
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = stringResource(R.string.see_derivation),
+                    )
                 }
             }
+
             else ->
                 Icon(
                     imageVector = Icons.Default.Close,

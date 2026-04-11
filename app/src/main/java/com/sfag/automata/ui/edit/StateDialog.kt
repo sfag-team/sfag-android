@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import com.sfag.R
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.State
+import com.sfag.main.ui.component.CancelButton
+import com.sfag.main.ui.component.ConfirmButton
 import com.sfag.main.ui.component.DefaultDialog
 import com.sfag.main.ui.component.DefaultTextField
 import com.sfag.main.ui.component.ItemSpecificationIcon
@@ -40,44 +42,49 @@ internal fun Machine.StateDialog(
     tapOffset: Offset,
     onAddPosition: (stateIndex: Int, offset: Offset) -> Unit,
     onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
 ) {
     var stateName by remember { mutableStateOf(selectedState?.name ?: "") }
     var isInitial by remember { mutableStateOf(selectedState?.initial ?: false) }
     var isFinal by remember { mutableStateOf(selectedState?.final ?: false) }
+
+    var tooltipMsg by remember { mutableIntStateOf(R.string.duplicate_state_name) }
     val tooltipState = rememberTooltipState()
     val scope = rememberCoroutineScope()
 
-    var tooltipMsg by remember { mutableIntStateOf(R.string.duplicate_state_name) }
-
     DefaultDialog(
-        title = null,
-        enabled = stateName.isNotEmpty(),
-        onDismiss = onDismiss,
-        onConfirm = {
-            val isDuplicate = states.any { it.name == stateName && it.index != selectedState?.index }
-            if (isDuplicate) {
-                tooltipMsg = R.string.duplicate_state_name
-                scope.launch { tooltipState.show() }
-                return@DefaultDialog
-            }
-            if (selectedState == null) {
-                val newIndex = findNewStateIndex()
-                addNewState(
-                    State(
-                        name = stateName,
-                        isCurrent = false,
-                        index = newIndex,
-                        final = isFinal,
-                        initial = isInitial,
-                    ),
-                )
-                onAddPosition(newIndex, tapOffset)
-            } else {
-                selectedState.name = stateName
-                selectedState.initial = isInitial
-                selectedState.final = isFinal
-            }
-            onDismiss()
+        onDismissRequest = onDismiss,
+        buttons = {
+            CancelButton(onClick = onDismiss)
+            ConfirmButton(
+                onClick = {
+                    val isDuplicate =
+                        states.any { it.name == stateName && it.index != selectedState?.index }
+                    if (isDuplicate) {
+                        scope.launch { tooltipState.show() }
+                    } else {
+                        if (selectedState == null) {
+                            val newIndex = findNewStateIndex()
+                            addNewState(
+                                State(
+                                    name = stateName,
+                                    isCurrent = false,
+                                    index = newIndex,
+                                    final = isFinal,
+                                    initial = isInitial,
+                                )
+                            )
+                            onAddPosition(newIndex, tapOffset)
+                        } else {
+                            selectedState.name = stateName
+                            selectedState.initial = isInitial
+                            selectedState.final = isFinal
+                        }
+                        onConfirm()
+                    }
+                },
+                enabled = stateName.isNotEmpty(),
+            )
         },
     ) {
         TooltipBox(
@@ -115,10 +122,10 @@ internal fun Machine.StateDialog(
         }
 
         DefaultTextField(
-            label = stringResource(R.string.state_name),
             value = stateName,
-            modifier = Modifier.fillMaxWidth(),
             onValueChange = { if (it.length <= 5) stateName = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = stringResource(R.string.state_name),
         )
     }
 }

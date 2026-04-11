@@ -7,6 +7,6 @@
 
     <!-- M3 skip_next outlined -->
     <path
-        android:pathData="M6,18l8.5,-6L6,6v12zM8,9.86L11.03,12L8,14.14V9.86zM16,6h2v12h-2z"
-        android:fillColor="#FF000000" />
+        android:fillColor="#FF000000"
+        android:pathData="M6,18l8.5,-6L6,6v12zM8,9.86L11.03,12L8,14.14V9.86zM16,6h2v12h-2z" />
 </vector>

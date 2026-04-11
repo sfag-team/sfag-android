@@ -3,8 +3,8 @@ package com.sfag.grammar.data
 import com.sfag.grammar.domain.grammar.GrammarRule
 import com.sfag.main.config.Symbols
 import com.sfag.main.data.JffUtils
-import com.sfag.main.data.JffUtils.escapeXml
-import com.sfag.main.data.JffUtils.xmlTag
+import com.sfag.main.data.XmlUtils.escapeXml
+import com.sfag.main.data.XmlUtils.xmlTag
 
 fun List<GrammarRule>.exportToJff(): String =
     JffUtils.jffDocument("grammar") {

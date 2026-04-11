@@ -3,20 +3,22 @@ package com.sfag.automata.ui.tree
 import androidx.compose.ui.geometry.Offset
 import com.sfag.automata.domain.tree.Tree
 import com.sfag.automata.domain.tree.TreeNode
-import com.sfag.automata.ui.common.TREE_NODE_HORIZONTAL_SPACING
-import com.sfag.automata.ui.common.TREE_NODE_VERTICAL_SPACING
+import com.sfag.automata.ui.common.NODE_RADIUS
+
+private const val DEPTH_SPACING = NODE_RADIUS * 1.5f
+private const val LEAF_SPACING = NODE_RADIUS * 1f
 
 internal fun calculateLayout(tree: Tree): Map<Int, Offset> {
     val root = tree.root ?: return emptyMap()
     val positions = mutableMapOf<Int, Offset>()
-    var leafIndex = 0
+    var leafPosition = 0
 
     fun layoutNode(node: TreeNode): Pair<Float, Float> {
-        val x = node.depth * TREE_NODE_HORIZONTAL_SPACING
+        val x = node.depth * DEPTH_SPACING
 
         if (node.children.isEmpty()) {
-            val y = leafIndex * TREE_NODE_VERTICAL_SPACING
-            leafIndex++
+            val y = leafPosition * LEAF_SPACING
+            leafPosition++
             positions[node.id] = Offset(x, y)
             return y to y
         }
@@ -25,8 +27,12 @@ internal fun calculateLayout(tree: Tree): Map<Int, Offset> {
         var maxChildY = Float.MIN_VALUE
         for (child in node.children) {
             val (childMin, childMax) = layoutNode(child)
-            if (childMin < minChildY) minChildY = childMin
-            if (childMax > maxChildY) maxChildY = childMax
+            if (childMin < minChildY) {
+                minChildY = childMin
+            }
+            if (childMax > maxChildY) {
+                maxChildY = childMax
+            }
         }
 
         val y = (minChildY + maxChildY) / 2f

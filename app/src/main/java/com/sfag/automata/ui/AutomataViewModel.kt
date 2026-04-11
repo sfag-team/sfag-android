@@ -8,82 +8,137 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
-import com.sfag.automata.data.Storage
+import androidx.lifecycle.viewModelScope
+import com.sfag.automata.data.AutomataStorage
 import com.sfag.automata.domain.machine.Machine
+import com.sfag.automata.domain.simulation.NodeSnapshot
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.main.config.INITIAL_ZOOM
 import com.sfag.main.data.Point2D
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+// JFLAP coordinate conversion (96 DPI desktop to 160 DPI Android dp) - protocol constant
+private const val JFLAP_TO_DP = 160f / 96f
 
 @HiltViewModel
-class AutomataViewModel
-    @Inject
-    internal constructor(
-        private val storage: Storage,
-    ) : ViewModel() {
-        // The single current machine - observed by the Activity to key the composition.
-        var currentMachine by mutableStateOf<Machine?>(null)
-            private set
+class AutomataViewModel @Inject internal constructor(private val storage: AutomataStorage) :
+    ViewModel() {
+    // The single current machine - observed by the Activity to key the composition.
+    var currentMachine by mutableStateOf<Machine?>(null)
+        private set
 
-        // Layout state - persists across simulation/edit mode switches
-        val statePositions: SnapshotStateMap<Int, Offset> = mutableStateMapOf()
-        var offsetXCanvas by mutableFloatStateOf(0f)
-        var offsetYCanvas by mutableFloatStateOf(0f)
-        var scaleCanvas by mutableFloatStateOf(0.5f)
-        var machineAutoCenter by mutableStateOf(false)
+    // Layout state - persists across simulation/edit mode switches
+    val statePositions: SnapshotStateMap<Int, Offset> = mutableStateMapOf()
+    var offsetXCanvas by mutableFloatStateOf(0f)
+    var offsetYCanvas by mutableFloatStateOf(0f)
+    var scaleCanvas by mutableFloatStateOf(1f)
+    var machineAutoCenter by mutableStateOf(false)
 
-        /** Sets the active machine, initializes positions, and resets view to default scale + center. */
-        fun setCurrentMachine(
-            machine: Machine,
-            positions: Map<Int, Point2D> = emptyMap(),
-        ) {
-            currentMachine = machine
-            initPositions(positions)
-            scaleCanvas = 0.5f
-            machineAutoCenter = true
-        }
+    // Pending example to load after user confirms replacing saved machine
+    var pendingExampleUri by mutableStateOf<String?>(null)
+    var pendingExampleName by mutableStateOf<String?>(null)
 
-        /** Persists the current machine to the fixed auto-save slot. */
-        fun autoSave(machine: Machine) {
-            storage.saveMachine(machine, getPositions(), offsetXCanvas, offsetYCanvas, scaleCanvas)
-        }
+    // Historical node inspection
+    var inspectedNodeId by mutableStateOf<Int?>(null)
+        private set
 
-        /** Loads the auto-saved machine. Returns true on success. */
-        fun loadMachine(): Boolean {
-            val (machine, positions, canvas) = storage.loadMachine() ?: return false
-            currentMachine = machine
-            initPositions(positions)
-            offsetXCanvas = canvas.first
-            offsetYCanvas = canvas.second
-            scaleCanvas = canvas.third
-            return true
-        }
+    var inspectedSnapshot by mutableStateOf<NodeSnapshot?>(null)
+        private set
 
-        fun advanceSimulation(): Simulation = currentMachine?.advanceSimulation() ?: Simulation.Ended(SimulationOutcome.ACTIVE)
+    fun inspectNode(machine: Machine, nodeId: Int) {
+        val node = machine.tree.findNode(nodeId)
+        inspectedNodeId = nodeId
+        inspectedSnapshot = node?.snapshot
+    }
 
-        /** Called when positions are loaded from storage or parsed from JFF. */
-        fun initPositions(positions: Map<Int, Point2D>) {
-            statePositions.clear()
-            positions.forEach { (index, point2D) -> statePositions[index] = Offset(point2D.x, point2D.y) }
-        }
+    fun clearInspection() {
+        inspectedNodeId = null
+        inspectedSnapshot = null
+    }
 
-        /** Returns current positions for JFF export/save. */
-        fun getPositions(): Map<Int, Point2D> = statePositions.mapValues { (_, offset) -> Point2D(offset.x, offset.y) }
+    // Track unsaved changes
+    var hasUnsavedChanges by mutableStateOf(false)
+        private set
 
-        /** Updates a single state's position (called on drag). */
-        fun updateStatePosition(
-            stateIndex: Int,
-            delta: Offset,
-        ) {
-            statePositions[stateIndex]?.let { statePositions[stateIndex] = it + delta }
-        }
+    fun markDirty() {
+        hasUnsavedChanges = true
+    }
 
-        /** Assigns a position to a newly created state. */
-        fun addStatePosition(
-            stateIndex: Int,
-            offset: Offset,
-        ) {
-            statePositions[stateIndex] = offset
+    fun markSaved() {
+        hasUnsavedChanges = false
+    }
+
+    /**
+     * Sets the active machine and resets view to default scale + center. JFLAP coordinates (96 DPI)
+     * are scaled to dp (160 DPI) via JFLAP_TO_DP.
+     */
+    fun setCurrentMachine(machine: Machine, positions: Map<Int, Point2D> = emptyMap()) {
+        clearInspection()
+        currentMachine = machine
+        machine.setInitialStateAsCurrent()
+        loadPositions(positions)
+        scaleCanvas = INITIAL_ZOOM
+        machineAutoCenter = true
+        markSaved()
+    }
+
+    /** Persists the current machine to the fixed auto-save slot. */
+    fun autoSave(machine: Machine) {
+        val positions = getPositions()
+        val offsetX = offsetXCanvas
+        val offsetY = offsetYCanvas
+        val scale = scaleCanvas
+        val dirty = hasUnsavedChanges
+        viewModelScope.launch(Dispatchers.IO) {
+            storage.saveMachine(machine, positions, offsetX, offsetY, scale, dirty)
         }
     }
+
+    /** Loads the auto-saved machine. Returns true on success. */
+    fun loadMachine(): Boolean {
+        val stored = storage.loadMachine() ?: return false
+        currentMachine = stored.machine
+        stored.machine.setInitialStateAsCurrent()
+        loadPositions(stored.positions)
+        offsetXCanvas = stored.offsetX
+        offsetYCanvas = stored.offsetY
+        scaleCanvas = stored.scale
+        if (stored.dirty) {
+            markDirty()
+        } else {
+            markSaved()
+        }
+        return true
+    }
+
+    fun advanceSimulation(): Simulation =
+        currentMachine?.advanceSimulation() ?: Simulation.Ended(SimulationOutcome.ACTIVE)
+
+    /** Returns current positions as JFLAP units for JFF export/save (dp -> JFLAP). */
+    fun getPositions(): Map<Int, Point2D> =
+        statePositions.mapValues { (_, offset) ->
+            Point2D(offset.x / JFLAP_TO_DP, offset.y / JFLAP_TO_DP)
+        }
+
+    /** Updates a single state's position (called on drag). */
+    fun updateStatePosition(stateIndex: Int, delta: Offset) {
+        statePositions[stateIndex]?.let { statePositions[stateIndex] = it + delta }
+    }
+
+    /** Assigns a position to a newly created state. */
+    fun addStatePosition(stateIndex: Int, offset: Offset) {
+        statePositions[stateIndex] = offset
+    }
+
+    /** Converts JFLAP positions to dp and loads them into statePositions. */
+    private fun loadPositions(positions: Map<Int, Point2D>) {
+        statePositions.clear()
+        positions.forEach { (index, point2D) ->
+            statePositions[index] = Offset(point2D.x * JFLAP_TO_DP, point2D.y * JFLAP_TO_DP)
+        }
+    }
+}

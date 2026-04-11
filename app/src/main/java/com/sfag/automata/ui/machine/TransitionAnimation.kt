@@ -13,7 +13,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.unit.IntOffset
-import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.simulation.TransitionRef
 import com.sfag.automata.ui.common.NODE_RADIUS
 import kotlin.math.roundToInt
@@ -23,7 +22,7 @@ import kotlin.math.roundToInt
  * single progress value so they move in lockstep.
  */
 @Composable
-fun Machine.TransitionAnimation(
+fun TransitionAnimation(
     transitionRefs: List<TransitionRef>,
     transitionPaths: List<TransitionPath?>,
     offsetXCanvas: Float,
@@ -49,27 +48,17 @@ fun Machine.TransitionAnimation(
         val circleColor = MaterialTheme.colorScheme.onSurface
         val innerColor = MaterialTheme.colorScheme.surfaceContainerLowest
 
-        data class AnimEntry(
-            val path: Path,
-            val bigR: Float,
-            val smallR: Float,
-        )
+        data class AnimEntry(val path: Path, val bigR: Float, val smallR: Float)
 
         val animEntries =
             transitionRefs.mapNotNull { ref ->
+                val transitionPath =
+                    transitionPaths.getOrNull(ref.transitionIndex) ?: return@mapNotNull null
+
+                val path = transitionPath.arrowBody
                 val radiusBig = NODE_RADIUS / 2f
                 val radiusSmall = radiusBig - 5f
 
-                // Find matching transition index
-                val matchingIndex =
-                    this@TransitionAnimation.transitions.indexOfFirst { transition ->
-                        transition.fromState == ref.fromStateIndex && transition.toState == ref.toStateIndex
-                    }
-                if (matchingIndex < 0) return@mapNotNull null
-                val transitionPath =
-                    transitionPaths.getOrNull(matchingIndex) ?: return@mapNotNull null
-
-                val path = transitionPath.arrowBody
                 AnimEntry(path, radiusBig, radiusSmall)
             }
 
@@ -77,7 +66,7 @@ fun Machine.TransitionAnimation(
             modifier =
                 Modifier.fillMaxSize().offset {
                     IntOffset(offsetXCanvas.roundToInt(), offsetYCanvas.roundToInt())
-                },
+                }
         ) {
             for (entry in animEntries) {
                 val position = getCurrentPositionByPath(entry.path, progress.value)

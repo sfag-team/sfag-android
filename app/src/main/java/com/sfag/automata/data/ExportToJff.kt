@@ -6,9 +6,10 @@ import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.TuringMachine
 import com.sfag.main.config.Symbols
 import com.sfag.main.data.JffUtils
-import com.sfag.main.data.JffUtils.escapeXml
-import com.sfag.main.data.JffUtils.xmlTag
 import com.sfag.main.data.Point2D
+import com.sfag.main.data.XmlUtils.escapeXml
+import com.sfag.main.data.XmlUtils.formatFloat
+import com.sfag.main.data.XmlUtils.xmlTag
 
 fun Machine.exportToJff(positions: Map<Int, Point2D>): String =
     JffUtils.jffDocument(jffTag) {
@@ -18,10 +19,14 @@ fun Machine.exportToJff(positions: Map<Int, Point2D>): String =
             val escapedName = escapeXml(state.name)
             val position = positions[state.index] ?: Point2D()
             appendLine("""        <state id="${state.index}" name="$escapedName">""")
-            appendLine("""            <x>${JffUtils.formatFloat(position.x)}</x>""")
-            appendLine("""            <y>${JffUtils.formatFloat(position.y)}</y>""")
-            if (state.initial) appendLine("            <initial/>")
-            if (state.final) appendLine("            <final/>")
+            appendLine("""            <x>${formatFloat(position.x)}</x>""")
+            appendLine("""            <y>${formatFloat(position.y)}</y>""")
+            if (state.initial) {
+                appendLine("            <initial/>")
+            }
+            if (state.final) {
+                appendLine("            <final/>")
+            }
             appendLine("        </state>")
         }
 
@@ -42,7 +47,7 @@ private fun FiniteMachine.exportFiniteTransitions(builder: StringBuilder) {
         builder.appendLine("        <transition>")
         builder.appendLine("            <from>${transition.fromState}</from>")
         builder.appendLine("            <to>${transition.toState}</to>")
-        builder.appendLine("            ${xmlTag("read", transition.name)}")
+        builder.appendLine("            ${xmlTag("read", transition.read)}")
         builder.appendLine("        </transition>")
     }
 }
@@ -52,7 +57,7 @@ private fun PushdownMachine.exportPushdownTransitions(builder: StringBuilder) {
         builder.appendLine("        <transition>")
         builder.appendLine("            <from>${transition.fromState}</from>")
         builder.appendLine("            <to>${transition.toState}</to>")
-        builder.appendLine("            ${xmlTag("read", transition.name)}")
+        builder.appendLine("            ${xmlTag("read", transition.read)}")
         builder.appendLine("            ${xmlTag("pop", transition.pop)}")
         builder.appendLine("            ${xmlTag("push", transition.push)}")
         builder.appendLine("        </transition>")
@@ -65,13 +70,13 @@ private fun TuringMachine.exportTuringTransitions(builder: StringBuilder) {
         builder.appendLine("            <from>${transition.fromState}</from>")
         builder.appendLine("            <to>${transition.toState}</to>")
         val readExport =
-            if (transition.name == Symbols.BLANK_CHAR.toString()) "" else transition.name
+            if (transition.read == Symbols.BLANK_CHAR.toString()) "" else transition.read
         builder.appendLine("            ${xmlTag("read", readExport)}")
         val writeExport =
-            if (transition.writeSymbol == Symbols.BLANK_CHAR) {
+            if (transition.write == Symbols.BLANK_CHAR) {
                 ""
             } else {
-                transition.writeSymbol.toString()
+                transition.write.toString()
             }
         builder.appendLine("            ${xmlTag("write", writeExport)}")
         builder.appendLine("            <move>${transition.direction.symbol}</move>")

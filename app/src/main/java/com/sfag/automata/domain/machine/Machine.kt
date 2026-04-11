@@ -1,8 +1,7 @@
 package com.sfag.automata.domain.machine
 
 import com.sfag.automata.domain.simulation.Simulation
-import com.sfag.automata.domain.simulation.TransitionRef
-import com.sfag.automata.domain.tree.Branch
+import com.sfag.automata.domain.simulation.snapshotActiveNodes
 import com.sfag.automata.domain.tree.Tree
 
 sealed class Machine(
@@ -11,27 +10,46 @@ sealed class Machine(
     val savedInputs: MutableList<StringBuilder>,
     var remainingInput: StringBuilder = StringBuilder(),
 ) {
-    abstract val transitions: List<Transition>
-
     /** JFF file format tag (e.g. "fa", "pda", "turing"). */
     abstract val jffTag: String
 
     /** Short type label for UI display (e.g. "FA", "PDA", "TM"). */
     abstract val typeLabel: String
-
     abstract var currentState: Int?
-
-    val tree = Tree()
+    abstract val transitions: List<Transition>
 
     var fullInput: String = ""
         private set
+
+    val tree = Tree()
+
+    abstract fun advanceSimulation(): Simulation
+
+    abstract fun canReachFinalState(input: StringBuilder, fromInit: Boolean): Boolean?
+
+    abstract fun removeTransition(transition: Transition)
+
+    open fun addNewState(state: State) {
+        if (state.initial && currentState == null) {
+            currentState = state.index
+            state.isCurrent = true
+        }
+        states.add(state)
+    }
+
+    open fun isAccepted(input: StringBuilder): Boolean? = canReachFinalState(input, true)
+
+    open fun resetSimulation() {
+        val initialStateIndex = states.firstOrNull { it.initial }?.index
+        for (state in states) {
+            state.isCurrent = state.index == initialStateIndex
+        }
+    }
 
     fun loadInput(input: String) {
         fullInput = input
         setInitialStateAsCurrent()
     }
-
-    abstract fun removeTransition(transition: Transition)
 
     fun removeState(state: State) {
         states.remove(state)
@@ -39,8 +57,6 @@ sealed class Machine(
             .filter { it.fromState == state.index || it.toState == state.index }
             .forEach { removeTransition(it) }
     }
-
-    abstract fun advanceSimulation(): Simulation
 
     fun getStateByIndex(index: Int): State =
         states.firstOrNull { it.index == index }
@@ -60,69 +76,32 @@ sealed class Machine(
             }
         remainingInput = StringBuilder(fullInput)
         resetSimulation()
+        tree.attachSnapshots(snapshotActiveNodes())
     }
-
-    open fun addNewState(state: State) {
-        if (state.initial && currentState == null) {
-            currentState = state.index
-            state.isCurrent = true
-        }
-        states.add(state)
-    }
-
-    abstract fun canReachFinalState(
-        input: StringBuilder,
-        fromInit: Boolean,
-    ): Boolean?
-
-    /** Expands the derivation tree with exactly the transitions being processed in this step. */
-    fun expandSimulationTree(
-        transitionRefs: List<TransitionRef>,
-        keepActive: Boolean = false,
-    ) {
-        val active = tree.getActiveNodes()
-        if (active.isEmpty()) return
-
-        val branches = mutableMapOf<Int, List<Branch>>()
-        for (node in active) {
-            val state = states.firstOrNull { it.name == node.stateName }
-            if (state == null) {
-                branches[node.id] = emptyList()
-                continue
-            }
-            val toStateIndices =
-                transitionRefs
-                    .filter { it.fromStateIndex == state.index }
-                    .map { it.toStateIndex }
-                    .toMutableSet()
-            if (keepActive) toStateIndices.add(state.index)
-            if (toStateIndices.isEmpty()) {
-                branches[node.id] = emptyList()
-                continue
-            }
-            branches[node.id] =
-                toStateIndices
-                    .map { index -> Branch(getStateByIndex(index).name) }
-                    .sortedBy { it.stateName }
-        }
-        tree.expandActive(branches)
-    }
-
-    open fun isAccepted(input: StringBuilder): Boolean? = canReachFinalState(input, true)
-
-    open fun resetSimulation() {}
 
     fun findNewStateIndex(): Int {
-        if (states.isEmpty()) return 1
+        if (states.isEmpty()) {
+            return 1
+        }
         val usedIndices = states.map { it.index }.toSortedSet()
         for (i in 1..usedIndices.last() + 1) {
-            if (i !in usedIndices) return i
+            if (i !in usedIndices) {
+                return i
+            }
         }
         return usedIndices.last() + 1
     }
 
+    protected fun consumeInput(length: Int) {
+        if (length > 0 && remainingInput.isNotEmpty()) {
+            remainingInput.delete(0, minOf(length, remainingInput.length))
+        }
+    }
+
     protected fun ensureCurrentState(): Boolean {
-        if (currentState == null) currentState = states.firstOrNull { it.initial }?.index
+        if (currentState == null) {
+            currentState = states.firstOrNull { it.initial }?.index
+        }
         return currentState != null
     }
 
@@ -132,4 +111,39 @@ sealed class Machine(
         } else {
             currentState ?: states.firstOrNull { it.initial }?.index
         }
+
+    /**
+     * Generic BFS reachability check. Explores configurations breadth-first using a visited set
+     * (configs must implement structural equality via data class).
+     *
+     * @return true = accepted, false = rejected (exhausted), null = inconclusive (limit hit)
+     */
+    protected fun <Config> bfsReachability(
+        initialConfigs: List<Config>,
+        expand: (Config) -> List<Config>,
+        isAccepted: (Config) -> Boolean,
+        maxConfigs: Int,
+    ): Boolean? {
+        val visited = mutableSetOf<Config>()
+        var current = initialConfigs.toMutableList()
+
+        while (current.isNotEmpty() && visited.size < maxConfigs) {
+            val next = mutableListOf<Config>()
+            for (config in current) {
+                if (!visited.add(config)) {
+                    continue
+                }
+                if (visited.size > maxConfigs) {
+                    break
+                }
+                if (isAccepted(config)) {
+                    return true
+                }
+                next.addAll(expand(config))
+            }
+            current = next
+        }
+
+        return if (current.isEmpty()) false else null
+    }
 }

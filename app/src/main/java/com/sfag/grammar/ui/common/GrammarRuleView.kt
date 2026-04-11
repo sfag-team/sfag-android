@@ -40,10 +40,7 @@ fun GrammarRuleView(
             readOnly = true,
             modifier = Modifier.weight(1f),
         )
-        Text(
-            Symbols.ARROW,
-            style = MaterialTheme.typography.headlineMedium,
-        )
+        Text(Symbols.ARROW, style = MaterialTheme.typography.headlineMedium)
         OutlinedTextField(
             value = grammarRule.right,
             onValueChange = {},
@@ -55,7 +52,10 @@ fun GrammarRuleView(
                 Icon(Icons.Default.Create, contentDescription = stringResource(R.string.edit_rule))
             }
             IconButton(onClick = { grammarViewModel.removeRule(grammarRule) }) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.remove_rule))
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.remove_rule),
+                )
             }
         }
     }

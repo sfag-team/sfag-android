@@ -39,10 +39,10 @@ import androidx.compose.ui.unit.dp
 fun <T> DropdownSelector(
     items: List<T>,
     defaultSelectedIndex: Int,
+    onSelectItem: (T) -> Unit,
     modifier: Modifier = Modifier,
     label: String = "",
     textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
-    onSelectItem: (T) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     var selectedText by remember { mutableStateOf(label) }
@@ -109,8 +109,7 @@ fun RowScope.ItemSpecificationIcon(
     ) {
         Box(
             modifier =
-                Modifier
-                    .weight(1f)
+                Modifier.weight(1f)
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.small)
                     .background(
@@ -118,8 +117,9 @@ fun RowScope.ItemSpecificationIcon(
                             MaterialTheme.colorScheme.secondaryContainer
                         } else {
                             MaterialTheme.colorScheme.surfaceContainerHigh
-                        },
-                    ).clickable { onClick() },
+                        }
+                    )
+                    .clickable { onClick() },
             contentAlignment = Alignment.Center,
         ) {
             Icon(

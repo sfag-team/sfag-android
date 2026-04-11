@@ -17,23 +17,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.sfag.R
 import com.sfag.automata.domain.machine.PushdownMachine
-import com.sfag.automata.ui.common.BAR_HEIGHT
-import com.sfag.automata.ui.common.CELL_SIZE
+import com.sfag.automata.ui.machine.cellPadding
+import com.sfag.automata.ui.machine.cellSize
 
 /** PDA stack bar. Shows stack contents left-to-right (bottom-to-top). */
 @Composable
-fun PushdownMachine.Stack() {
-    val cellPadding = (BAR_HEIGHT - CELL_SIZE) / 2
+fun PushdownMachine.Stack(overrideSymbols: List<Char>? = null) {
+    val displaySymbols = overrideSymbols ?: symbolStack
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(BAR_HEIGHT)
+            Modifier.fillMaxWidth()
+                .height(cellSize + cellPadding * 2)
                 .padding(horizontal = cellPadding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(cellPadding),
     ) {
-        Box(modifier = Modifier.size(CELL_SIZE), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.size(cellSize), contentAlignment = Alignment.Center) {
             Text(
                 text = stringResource(R.string.pda_stack),
                 style = MaterialTheme.typography.labelLarge,
@@ -45,10 +44,10 @@ fun PushdownMachine.Stack() {
             horizontalArrangement = Arrangement.spacedBy(cellPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (symbolStack.isEmpty()) {
+            if (displaySymbols.isEmpty()) {
                 item { Cell(symbol = ' ') }
             } else {
-                items(symbolStack) { Cell(symbol = it) }
+                items(displaySymbols) { Cell(symbol = it) }
             }
         }
     }
