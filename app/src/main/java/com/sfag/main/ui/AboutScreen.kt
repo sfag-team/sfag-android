@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,7 +53,7 @@ private enum class AboutSection {
 
 @Composable
 fun AboutScreen(navBack: () -> Unit) {
-    var selected by remember { mutableStateOf(AboutSection.AUTOMATA) }
+    var selected by rememberSaveable { mutableStateOf(AboutSection.AUTOMATA) }
 
     Column(
         modifier =
@@ -313,6 +314,11 @@ private fun LanguageButton(
 }
 
 private fun changeLanguage(languageCode: String) {
+    val currentLanguage =
+        AppCompatDelegate.getApplicationLocales().get(0)?.language ?: Locale.getDefault().language
+    if (currentLanguage == languageCode) {
+        return
+    }
     val appLocale = LocaleListCompat.forLanguageTags(languageCode)
     AppCompatDelegate.setApplicationLocales(appLocale)
 }

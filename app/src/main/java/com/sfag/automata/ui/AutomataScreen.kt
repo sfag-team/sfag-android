@@ -238,59 +238,70 @@ fun AutomataScreen(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
-                                DefaultButton(
-                                    onClick = {
-                                        JffUtils.shareFile(
-                                            context = context,
-                                            jffContent =
-                                                machine.exportToJff(viewModel.getPositions()),
-                                            filename = machine.name,
-                                        )
-                                    },
-                                    text = stringResource(R.string.share_file),
-                                    modifier = Modifier.weight(1f),
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                ) {
+                                    DefaultButton(
+                                        onClick = {
+                                            JffUtils.shareFile(
+                                                context = context,
+                                                jffContent =
+                                                    machine.exportToJff(viewModel.getPositions()),
+                                                filename = machine.name,
+                                            )
+                                        },
+                                        text = stringResource(R.string.share_file),
+                                        modifier = Modifier.weight(1f),
+                                    )
 
-                                DefaultButton(
-                                    onClick = { exportLauncher.launch("${machine.name}.jff") },
-                                    text = stringResource(R.string.save_file),
-                                    modifier = Modifier.weight(1f),
-                                )
+                                    DefaultButton(
+                                        onClick = { exportLauncher.launch("${machine.name}.jff") },
+                                        text = stringResource(R.string.save_file),
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
 
-                                DefaultButton(
-                                    onClick = {
-                                        if (viewModel.hasUnsavedChanges) {
-                                            pendingAction = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                ) {
+                                    DefaultButton(
+                                        onClick = {
+                                            if (viewModel.hasUnsavedChanges) {
+                                                pendingAction = {
+                                                    importLauncher.launch(JFF_OPEN_MIME_TYPES)
+                                                }
+                                                showUnsavedDialog = true
+                                            } else {
                                                 importLauncher.launch(JFF_OPEN_MIME_TYPES)
                                             }
-                                            showUnsavedDialog = true
-                                        } else {
-                                            importLauncher.launch(JFF_OPEN_MIME_TYPES)
-                                        }
-                                    },
-                                    text = stringResource(R.string.import_button),
-                                    modifier = Modifier.weight(1f),
-                                )
+                                        },
+                                        text = stringResource(R.string.import_button),
+                                        modifier = Modifier.weight(1f),
+                                    )
 
-                                DefaultButton(
-                                    onClick = {
-                                        if (viewModel.hasUnsavedChanges) {
-                                            pendingAction = {
+                                    DefaultButton(
+                                        onClick = {
+                                            if (viewModel.hasUnsavedChanges) {
+                                                pendingAction = {
+                                                    activeDialog = ActiveDialog.NewMachine
+                                                }
+                                                showUnsavedDialog = true
+                                            } else {
                                                 activeDialog = ActiveDialog.NewMachine
                                             }
-                                            showUnsavedDialog = true
-                                        } else {
-                                            activeDialog = ActiveDialog.NewMachine
-                                        }
-                                    },
-                                    text = stringResource(R.string.create_new),
-                                    modifier = Modifier.weight(1f),
-                                )
+                                        },
+                                        text = stringResource(R.string.create_new),
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
                             }
 
                             Box(

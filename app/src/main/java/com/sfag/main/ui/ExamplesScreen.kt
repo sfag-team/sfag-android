@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.annotation.StringRes
 import com.sfag.R
 import com.sfag.main.config.Superscripts
 
@@ -82,25 +83,27 @@ private fun ExamplesSection(
         ) {
             items(items) { example ->
                 val description = example.second
+                val localizedName = stringResource(description.nameRes)
+                val localizedDescription = stringResource(description.descriptionRes)
                 Column(
                     modifier =
                         Modifier.fillMaxWidth()
                             .heightIn(min = 96.dp)
                             .clip(MaterialTheme.shapes.small)
                             .background(MaterialTheme.colorScheme.secondaryContainer)
-                            .clickable { onItemClicked(example.first, description.name) },
+                            .clickable { onItemClicked(example.first, localizedName) },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = Superscripts.toDisplayString(description.name),
+                        text = Superscripts.toDisplayString(localizedName),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 16.dp),
                     )
                     Text(
-                        text = description.description,
+                        text = localizedDescription,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                         textAlign = TextAlign.Center,
@@ -115,29 +118,63 @@ private fun ExamplesSection(
 private object ExampleSources {
     val automataExamples =
         listOf(
-            "automata/a-n.jff" to ExampleDescription("a^n", "Deterministic finite automaton"),
-            "automata/3k-1.jff" to ExampleDescription("3k +1", "Deterministic finite automaton"),
+            "automata/a-n.jff" to
+                ExampleDescription(R.string.example_name_an, R.string.example_desc_dfa),
+            "automata/3k-1.jff" to
+                ExampleDescription(R.string.example_name_3k_plus_1, R.string.example_desc_dfa),
             "automata/ends-dfa.jff" to
-                ExampleDescription("Ends 01 or 10", "Deterministic finite automaton"),
+                ExampleDescription(
+                    R.string.example_name_ends_01_or_10,
+                    R.string.example_desc_dfa,
+                ),
             "automata/ends-nfa.jff" to
-                ExampleDescription("Ends 01 or 10", "Non-deterministic finite automaton"),
+                ExampleDescription(
+                    R.string.example_name_ends_01_or_10,
+                    R.string.example_desc_ndfa,
+                ),
             "automata/an-bn-pda.jff" to
-                ExampleDescription("a^n b^n", "Deterministic pushdown automaton"),
-            "automata/wcw-r.jff" to ExampleDescription("wcwR", "Deterministic pushdown automaton"),
-            "automata/ww-r.jff" to ExampleDescription("wwR", "Non-deterministic pushdown automaton"),
+                ExampleDescription(R.string.example_name_an_bn, R.string.example_desc_dpda),
+            "automata/wcw-r.jff" to
+                ExampleDescription(R.string.example_name_wcw_r, R.string.example_desc_dpda),
+            "automata/ww-r.jff" to
+                ExampleDescription(R.string.example_name_ww_r, R.string.example_desc_ndpda),
         )
 
     val grammarExamples =
         listOf(
-            "grammar/g-reg.jff" to ExampleDescription("a^n", "Regular grammar"),
-            "grammar/g-cf.jff" to ExampleDescription("a^n b^n", "Context-free grammar"),
+            "grammar/g-reg.jff" to
+                ExampleDescription(R.string.example_name_an, R.string.example_desc_regular_grammar),
+            "grammar/g-cf.jff" to
+                ExampleDescription(R.string.example_name_an_bn, R.string.example_desc_context_free_grammar),
             "grammar/ab_norm.jff" to
-                ExampleDescription("Normalized a^n b^n", "Context-free grammar"),
-            "grammar/g-cs.jff" to ExampleDescription("a^n b^n c^n", "Context-sensitive grammar"),
-            "grammar/gram-3kplus1-a.jff" to ExampleDescription("3k+1 a", "Regular grammar"),
-            "grammar/gram-01.jff" to ExampleDescription("Ends 01 or 10", "Regular grammar"),
-            "grammar/gram-wwR.jff" to ExampleDescription("wwR", "Context-free grammar"),
+                ExampleDescription(
+                    R.string.example_name_normalized_an_bn,
+                    R.string.example_desc_context_free_grammar,
+                ),
+            "grammar/g-cs.jff" to
+                ExampleDescription(
+                    R.string.example_name_an_bn_cn,
+                    R.string.example_desc_context_sensitive_grammar,
+                ),
+            "grammar/gram-3kplus1-a.jff" to
+                ExampleDescription(
+                    R.string.example_name_3k_plus_1_a,
+                    R.string.example_desc_regular_grammar,
+                ),
+            "grammar/gram-01.jff" to
+                ExampleDescription(
+                    R.string.example_name_ends_01_or_10,
+                    R.string.example_desc_regular_grammar,
+                ),
+            "grammar/gram-wwR.jff" to
+                ExampleDescription(
+                    R.string.example_name_ww_r,
+                    R.string.example_desc_context_free_grammar,
+                ),
         )
 }
 
-private data class ExampleDescription(val name: String, val description: String)
+private data class ExampleDescription(
+    @param:StringRes val nameRes: Int,
+    @param:StringRes val descriptionRes: Int,
+)

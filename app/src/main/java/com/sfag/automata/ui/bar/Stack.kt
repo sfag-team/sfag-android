@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.sfag.R
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.ui.machine.cellPadding
@@ -32,11 +34,13 @@ fun PushdownMachine.Stack(overrideSymbols: List<Char>? = null) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(cellPadding),
     ) {
-        Box(modifier = Modifier.size(cellSize), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.widthIn(min = 84.dp).height(cellSize), contentAlignment = Alignment.Center) {
             Text(
                 text = stringResource(R.string.pda_stack),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
             )
         }
         LazyRow(
