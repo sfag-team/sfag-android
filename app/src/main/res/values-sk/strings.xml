@@ -104,6 +104,10 @@
     <string name="grammar_simulator">Simulátor gramatík</string>
     <string name="grammar_terminal">Terminály</string>
     <string name="grammar_type">Typ</string>
+    <string name="grammar_type_regular">Regulárna gramatika</string>
+    <string name="grammar_type_context_free">Bezkontextová gramatika</string>
+    <string name="grammar_type_context_sensitive">Kontextová gramatika</string>
+    <string name="grammar_type_unrestricted">Neobmedzená gramatika</string>
     <string name="import_grammar">Importovať gramatiku</string>
     <string name="invalid_chars_error">Povolené sú len písmená, číslice, ε alebo |</string>
     <string name="invalid_result">Neplatné</string>

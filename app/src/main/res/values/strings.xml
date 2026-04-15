@@ -104,6 +104,10 @@
     <string name="grammar_simulator">Grammar simulator</string>
     <string name="grammar_terminal">Terminals</string>
     <string name="grammar_type">Type</string>
+    <string name="grammar_type_regular">Regular Grammar</string>
+    <string name="grammar_type_context_free">Context-Free Grammar</string>
+    <string name="grammar_type_context_sensitive">Context-Sensitive Grammar</string>
+    <string name="grammar_type_unrestricted">Unrestricted Grammar</string>
     <string name="import_grammar">Import grammar</string>
     <string name="invalid_chars_error">Only letters, digits, ε or | are allowed</string>
     <string name="invalid_result">Invalid</string>
