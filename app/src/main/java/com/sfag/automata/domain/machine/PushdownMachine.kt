@@ -8,9 +8,9 @@ import com.sfag.main.config.MAX_SIM_PDA_CONFIGS
 import com.sfag.main.config.MAX_SIM_PDA_STALE_STEPS
 import com.sfag.main.config.Symbols
 
-enum class AcceptanceCriteria(val text: String) {
-    BY_FINAL_STATE("final state"),
-    BY_EMPTY_STACK("empty stack"),
+enum class AcceptanceCriteria {
+    BY_FINAL_STATE,
+    BY_EMPTY_STACK,
 }
 
 data class PdaConfig(

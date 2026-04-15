@@ -221,30 +221,22 @@ fun AutomataScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             Row(
-                                Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 DefaultButton(
                                     onClick = {
-                                        JffUtils.shareFile(
-                                            context = context,
-                                            jffContent =
-                                                machine.exportToJff(viewModel.getPositions()),
-                                            name = machine.name,
-                                        )
+                                        if (viewModel.hasUnsavedChanges) {
+                                            pendingAction = {
+                                                activeDialog = ActiveDialog.NewMachine
+                                            }
+                                            showUnsavedDialog = true
+                                        } else {
+                                            activeDialog = ActiveDialog.NewMachine
+                                        }
                                     },
-                                    text = stringResource(R.string.share_file),
-                                    modifier = Modifier.weight(1f),
-                                )
-
-                                DefaultButton(
-                                    onClick = {
-                                        exportLauncher.launch(
-                                            JffUtils.addJffExtension(machine.name)
-                                        )
-                                    },
-                                    text = stringResource(R.string.save_file),
+                                    text = stringResource(R.string.new_button),
                                     modifier = Modifier.weight(1f),
                                 )
 
@@ -265,16 +257,24 @@ fun AutomataScreen(
 
                                 DefaultButton(
                                     onClick = {
-                                        if (viewModel.hasUnsavedChanges) {
-                                            pendingAction = {
-                                                activeDialog = ActiveDialog.NewMachine
-                                            }
-                                            showUnsavedDialog = true
-                                        } else {
-                                            activeDialog = ActiveDialog.NewMachine
-                                        }
+                                        exportLauncher.launch(
+                                            JffUtils.addJffExtension(machine.name)
+                                        )
                                     },
-                                    text = stringResource(R.string.create_new),
+                                    text = stringResource(R.string.export_button),
+                                    modifier = Modifier.weight(1f),
+                                )
+
+                                DefaultButton(
+                                    onClick = {
+                                        JffUtils.shareFile(
+                                            context = context,
+                                            jffContent =
+                                                machine.exportToJff(viewModel.getPositions()),
+                                            name = machine.name,
+                                        )
+                                    },
+                                    text = stringResource(R.string.share_button),
                                     modifier = Modifier.weight(1f),
                                 )
                             }
