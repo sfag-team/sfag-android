@@ -12,8 +12,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -211,10 +211,8 @@ fun AutomataScreen(
 
         Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLowest)) {
             if (currentMode.value != Mode.INPUT_EDITOR) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                    contentPadding = PaddingValues(vertical = 16.dp),
-                ) {
+                LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+                    item { Spacer(Modifier.height(16.dp)) }
                     item {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
@@ -438,6 +436,7 @@ fun AutomataScreen(
                             )
                         }
                     }
+                    item { Spacer(Modifier.height(16.dp)) }
                 }
             }
 

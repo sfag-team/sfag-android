@@ -5,8 +5,10 @@ import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Build
@@ -16,7 +18,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.sfag.R
 import com.sfag.grammar.data.exportToJff
@@ -36,7 +38,6 @@ import com.sfag.grammar.ui.input.MultiInputViewModel
 import com.sfag.grammar.ui.input.SingleInputView
 import com.sfag.main.config.JFF_OPEN_MIME_TYPES
 import com.sfag.main.config.JFF_SAVE_MIME_TYPE
-import com.sfag.main.ui.component.DefaultSnackbarHost
 import com.sfag.main.ui.component.ExportFile
 import com.sfag.main.ui.component.ImportFile
 import kotlinx.coroutines.launch
@@ -48,14 +49,13 @@ private enum class GrammarMode {
 }
 
 @Composable
-fun GrammarScreen(navBack: () -> Unit) {
+fun GrammarScreen(navBack: () -> Unit, snackbarHostState: SnackbarHostState) {
     val grammarViewModel: GrammarViewModel = hiltViewModel()
     val inputsViewModel: MultiInputViewModel = hiltViewModel()
     val context = LocalContext.current
     val currentMode = remember { mutableStateOf(GrammarMode.GRAMMAR_EDITOR) }
     val selectedInput = remember { mutableStateOf<String?>(null) }
 
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val importErrorMsg = stringResource(R.string.file_import_error)
     val importLauncher =
@@ -98,31 +98,22 @@ fun GrammarScreen(navBack: () -> Unit) {
             GrammarMode.MULTI_INPUT -> currentMode.value = GrammarMode.GRAMMAR_EDITOR
         }
     }
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-        topBar = {
-            GrammarTopBar(
-                currentMode = currentMode,
-                grammarViewModel = grammarViewModel,
-                onImport = { importLauncher.launch(JFF_OPEN_MIME_TYPES) },
-                onExport = { exportLauncher.launch("grammar.jff") },
-            )
-        },
-        snackbarHost = { DefaultSnackbarHost(snackbarHostState) },
-    ) { padding ->
+    Column(modifier = Modifier.fillMaxSize()) {
+        GrammarTopBar(
+            currentMode = currentMode,
+            grammarViewModel = grammarViewModel,
+            onImport = { importLauncher.launch(JFF_OPEN_MIME_TYPES) },
+            onExport = { exportLauncher.launch("grammar.jff") },
+        )
         when (currentMode.value) {
             GrammarMode.GRAMMAR_EDITOR ->
-                GrammarEditor(
-                    grammarViewModel,
-                    snackbarHostState,
-                    modifier = Modifier.padding(padding),
-                )
+                GrammarEditor(grammarViewModel, snackbarHostState, modifier = Modifier.fillMaxSize())
 
             GrammarMode.SINGLE_INPUT ->
                 SingleInputView(
                     grammarViewModel,
                     initialInput = selectedInput.value,
-                    modifier = Modifier.padding(padding),
+                    modifier = Modifier.fillMaxSize(),
                 )
 
             GrammarMode.MULTI_INPUT ->
@@ -133,7 +124,7 @@ fun GrammarScreen(navBack: () -> Unit) {
                         selectedInput.value = input
                         currentMode.value = GrammarMode.SINGLE_INPUT
                     },
-                    modifier = Modifier.padding(padding),
+                    modifier = Modifier.fillMaxSize(),
                 )
         }
     }
@@ -153,14 +144,14 @@ private fun GrammarTopBar(
         title = {},
         navigationIcon = {
             Row {
-                IconButton(onClick = onExport) {
+                IconButton(onClick = onExport, modifier = Modifier.size(48.dp)) {
                     Icon(
                         ExportFile,
                         contentDescription = stringResource(R.string.export_grammar),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                IconButton(onClick = onImport) {
+                IconButton(onClick = onImport, modifier = Modifier.size(48.dp)) {
                     Icon(
                         ImportFile,
                         contentDescription = stringResource(R.string.import_grammar),
@@ -196,7 +187,8 @@ private fun GrammarTopBar(
                         ) {
                             currentMode.value = navItem.dest
                         }
-                    }
+                    },
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
                         imageVector = navItem.icon,

@@ -1,12 +1,9 @@
 package com.sfag.main.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -15,19 +12,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,14 +28,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.os.LocaleListCompat
 import com.sfag.R
-import java.util.Locale
 
 private enum class AboutSection {
     AUTOMATA,
@@ -59,14 +47,8 @@ fun AboutScreen(navBack: () -> Unit) {
             Modifier.fillMaxSize()
                 .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.logo_wide),
-            contentDescription = "Logo",
-            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp).height(60.dp),
-        )
-
         Spacer(Modifier.height(16.dp))
 
         SectionCard {
@@ -78,19 +60,21 @@ fun AboutScreen(navBack: () -> Unit) {
 
         Spacer(Modifier.height(20.dp))
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             SegmentedButton(
-                text = stringResource(R.string.about_automata_tab),
-                active = selected == AboutSection.AUTOMATA,
-            ) {
-                selected = AboutSection.AUTOMATA
-            }
+                selected = selected == AboutSection.AUTOMATA,
+                onClick = { selected = AboutSection.AUTOMATA },
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                icon = {},
+                label = { Text(stringResource(R.string.about_automata_tab)) },
+            )
             SegmentedButton(
-                text = stringResource(R.string.about_grammar_tab),
-                active = selected == AboutSection.GRAMMAR,
-            ) {
-                selected = AboutSection.GRAMMAR
-            }
+                selected = selected == AboutSection.GRAMMAR,
+                onClick = { selected = AboutSection.GRAMMAR },
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                icon = {},
+                label = { Text(stringResource(R.string.about_grammar_tab)) },
+            )
         }
 
         Spacer(Modifier.height(16.dp))
@@ -105,7 +89,7 @@ fun AboutScreen(navBack: () -> Unit) {
         SectionCard {
             Text(
                 stringResource(R.string.authors_label),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.labelLarge,
             )
             Spacer(Modifier.height(8.dp))
             AuthorList(
@@ -126,24 +110,30 @@ fun AboutScreen(navBack: () -> Unit) {
         SectionCard {
             Text(
                 stringResource(R.string.supervisor_label),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.labelLarge,
             )
             Text("doc. Mgr. Daniela Chuda, PhD.", style = MaterialTheme.typography.bodyMedium)
         }
 
         Spacer(Modifier.height(24.dp))
 
-        LanguageSelector()
-
-        Spacer(Modifier.height(32.dp))
-
-        Column(
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("FEI STU Bratislava", style = MaterialTheme.typography.labelMedium)
-            Text("AutoGram simulator v2.3 ©2026", style = MaterialTheme.typography.labelSmall)
+            Image(
+                painter = painterResource(id = R.drawable.logo_wide),
+                contentDescription = null,
+                modifier = Modifier.height(48.dp),
+            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text("FEI STU Bratislava", style = MaterialTheme.typography.labelMedium)
+                Text("AutoGram v2.4 ©2026", style = MaterialTheme.typography.labelSmall)
+            }
         }
+
+        Spacer(Modifier.height(16.dp))
     }
 
     BackHandler { navBack() }
@@ -154,7 +144,7 @@ private fun AutomataSection() {
     SectionCard {
         Text(
             text = stringResource(R.string.about_automata_features),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.labelLarge,
         )
         Spacer(Modifier.height(8.dp))
         FeatureList(
@@ -174,7 +164,7 @@ private fun GrammarSection() {
     SectionCard {
         Text(
             text = stringResource(R.string.about_grammar_features),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.labelLarge,
         )
         Spacer(Modifier.height(8.dp))
         FeatureList(
@@ -186,21 +176,6 @@ private fun GrammarSection() {
                 stringResource(R.string.feature_multi_grammar),
             )
         )
-    }
-}
-
-@Composable
-private fun SegmentedButton(text: String, active: Boolean, onClick: () -> Unit) {
-    FilledTonalButton(
-        onClick = onClick,
-        colors =
-            if (active) {
-                ButtonDefaults.filledTonalButtonColors()
-            } else {
-                ButtonDefaults.outlinedButtonColors()
-            },
-    ) {
-        Text(text)
     }
 }
 
@@ -218,108 +193,8 @@ private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
 @Composable
 private fun AuthorList(authors: List<String>) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        authors.chunked(2).forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(row[0], style = MaterialTheme.typography.bodyMedium)
-                if (row.size > 1) {
-                    Text(row[1], style = MaterialTheme.typography.bodyMedium)
-                } else {
-                    Spacer(Modifier.width(0.dp))
-                }
-            }
-        }
+        authors.forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
     }
-}
-
-@Composable
-private fun LanguageSelector() {
-    val currentLanguage =
-        AppCompatDelegate.getApplicationLocales().get(0)?.language ?: Locale.getDefault().language
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Default.Language,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.size(8.dp))
-            Text(
-                text = stringResource(R.string.select_language),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            LanguageButton(
-                text = stringResource(R.string.language_slovak),
-                isSelected = currentLanguage == "sk",
-                modifier = Modifier.weight(1f),
-            ) {
-                changeLanguage("sk")
-            }
-            LanguageButton(
-                text = stringResource(R.string.language_english),
-                isSelected = currentLanguage == "en",
-                modifier = Modifier.weight(1f),
-            ) {
-                changeLanguage("en")
-            }
-        }
-    }
-}
-
-@Composable
-private fun LanguageButton(
-    text: String,
-    isSelected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier =
-            modifier
-                .height(40.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(
-                    if (isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerHigh
-                    }
-                )
-                .clickable { onClick() }
-                .padding(horizontal = 12.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = text,
-            color =
-                if (isSelected) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            style = MaterialTheme.typography.labelLarge,
-        )
-    }
-}
-
-private fun changeLanguage(languageCode: String) {
-    val currentLanguage =
-        AppCompatDelegate.getApplicationLocales().get(0)?.language ?: Locale.getDefault().language
-    if (currentLanguage == languageCode) {
-        return
-    }
-    val appLocale = LocaleListCompat.forLanguageTags(languageCode)
-    AppCompatDelegate.setApplicationLocales(appLocale)
 }
 
 @Composable

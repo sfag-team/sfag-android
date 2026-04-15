@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,11 +25,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -137,6 +140,8 @@ fun SingleInputView(
     val treePositions = treeData?.second
 
     Column(modifier = modifier.fillMaxSize()) {
+        Spacer(modifier = Modifier.height(16.dp))
+
         Text(
             text = stringResource(R.string.test_an_input),
             style = MaterialTheme.typography.headlineMedium,
@@ -147,6 +152,9 @@ fun SingleInputView(
             modifier = Modifier.height(4.dp).fillMaxWidth().padding(horizontal = 16.dp),
             color = MaterialTheme.colorScheme.primary,
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         Row(
             modifier = Modifier.padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -158,7 +166,7 @@ fun SingleInputView(
                     inputText = it
                 },
                 placeholder = { Text(stringResource(R.string.terminal_placeholder)) },
-                modifier = Modifier.weight(1f).padding(top = 4.dp),
+                modifier = Modifier.weight(1f),
                 singleLine = true,
                 colors =
                     TextFieldDefaults.colors(
@@ -167,31 +175,37 @@ fun SingleInputView(
                     ),
             )
             Spacer(modifier = Modifier.width(8.dp))
-            IconButton(
-                onClick = {
-                    testedInput = inputText
-                    isTreeShown = false
-                    isTableShown = false
-                    isLinearShown = false
-                    focusManager.clearFocus()
-                    coroutineScope.launch {
-                        isParsing = true
-                        parseResult =
-                            withContext(Dispatchers.Default) {
-                                parse(inputText, rules, terminals, grammarType)
-                            }
-                        isParsed = true
-                        isParsing = false
-                    }
+            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                IconButton(
+                    onClick = {
+                        testedInput = inputText
+                        isTreeShown = false
+                        isTableShown = false
+                        isLinearShown = false
+                        focusManager.clearFocus()
+                        coroutineScope.launch {
+                            isParsing = true
+                            parseResult =
+                                withContext(Dispatchers.Default) {
+                                    parse(inputText, rules, terminals, grammarType)
+                                }
+                            isParsed = true
+                            isParsing = false
+                        }
+                    },
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = stringResource(R.string.check_input),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
                 }
-            ) {
-                Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = stringResource(R.string.check_input),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         if (isParsing) {
             Box(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -258,75 +272,85 @@ fun SingleInputView(
                             }
                         }
                     }
-                    IconButton(
-                        onClick = { isTreeShown = false },
-                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                    ) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = stringResource(R.string.close_tree),
-                        )
-                    }
-                    IconButton(
-                        onClick = { treeStep = 0 },
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(4.dp),
-                    ) {
-                        Icon(
-                            Icons.Default.Refresh,
-                            contentDescription = stringResource(R.string.reset_simulation),
-                        )
-                    }
-                    IconButton(
-                        onClick = {
-                            if (treeStep < steps.size) {
-                                coroutineScope.launch {
+                    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                        IconButton(
+                            onClick = { isTreeShown = false },
+                            modifier =
+                                Modifier.align(Alignment.TopEnd).padding(8.dp).size(40.dp),
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = stringResource(R.string.close_tree),
+                            )
+                        }
+                        IconButton(
+                            onClick = { treeStep = 0 },
+                            modifier =
+                                Modifier.align(Alignment.BottomCenter).padding(4.dp).size(40.dp),
+                        ) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = stringResource(R.string.reset_simulation),
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                if (treeStep < steps.size) {
+                                    coroutineScope.launch {
+                                        treeStep++
+                                        focusNodeAnimated(
+                                            tree,
+                                            treePositions,
+                                            treeStep,
+                                            offsetX,
+                                            offsetY,
+                                            scale.floatValue,
+                                            canvasSize.value.width,
+                                            canvasSize.value.height,
+                                        )
+                                    }
+                                } else if (treeStep == steps.size) {
                                     treeStep++
-                                    focusNodeAnimated(
-                                        tree,
-                                        treePositions,
-                                        treeStep,
-                                        offsetX,
-                                        offsetY,
-                                        scale.floatValue,
-                                        canvasSize.value.width,
-                                        canvasSize.value.height,
-                                    )
                                 }
-                            } else if (treeStep == steps.size) {
-                                treeStep++
-                            }
-                        },
-                        modifier =
-                            Modifier.align(Alignment.BottomEnd).padding(end = 30.dp, bottom = 4.dp),
-                    ) {
-                        Icon(ChevronRight, contentDescription = stringResource(R.string.next_step))
-                    }
-                    IconButton(
-                        onClick = {
-                            if (treeStep > 0) {
-                                coroutineScope.launch {
-                                    treeStep--
-                                    focusNodeAnimated(
-                                        tree,
-                                        treePositions,
-                                        treeStep,
-                                        offsetX,
-                                        offsetY,
-                                        scale.floatValue,
-                                        canvasSize.value.width,
-                                        canvasSize.value.height,
-                                    )
+                            },
+                            modifier =
+                                Modifier.align(Alignment.BottomEnd)
+                                    .padding(end = 30.dp, bottom = 4.dp)
+                                    .size(40.dp),
+                        ) {
+                            Icon(
+                                ChevronRight,
+                                contentDescription = stringResource(R.string.next_step),
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                if (treeStep > 0) {
+                                    coroutineScope.launch {
+                                        treeStep--
+                                        focusNodeAnimated(
+                                            tree,
+                                            treePositions,
+                                            treeStep,
+                                            offsetX,
+                                            offsetY,
+                                            scale.floatValue,
+                                            canvasSize.value.width,
+                                            canvasSize.value.height,
+                                        )
+                                    }
                                 }
-                            }
-                        },
-                        modifier =
-                            Modifier.align(Alignment.BottomStart)
-                                .padding(start = 30.dp, bottom = 4.dp),
-                    ) {
-                        Icon(
-                            ChevronLeft,
-                            contentDescription = stringResource(R.string.previous_step),
-                        )
+                            },
+                            modifier =
+                                Modifier.align(Alignment.BottomStart)
+                                    .padding(start = 30.dp, bottom = 4.dp)
+                                    .size(40.dp),
+                        ) {
+                            Icon(
+                                ChevronLeft,
+                                contentDescription = stringResource(R.string.previous_step),
+                            )
+                        }
                     }
                 }
             }
@@ -404,36 +428,43 @@ fun SingleInputView(
                     horizontalArrangement =
                         Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
                 ) {
-                    IconButton(
-                        onClick = {
-                            isTableShown = false
-                            isLinearShown = true
+                    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                        IconButton(
+                            onClick = {
+                                isTableShown = false
+                                isLinearShown = true
+                            },
+                            modifier = Modifier.size(40.dp),
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowForward,
+                                stringResource(R.string.linear_derivation),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
                         }
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowForward,
-                            stringResource(R.string.linear_derivation),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    IconButton(
-                        onClick = {
-                            isLinearShown = false
-                            isTableShown = true
+                        IconButton(
+                            onClick = {
+                                isLinearShown = false
+                                isTableShown = true
+                            },
+                            modifier = Modifier.size(40.dp),
+                        ) {
+                            Icon(
+                                Icons.Default.Menu,
+                                stringResource(R.string.table_derivation),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
                         }
-                    ) {
-                        Icon(
-                            Icons.Default.Menu,
-                            stringResource(R.string.table_derivation),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    IconButton(onClick = { isTreeShown = true }) {
-                        Icon(
-                            NetworkNode,
-                            stringResource(R.string.tree_derivation),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
+                        IconButton(
+                            onClick = { isTreeShown = true },
+                            modifier = Modifier.size(40.dp),
+                        ) {
+                            Icon(
+                                NetworkNode,
+                                stringResource(R.string.tree_derivation),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
                 }
                 if (isTableShown) {
@@ -451,7 +482,10 @@ fun SingleInputView(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp),
             )
-            LazyColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
+            LazyColumn(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 items(rules) { rule ->
                     GrammarRuleView(
                         grammarRule = rule,
@@ -461,6 +495,8 @@ fun SingleInputView(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -508,17 +544,28 @@ private fun StateTable(steps: List<DerivationStep>, modifier: Modifier = Modifie
                 .padding(8.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            IconButton(onClick = { if (currentStep > 1) currentStep-- }) {
-                Icon(ChevronLeft, contentDescription = stringResource(R.string.previous_step))
-            }
-            IconButton(onClick = { if (currentStep < steps.size) currentStep++ }) {
-                Icon(ChevronRight, contentDescription = stringResource(R.string.next_step))
-            }
-            IconButton(onClick = { currentStep = steps.size }) {
-                Icon(
-                    KeyboardDoubleArrowRight,
-                    contentDescription = stringResource(R.string.jump_to_end),
-                )
+            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                IconButton(
+                    onClick = { if (currentStep > 1) currentStep-- },
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(ChevronLeft, contentDescription = stringResource(R.string.previous_step))
+                }
+                IconButton(
+                    onClick = { if (currentStep < steps.size) currentStep++ },
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(ChevronRight, contentDescription = stringResource(R.string.next_step))
+                }
+                IconButton(
+                    onClick = { currentStep = steps.size },
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        KeyboardDoubleArrowRight,
+                        contentDescription = stringResource(R.string.jump_to_end),
+                    )
+                }
             }
         }
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

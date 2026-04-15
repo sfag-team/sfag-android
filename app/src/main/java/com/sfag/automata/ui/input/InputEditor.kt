@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -68,10 +69,12 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         modifier =
             Modifier.fillMaxSize()
                 .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        Spacer(Modifier.height(16.dp))
+
         // TOP: PDA acceptance criteria + text field card
         Column(
             modifier =
@@ -261,5 +264,7 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                 }
             }
         }
+
+        Spacer(Modifier.height(16.dp))
     }
 }

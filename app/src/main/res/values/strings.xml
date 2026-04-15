@@ -2,10 +2,6 @@
 <resources>
     <string name="app_name">AutoGram</string>
 
-    <string name="language_english">English</string>
-    <string name="language_slovak">Slovak</string>
-    <string name="select_language">Select language</string>
-
     <string name="cancel_button">Cancel</string>
     <string name="create_button">Create</string>
     <string name="discard_button">Discard</string>
@@ -19,7 +15,7 @@
     <string name="file_export_error">Failed to save file</string>
     <string name="file_import_error">Failed to open file</string>
 
-    <!-- Main Screen -->
+    <!-- Home Screen -->
     <string name="automata_simulator">Automata simulator</string>
     <string name="grammar_simulator">Grammar simulator</string>
     <string name="example_page">Examples</string>
@@ -32,13 +28,13 @@
     <string name="add_state">Add states</string>
     <string name="add_transition">Add transitions</string>
     <string name="duplicate_state_name">A state with this name already exists</string>
-    <string name="input_tape_button">Input\ntape</string>
-    <string name="input_tape_field">input tape</string>
     <string name="final_state">Final</string>
     <string name="finite_automaton">Finite</string>
     <string name="from_state">from</string>
     <string name="initial_state">Initial</string>
     <string name="initial_state_exists">Your machine already has an initial state</string>
+    <string name="input_tape_button">Input\ntape</string>
+    <string name="input_tape_field">input tape</string>
     <string name="machine_name">machine name</string>
     <string name="machine_state">States</string>
     <string name="machine_transition">Transitions</string>
@@ -77,6 +73,11 @@
     <string name="grammar_rule">Rules</string>
     <string name="grammar_terminal">Terminals</string>
     <string name="grammar_type">Type</string>
+    <string name="grammar_type_context_free">Context-Free Grammar</string>
+    <string name="grammar_type_context_sensitive">Context-Sensitive Grammar</string>
+    <string name="grammar_type_invalid">Invalid Grammar</string>
+    <string name="grammar_type_regular">Regular Grammar</string>
+    <string name="grammar_type_unrestricted">Unrestricted Grammar</string>
     <string name="import_grammar">Import grammar</string>
     <string name="input_accepted"> is accepted</string>
     <string name="input_inconclusive"> - could not determine (too complex)</string>
@@ -107,37 +108,37 @@
 
     <!-- Automata examples -->
     <string name="automata_example">Automata examples</string>
-    <string name="dfa_3kplus1_desc">Deterministic finite automaton</string>
     <string name="dfa_3kplus1_label">3k +1</string>
-    <string name="dfa_an_desc">Deterministic finite automaton</string>
+    <string name="dfa_3kplus1_desc">Deterministic finite automaton</string>
     <string name="dfa_an_label">a^n</string>
-    <string name="dfa_ends_01_or_10_desc">Deterministic finite automaton</string>
+    <string name="dfa_an_desc">Deterministic finite automaton</string>
     <string name="dfa_ends_01_or_10_label">Ends 01 or 10</string>
-    <string name="dpda_an_bn_desc">Deterministic pushdown automaton</string>
+    <string name="dfa_ends_01_or_10_desc">Deterministic finite automaton</string>
     <string name="dpda_an_bn_label">a^n b^n</string>
-    <string name="dpda_wcwR_desc">Deterministic pushdown automaton</string>
+    <string name="dpda_an_bn_desc">Deterministic pushdown automaton</string>
     <string name="dpda_wcwR_label">wcwR</string>
-    <string name="nfa_ends_01_or_10_desc">Non-deterministic finite automaton</string>
+    <string name="dpda_wcwR_desc">Deterministic pushdown automaton</string>
     <string name="nfa_ends_01_or_10_label">Ends 01 or 10</string>
-    <string name="npda_wwR_desc">Non-deterministic pushdown automaton</string>
+    <string name="nfa_ends_01_or_10_desc">Non-deterministic finite automaton</string>
     <string name="npda_wwR_label">wwR</string>
+    <string name="npda_wwR_desc">Non-deterministic pushdown automaton</string>
 
     <!--  Grammar examples -->
     <string name="grammar_example">Grammar examples</string>
-    <string name="cf_an_bn_desc">Context-free grammar</string>
     <string name="cf_an_bn_label">a^n b^n</string>
-    <string name="cf_an_bn_norm_desc">Context-free grammar</string>
+    <string name="cf_an_bn_desc">Context-free grammar</string>
     <string name="cf_an_bn_norm_label">Normalized a^n b^n</string>
-    <string name="cf_wwR_desc">Context-free grammar</string>
+    <string name="cf_an_bn_norm_desc">Context-free grammar</string>
     <string name="cf_wwR_label">wwR</string>
-    <string name="cs_an_bn_cn_desc">Context-sensitive grammar</string>
+    <string name="cf_wwR_desc">Context-free grammar</string>
     <string name="cs_an_bn_cn_label">a^n b^n c^n</string>
-    <string name="reg_3kplus1_a_desc">Regular grammar</string>
+    <string name="cs_an_bn_cn_desc">Context-sensitive grammar</string>
     <string name="reg_3kplus1_a_label">3k+1 a</string>
-    <string name="reg_an_desc">Regular grammar</string>
+    <string name="reg_3kplus1_a_desc">Regular grammar</string>
     <string name="reg_an_label">a^n</string>
-    <string name="reg_ends_01_or_10_desc">Regular grammar</string>
+    <string name="reg_an_desc">Regular grammar</string>
     <string name="reg_ends_01_or_10_label">Ends 01 or 10</string>
+    <string name="reg_ends_01_or_10_desc">Regular grammar</string>
 
     <!-- About Screen -->
     <string name="about_automata_features">The simulator allows for finite/pushdown automata:</string>

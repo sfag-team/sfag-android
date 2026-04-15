@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -88,9 +89,17 @@ class MainActivity : AppCompatActivity() {
             AppTheme {
                 PortraitPillarbox {
                     val navController = rememberNavController()
-                    Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest) {
-                        innerPadding ->
-                        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                    val snackbarHostState = remember { SnackbarHostState() }
+                    Scaffold(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                        snackbarHost = { DefaultSnackbarHost(snackbarHostState) },
+                    ) { innerPadding ->
+                        Column(
+                            modifier =
+                                Modifier.fillMaxSize()
+                                    .padding(innerPadding)
+                                    .consumeWindowInsets(innerPadding)
+                        ) {
                             NavHost(
                                 navController = navController,
                                 startDestination = Destinations.HOME.route,
@@ -346,21 +355,12 @@ class MainActivity : AppCompatActivity() {
                                         return@composable
                                     }
 
-                                    val snackbarHostState = remember { SnackbarHostState() }
-                                    Scaffold(
-                                        containerColor =
-                                            MaterialTheme.colorScheme.surfaceContainerLowest,
-                                        snackbarHost = { DefaultSnackbarHost(snackbarHostState) },
-                                    ) { automataInnerPadding ->
-                                        if (viewModel.currentMachine != null) {
-                                            AutomataScreen(
-                                                modifier =
-                                                    Modifier.fillMaxSize()
-                                                        .padding(automataInnerPadding),
-                                                snackbarHostState = snackbarHostState,
-                                                navBack = { navController.popBackStack() },
-                                            )
-                                        }
+                                    if (viewModel.currentMachine != null) {
+                                        AutomataScreen(
+                                            modifier = Modifier.fillMaxSize(),
+                                            snackbarHostState = snackbarHostState,
+                                            navBack = { navController.popBackStack() },
+                                        )
                                     }
                                 }
                                 composable(
@@ -428,7 +428,10 @@ class MainActivity : AppCompatActivity() {
                                         return@composable
                                     }
 
-                                    GrammarScreen(navBack = { navController.popBackStack() })
+                                    GrammarScreen(
+                                        navBack = { navController.popBackStack() },
+                                        snackbarHostState = snackbarHostState,
+                                    )
                                 }
                             }
                         }

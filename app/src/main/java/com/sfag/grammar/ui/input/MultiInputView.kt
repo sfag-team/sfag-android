@@ -1,5 +1,7 @@
 package com.sfag.grammar.ui.input
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,11 +21,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -56,7 +60,9 @@ fun MultiInputView(
     val terminals = grammarViewModel.terminals
     val grammarType = grammarViewModel.grammarType
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        Spacer(Modifier.height(16.dp))
+
         Text(
             text = stringResource(R.string.test_multiple_inputs),
             style = MaterialTheme.typography.headlineMedium,
@@ -67,6 +73,8 @@ fun MultiInputView(
             modifier = Modifier.height(4.dp).fillMaxWidth(),
             color = MaterialTheme.colorScheme.primary,
         )
+
+        Spacer(Modifier.height(16.dp))
         // Compute fresh every composition (not cached) so indices are never stale
         val rowsToRemove =
             if (inputs.size > 5) {
@@ -76,7 +84,10 @@ fun MultiInputView(
             }
         SideEffect { rowsToRemove.asReversed().forEach { inputsViewModel.removeRowAt(it) } }
 
-        LazyColumn(modifier = Modifier.weight(1f)) {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
             items(inputs.indices.toList()) { index ->
                 if (index in rowsToRemove) {
                     return@items
@@ -96,6 +107,8 @@ fun MultiInputView(
                 )
             }
         }
+
+        Spacer(Modifier.height(16.dp))
     }
 }
 
@@ -138,7 +151,7 @@ private fun TableRow(
     }
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextField(
@@ -154,37 +167,65 @@ private fun TableRow(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        when {
-            isValid == null && !isInconclusive ->
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+            when {
+                isValid == null && !isInconclusive ->
+                    Box(
+                        modifier = Modifier.size(40.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    }
 
-            isInconclusive ->
-                Text(
-                    text = "?",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                isInconclusive ->
+                    Box(
+                        modifier = Modifier.size(40.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "?",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
 
-            isValid == true -> {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = stringResource(R.string.valid_result),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                IconButton(onClick = { onTestInput(inputText) }) {
-                    Icon(
-                        Icons.Default.PlayArrow,
-                        contentDescription = stringResource(R.string.see_derivation),
-                    )
+                isValid == true -> {
+                    Box(
+                        modifier = Modifier.size(40.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = stringResource(R.string.valid_result),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    IconButton(
+                        onClick = { onTestInput(inputText) },
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            Icons.Default.PlayArrow,
+                            contentDescription = stringResource(R.string.see_derivation),
+                        )
+                    }
                 }
-            }
 
-            else ->
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = stringResource(R.string.invalid_result),
-                    tint = MaterialTheme.colorScheme.error,
-                )
+                else ->
+                    Box(
+                        modifier = Modifier.size(40.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.invalid_result),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
+            }
         }
     }
 }

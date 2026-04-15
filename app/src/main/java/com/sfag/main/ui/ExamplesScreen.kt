@@ -6,8 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,6 +40,8 @@ fun ExamplesScreen(
                 .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        Spacer(Modifier.height(16.dp))
+
         ExamplesSection(
             title = stringResource(R.string.automata_example),
             items = ExampleSources.automataExamples,
@@ -53,9 +57,16 @@ fun ExamplesScreen(
         ) { uri, name ->
             navToGrammar(uri, name)
         }
+
+        Spacer(Modifier.height(16.dp))
     }
     BackHandler { navBack() }
 }
+
+private data class ExampleDescription(
+    @param:StringRes val labelRes: Int,
+    @param:StringRes val descRes: Int,
+)
 
 @Composable
 private fun ExamplesSection(
@@ -159,8 +170,3 @@ private object ExampleSources {
                 ExampleDescription(R.string.cf_wwR_label, R.string.cf_wwR_desc),
         )
 }
-
-private data class ExampleDescription(
-    @param:StringRes val labelRes: Int,
-    @param:StringRes val descRes: Int,
-)

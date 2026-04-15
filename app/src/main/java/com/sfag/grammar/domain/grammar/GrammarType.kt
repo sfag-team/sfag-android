@@ -1,11 +1,12 @@
 package com.sfag.grammar.domain.grammar
 
-enum class GrammarType(private val displayName: String) {
-    REGULAR("Regular Grammar"),
-    CONTEXT_FREE("Context-Free Grammar"),
-    CONTEXT_SENSITIVE("Context-Sensitive Grammar"),
-    UNRESTRICTED("Unrestricted Grammar"),
-    INVALID("Invalid Grammar");
+import androidx.annotation.StringRes
+import com.sfag.R
 
-    override fun toString(): String = displayName
+enum class GrammarType(@StringRes val displayNameRes: Int) {
+    REGULAR(R.string.grammar_type_regular),
+    CONTEXT_FREE(R.string.grammar_type_context_free),
+    CONTEXT_SENSITIVE(R.string.grammar_type_context_sensitive),
+    UNRESTRICTED(R.string.grammar_type_unrestricted),
+    INVALID(R.string.grammar_type_invalid),
 }
