@@ -4,65 +4,81 @@ import com.sfag.main.config.Symbols
 
 fun classifyGrammar(rules: List<GrammarRule>): GrammarType {
     val individual =
-        rules.flatMap { rule -> rule.right.split('|').map { GrammarRule(rule.left, it) } }
-    if (individual.isEmpty()) {
-        return GrammarType.REGULAR
-    }
-
-    // Try regular: each rule must pass isRegular, and linearity must be consistent
-    if (individual.all { isRegular(it) }) {
-        val hasRight = individual.any { it.right.matches(Regex("^[a-z\\d]+[A-Z]$")) }
-        val hasLeft = individual.any { it.right.matches(Regex("^[A-Z][a-z\\d]+$")) }
-        if (!hasRight || !hasLeft) {
-            // Epsilon only allowed for start symbol S, and S must not appear in any RHS
-            val epsRules = individual.filter { it.right == Symbols.EPSILON }
-            val epsValid =
-                epsRules.isEmpty() ||
-                    (epsRules.all { it.left == "S" } && individual.none { 'S' in it.right })
-            if (epsValid) {
-                return GrammarType.REGULAR
-            }
+        rules.flatMap { rule ->
+            rule.right.split('|').map { GrammarRule(rule.left.trim(), it.trim()) }
         }
-        // Mixed linearity or invalid epsilon - not regular, fall through to context-free
+
+    if (individual.isEmpty() || !individual.all(::isValidRule)) {
+        return GrammarType.INVALID
     }
 
-    if (individual.all { isContextFree(it) }) {
-        return GrammarType.CONTEXT_FREE
+    // Regular grammar requires all rules right-linear OR all rules left-linear
+    return if (individual.all(::isType3RLRule) || individual.all(::isType3LLRule)) {
+        GrammarType.REGULAR
+    } else if (individual.all(::isType2Rule)) {
+        GrammarType.CONTEXT_FREE
+    } else if (individual.all(::isType1Rule)) {
+        GrammarType.CONTEXT_SENSITIVE
+    } else {
+        GrammarType.UNRESTRICTED
     }
-
-    if (individual.all { isContextSensitive(it) }) {
-        // S -> ε requires S to not appear in any RHS
-        val hasStartEpsilon = individual.any { it.left == "S" && it.right == Symbols.EPSILON }
-        if (hasStartEpsilon && individual.any { it.right.contains('S') }) {
-            return GrammarType.UNRESTRICTED
-        }
-        return GrammarType.CONTEXT_SENSITIVE
-    }
-
-    return GrammarType.UNRESTRICTED
 }
 
-private fun isRegular(rule: GrammarRule): Boolean {
-    if (rule.left.length == 1 && rule.left.first().isUpperCase()) {
-        if (
-            rule.right == Symbols.EPSILON ||
-                rule.right.matches(Regex("^[A-Z]$")) ||
-                rule.right.matches(Regex("^[a-z\\d]+$")) ||
-                rule.right.matches(Regex("^[a-z\\d]+[A-Z]$")) ||
-                rule.right.matches(Regex("^[A-Z][a-z\\d]+$"))
-        ) {
-            return true
-        }
-    }
-    return false
+private fun isTerminal(c: Char): Boolean = c.isLowerCase() || c.isDigit()
+
+private fun isNonTerminal(c: Char): Boolean = c.isUpperCase()
+
+private fun isSingleNonTerminal(value: String): Boolean {
+    return value.length == 1 && isNonTerminal(value.first())
 }
 
-private fun isContextFree(rule: GrammarRule): Boolean =
-    rule.left.length == 1 && rule.left.first().isUpperCase()
+// Epsilon symbol on RHS is treated as empty string
+private fun normalizedRight(right: String): String {
+    return if (right == Symbols.EPSILON) "" else right
+}
 
-private fun isContextSensitive(rule: GrammarRule): Boolean {
-    if (rule.right == Symbols.EPSILON && rule.left == "S") {
+// Valid rule has only terminals and non-terminals, with at least one non-terminal on LHS
+private fun isValidRule(rule: GrammarRule): Boolean {
+    val allChars = rule.left + normalizedRight(rule.right)
+    val validVocabulary = allChars.all { isNonTerminal(it) || isTerminal(it) }
+
+    return validVocabulary && rule.left.any(::isNonTerminal)
+}
+
+// Type 3 Right-Linear form is A -> wB or A -> w where w is a (possibly empty) string of terminals
+private fun isType3RLRule(rule: GrammarRule): Boolean {
+    if (!isSingleNonTerminal(rule.left)) {
+        return false
+    }
+
+    val right = normalizedRight(rule.right)
+    if (right.isEmpty() || right.all(::isTerminal)) {
         return true
     }
-    return rule.right.length >= rule.left.length
+
+    return isNonTerminal(right.last()) && right.dropLast(1).all(::isTerminal)
+}
+
+// Type 3 Left-Linear form is A -> Bw or A -> w where w is a (possibly empty) string of terminals
+private fun isType3LLRule(rule: GrammarRule): Boolean {
+    if (!isSingleNonTerminal(rule.left)) {
+        return false
+    }
+
+    val right = normalizedRight(rule.right)
+    if (right.isEmpty() || right.all(::isTerminal)) {
+        return true
+    }
+
+    return isNonTerminal(right.first()) && right.drop(1).all(::isTerminal)
+}
+
+// Type 2 rule requires the LHS to be a single non-terminal
+private fun isType2Rule(rule: GrammarRule): Boolean {
+    return isSingleNonTerminal(rule.left)
+}
+
+// Type 1 rule requires |LHS| <= |RHS| (epsilon is length 0, so S -> ε is not Type 1)
+private fun isType1Rule(rule: GrammarRule): Boolean {
+    return rule.left.length <= normalizedRight(rule.right).length
 }
