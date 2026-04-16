@@ -12,73 +12,58 @@ import androidx.compose.ui.unit.dp
 import com.sfag.automata.domain.common.FormalDefinition
 import com.sfag.main.config.Symbols
 
-/**
- * Renders the formal mathematical definition of an automaton. Infers machine type from which
- * optional fields are present in FormalDefinition.
- */
+/** Renders the formal mathematical definition of an automaton. */
 @Composable
 fun FormalDefinitionView(definition: FormalDefinition) {
     Column(modifier = Modifier.padding(16.dp)) {
-        val headerText =
-            when {
-                definition.stackAlphabet != null ->
-                    "M = (Q, ${Symbols.SIGMA}, ${Symbols.GAMMA}, ${Symbols.DELTA}, ${definition.initialStateName}, ${definition.initialStackSymbol ?: 'Z'}, F)"
-
-                definition.tapeAlphabet != null ->
-                    "M = (Q, ${Symbols.SIGMA}, ${Symbols.GAMMA}, ${Symbols.DELTA}, ${definition.initialStateName}, ${definition.blankSymbol ?: Symbols.BLANK}, F)"
-
-                else ->
-                    "M = (Q, ${Symbols.SIGMA}, ${Symbols.DELTA}, ${definition.initialStateName}, F)"
-            }
-        Text(headerText, style = MaterialTheme.typography.titleLarge)
-
+        Text(definition.tupleHeader(), style = MaterialTheme.typography.titleLarge)
         Spacer(modifier = Modifier.height(8.dp))
-
-        // State set
-        Text(
-            "Q = { ${definition.stateNames.joinToString(", ")} }",
-            style = MaterialTheme.typography.bodyLarge,
-        )
-
-        Text(
-            "${Symbols.SIGMA} = { ${definition.inputAlphabet.joinToString(", ")} }",
-            style = MaterialTheme.typography.bodyLarge,
-        )
-
-        // PDA stack alphabet
-        definition.stackAlphabet?.let { alphabet ->
-            Text(
-                "${Symbols.GAMMA} = { ${alphabet.joinToString(", ")} }",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                "Z = '${definition.initialStackSymbol ?: 'Z'}'",
-                style = MaterialTheme.typography.bodyLarge,
-            )
+        definition.componentLines().forEach { line ->
+            Text(line, style = MaterialTheme.typography.bodyLarge)
         }
-
-        // Turing tape alphabet
-        definition.tapeAlphabet?.let { alphabet ->
-            Text(
-                "${Symbols.GAMMA} = { ${alphabet.joinToString(", ")} }",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                "${Symbols.BLANK} = '${definition.blankSymbol ?: Symbols.BLANK}'",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        }
-
-        // Final states
-        Text(
-            "F = { ${definition.finalStateNames.joinToString(", ")} }",
-            style = MaterialTheme.typography.bodyLarge,
-        )
-
         Spacer(modifier = Modifier.height(8.dp))
-
-        definition.transitionDescriptions.forEach { description ->
+        definition.transitionLabels.forEach { description ->
             Text(text = description, style = MaterialTheme.typography.bodyLarge)
         }
     }
+}
+
+private fun FormalDefinition.tupleHeader(): String {
+    val tuple = buildList {
+        add("Q")
+        add(Symbols.SIGMA)
+        if (
+            this@tupleHeader is FormalDefinition.Pushdown ||
+                this@tupleHeader is FormalDefinition.Turing
+        ) {
+            add(Symbols.GAMMA)
+        }
+        add(Symbols.DELTA)
+        add(initialStateName)
+        when (this@tupleHeader) {
+            is FormalDefinition.Finite -> Unit
+            is FormalDefinition.Pushdown -> add(initialStackSymbol.toString())
+            is FormalDefinition.Turing -> add(blankSymbol.toString())
+        }
+        add("F")
+    }
+    return "M = (${tuple.joinToString(", ")})"
+}
+
+private fun FormalDefinition.componentLines(): List<String> = buildList {
+    add("Q = { ${stateNames.joinToString(", ")} }")
+    add("${Symbols.SIGMA} = { ${inputAlphabet.joinToString(", ")} }")
+    when (this@componentLines) {
+        is FormalDefinition.Finite -> Unit
+        is FormalDefinition.Pushdown -> {
+            add("${Symbols.GAMMA} = { ${stackAlphabet.joinToString(", ")} }")
+            add("Z = '$initialStackSymbol'")
+        }
+
+        is FormalDefinition.Turing -> {
+            add("${Symbols.GAMMA} = { ${tapeAlphabet.joinToString(", ")} }")
+            add("${Symbols.BLANK} = '$blankSymbol'")
+        }
+    }
+    add("F = { ${finalStateNames.joinToString(", ")} }")
 }

@@ -110,7 +110,7 @@ fun Machine.MachineEditor(
                         if (simulationOutcome != null) primaryColor.copy(alpha = 0.38f)
                         else primaryColor
                     val snapshot = viewModel.inspectedSnapshot
-                    if (snapshot is NodeSnapshot.TmSnapshot) {
+                    if (snapshot is NodeSnapshot.TmNodeSnapshot) {
                         Tape(
                             symbols = snapshot.tape,
                             headIndex = snapshot.headPosition,
@@ -615,7 +615,8 @@ fun Machine.MachineEditor(
             ) {
                 Box(modifier = Modifier.fillMaxWidth().height(cellSize + cellPadding * 2)) {
                     key(recomposeKey) {
-                        val pdaSnapshot = viewModel.inspectedSnapshot as? NodeSnapshot.PdaSnapshot
+                        val pdaSnapshot =
+                            viewModel.inspectedSnapshot as? NodeSnapshot.PdaNodeSnapshot
                         Stack(overrideSymbols = pdaSnapshot?.stack)
                     }
                 }

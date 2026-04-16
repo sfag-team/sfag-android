@@ -6,8 +6,12 @@ import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.TapeDirection
 import com.sfag.automata.domain.machine.TuringMachine
-import com.sfag.main.config.MAX_FA_PDA_CONFIGS
-import com.sfag.main.config.MAX_TURING_CONFIGS
+import com.sfag.automata.domain.machine.applyStackOp
+import com.sfag.automata.domain.machine.stackTopMatches
+import com.sfag.main.config.MAX_BFS_FA_CONFIGS
+import com.sfag.main.config.MAX_BFS_PDA_CONFIGS
+import com.sfag.main.config.MAX_BFS_TM_CONFIGS
+import com.sfag.main.config.Symbols
 
 /**
  * BFS-based acceptance check for the input editor. Tests whether the machine accepts the given
@@ -24,7 +28,7 @@ fun Machine.checkAcceptance(input: StringBuilder): Boolean? =
 private fun FiniteMachine.checkFaAcceptance(input: StringBuilder): Boolean? {
     data class Config(val stateIndex: Int, val inputIndex: Int)
 
-    val startIndex = states.firstOrNull { it.initial }?.index ?: return false
+    val startIndex = initialState?.index ?: return false
     return bfsCheck(
         initial = Config(startIndex, 0),
         expand = { config ->
@@ -41,22 +45,20 @@ private fun FiniteMachine.checkFaAcceptance(input: StringBuilder): Boolean? {
             matching.map { Config(it.toState, config.inputIndex + it.read.length) }
         },
         isAccepted = { config ->
-            config.inputIndex == input.length &&
-                getStateByIndexOrNull(config.stateIndex)?.final == true
+            config.inputIndex == input.length && getStateByIndex(config.stateIndex).final
         },
-        maxConfigs = MAX_FA_PDA_CONFIGS,
+        maxConfigs = MAX_BFS_FA_CONFIGS,
     )
 }
 
 private fun PushdownMachine.checkPdaAcceptance(input: StringBuilder): Boolean? {
     data class Config(val stateIndex: Int, val inputIndex: Int, val stack: List<Char>)
 
-    val startIndex = states.firstOrNull { it.initial }?.index ?: return false
+    val startIndex = initialState?.index ?: return false
     val acceptPredicate: (Config) -> Boolean =
         when (acceptanceCriteria) {
             AcceptanceCriteria.BY_FINAL_STATE -> { config ->
-                    config.inputIndex == input.length &&
-                        getStateByIndexOrNull(config.stateIndex)?.final == true
+                    config.inputIndex == input.length && getStateByIndex(config.stateIndex).final
                 }
 
             AcceptanceCriteria.BY_EMPTY_STACK -> { config ->
@@ -64,7 +66,7 @@ private fun PushdownMachine.checkPdaAcceptance(input: StringBuilder): Boolean? {
                 }
         }
     return bfsCheck(
-        initial = Config(startIndex, 0, listOf('Z')),
+        initial = Config(startIndex, 0, listOf(Symbols.INITIAL_STACK_SYMBOL)),
         expand = { config ->
             val remaining = input.substring(minOf(config.inputIndex, input.length))
             pdaTransitions
@@ -74,38 +76,22 @@ private fun PushdownMachine.checkPdaAcceptance(input: StringBuilder): Boolean? {
                         (it.pop.isEmpty() || stackTopMatches(config.stack, it.pop))
                 }
                 .mapNotNull { transition ->
-                    val newStack = config.stack.toMutableList()
-                    if (transition.pop.isNotEmpty()) {
-                        repeat(transition.pop.length) { newStack.removeAt(newStack.lastIndex) }
-                    }
-                    if (transition.push.isNotEmpty()) {
-                        transition.push.reversed().forEach { newStack.add(it) }
-                    }
+                    val newStack =
+                        applyStackOp(config.stack, transition.pop, transition.push)
+                            ?: return@mapNotNull null
                     Config(transition.toState, config.inputIndex + transition.read.length, newStack)
                 }
         },
         isAccepted = acceptPredicate,
-        maxConfigs = MAX_FA_PDA_CONFIGS,
+        maxConfigs = MAX_BFS_PDA_CONFIGS,
     )
-}
-
-private fun stackTopMatches(stack: List<Char>, pop: String): Boolean {
-    if (stack.size < pop.length) {
-        return false
-    }
-    for (i in pop.indices) {
-        if (stack[stack.size - 1 - i] != pop[i]) {
-            return false
-        }
-    }
-    return true
 }
 
 private fun TuringMachine.checkTmAcceptance(input: StringBuilder): Boolean? {
     data class Config(val stateIndex: Int, val tape: List<Char>, val headPosition: Int)
 
     val initialTape = if (input.isEmpty()) listOf(blankSymbol) else input.toList()
-    val startIndex = states.firstOrNull { it.initial }?.index ?: return false
+    val startIndex = initialState?.index ?: return false
     return bfsCheck(
         initial = Config(startIndex, initialTape, 0),
         expand = { config ->
@@ -115,7 +101,7 @@ private fun TuringMachine.checkTmAcceptance(input: StringBuilder): Boolean? {
                 tape.add(blankSymbol)
             }
             val symbol = tape.getOrNull(head) ?: blankSymbol
-            turingTransitions
+            tmTransitions
                 .filter { it.fromState == config.stateIndex && it.read.firstOrNull() == symbol }
                 .map { transition ->
                     val newTape = tape.toMutableList()
@@ -134,8 +120,8 @@ private fun TuringMachine.checkTmAcceptance(input: StringBuilder): Boolean? {
                     Config(transition.toState, newTape, newHead)
                 }
         },
-        isAccepted = { config -> getStateByIndexOrNull(config.stateIndex)?.final == true },
-        maxConfigs = MAX_TURING_CONFIGS,
+        isAccepted = { config -> getStateByIndex(config.stateIndex).final },
+        maxConfigs = MAX_BFS_TM_CONFIGS,
     )
 }
 
@@ -148,14 +134,14 @@ private fun <Config> bfsCheck(
     val visited = mutableSetOf<Config>()
     var current = mutableListOf(initial)
 
-    while (current.isNotEmpty() && visited.size < maxConfigs) {
+    while (current.isNotEmpty()) {
         val next = mutableListOf<Config>()
         for (config in current) {
+            if (visited.size >= maxConfigs) {
+                return null
+            }
             if (!visited.add(config)) {
                 continue
-            }
-            if (visited.size > maxConfigs) {
-                break
             }
             if (isAccepted(config)) {
                 return true
@@ -165,5 +151,5 @@ private fun <Config> bfsCheck(
         current = next
     }
 
-    return if (current.isEmpty()) false else null
+    return false
 }

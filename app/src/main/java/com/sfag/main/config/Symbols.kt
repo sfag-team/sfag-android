@@ -12,6 +12,7 @@ object Symbols {
     // Special symbols
     const val BLANK = "\u2423" // ␣ - blank string
     const val BLANK_CHAR = '\u2423' // ␣ - blank char for tape operations
+    const val INITIAL_STACK_SYMBOL = 'Z' // PDA initial stack symbol
 
     // Notations
     const val ARROW = "->" // production rule arrow

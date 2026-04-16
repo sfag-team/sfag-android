@@ -1,6 +1,7 @@
 package com.sfag.automata.domain.machine
 
 import com.sfag.automata.domain.simulation.Simulation
+import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.snapshotActiveNodes
 import com.sfag.automata.domain.tree.Tree
 
@@ -23,7 +24,20 @@ sealed class Machine(
 
     val tree = Tree()
 
-    abstract fun advanceSimulation(): Simulation
+    val initialState: State?
+        get() = states.firstOrNull { it.initial }
+
+    fun advanceSimulation(): Simulation {
+        if (currentState == null) {
+            if (!ensureCurrentState()) {
+                return Simulation.Ended(SimulationOutcome.ACTIVE)
+            }
+            getStateByIndex(currentState!!).isCurrent = true
+        }
+        return calculateAllPathsStep()
+    }
+
+    protected abstract fun calculateAllPathsStep(): Simulation
 
     abstract fun removeTransition(transition: Transition)
 
@@ -36,15 +50,15 @@ sealed class Machine(
     }
 
     open fun resetSimulation() {
-        val initialStateIndex = states.firstOrNull { it.initial }?.index
+        val initialStateIndex = initialState?.index
         for (state in states) {
             state.isCurrent = state.index == initialStateIndex
         }
     }
 
-    fun loadInput(input: String) {
+    fun setInput(input: String) {
         fullInput = input
-        setInitialStateAsCurrent()
+        resetToInitialState()
     }
 
     fun removeState(state: State) {
@@ -60,16 +74,14 @@ sealed class Machine(
 
     fun getStateByIndexOrNull(index: Int): State? = states.firstOrNull { it.index == index }
 
-    fun setInitialStateAsCurrent() {
+    fun resetToInitialState() {
         currentState?.let { getStateByIndexOrNull(it)?.isCurrent = false }
         tree.clear()
-        states
-            .firstOrNull { it.initial }
-            ?.let { initialState ->
-                initialState.isCurrent = true
-                currentState = initialState.index
-                tree.initialize(initialState.name)
-            }
+        initialState?.let { state ->
+            state.isCurrent = true
+            currentState = state.index
+            tree.initialize(state.name)
+        }
         remainingInput = StringBuilder(fullInput)
         resetSimulation()
         tree.attachSnapshots(snapshotActiveNodes())
@@ -95,8 +107,8 @@ sealed class Machine(
     }
 
     protected fun ensureCurrentState(): Boolean {
-        if (currentState == null) {
-            currentState = states.firstOrNull { it.initial }?.index
+        if (currentState == null && initialState != null) {
+            resetToInitialState()
         }
         return currentState != null
     }

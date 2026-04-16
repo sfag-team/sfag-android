@@ -50,7 +50,7 @@ fun Machine.isDeterministic(): Boolean? {
             }
 
         is TuringMachine ->
-            !turingTransitions.hasPairwiseConflict { t1, t2 ->
+            !tmTransitions.hasPairwiseConflict { t1, t2 ->
                 t1.read.startsWith(t2.read) || t2.read.startsWith(t1.read)
             }
     }

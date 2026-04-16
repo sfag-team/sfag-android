@@ -52,12 +52,8 @@ fun Machine.TreeView(
 ) {
     val canvasHeight = if (isDeterministic() == true) 100.dp else 300.dp
     if (tree.root == null) {
-        val initialState = states.firstOrNull { it.initial }
-        if (initialState != null) {
-            tree.initialize(initialState.name)
-        } else {
-            return
-        }
+        val initial = initialState ?: return
+        tree.initialize(initial.name)
     }
 
     val density = LocalDensity.current
@@ -239,9 +235,9 @@ fun Machine.TreeView(
                         }
                     }
         ) {
-            // Leaf nodes: active = primary, accepted = green, rejected = red
-            // Dead-end nodes use same colors but dimmed via alpha
-            // Interior nodes stay neutral (surface fill)
+            // Accepted path: green from root to accepting leaf
+            // Rejected path: red from rejected leaf up to first accepted ancestor
+            // Dead branches: dimmed neutral
             fun fillColor(node: TreeNode): Color =
                 when (node.status) {
                     SimulationOutcome.ACTIVE if node.children.isEmpty() -> colors.primaryContainer
@@ -266,7 +262,12 @@ fun Machine.TreeView(
                 }
 
             fun nodeAlpha(node: TreeNode): Float =
-                if (node.status == SimulationOutcome.DEAD) 0.38f else 1f
+                when (node.status) {
+                    SimulationOutcome.DEAD -> 0.38f
+                    SimulationOutcome.ACTIVE,
+                    SimulationOutcome.ACCEPTED,
+                    SimulationOutcome.REJECTED -> 1f
+                }
 
             translate(left = offsetX, top = offsetY) {
                 scale(scale = scale, pivot = Offset.Zero) {
@@ -299,7 +300,7 @@ fun Machine.TreeView(
                             outlineColor = colors.onSurface,
                             fillColor = fillColor(node),
                             textArgb = textColor(node),
-                            name = node.stateName ?: "",
+                            name = node.stateName,
                             textPaint = textPaint,
                             baseTextSize = baseTextSize,
                             alpha = alpha,

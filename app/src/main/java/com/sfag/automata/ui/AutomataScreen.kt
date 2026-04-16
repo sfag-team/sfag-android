@@ -57,7 +57,6 @@ import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.snapshotActiveNodes
-import com.sfag.automata.domain.tree.expandFromStep
 import com.sfag.automata.domain.tree.markSimulationEnd
 import com.sfag.automata.ui.common.FormalDefinitionView
 import com.sfag.automata.ui.edit.StateList
@@ -198,13 +197,13 @@ fun AutomataScreen(
                 }
 
                 Mode.INPUT_EDITOR -> {
-                    machine.setInitialStateAsCurrent()
+                    machine.resetToInitialState()
                     viewModel.autoSave(machine)
                     currentMode.value = Mode.SIMULATOR
                 }
 
                 Mode.MACHINE_EDITOR -> {
-                    machine.setInitialStateAsCurrent()
+                    machine.resetToInitialState()
                     viewModel.autoSave(machine)
                     currentMode.value = Mode.SIMULATOR
                     recomposeKey.intValue++
@@ -326,7 +325,7 @@ fun AutomataScreen(
                                             return@DefaultIconButton
                                         }
                                         if (currentMode.value == Mode.MACHINE_EDITOR) {
-                                            machine.setInitialStateAsCurrent()
+                                            machine.resetToInitialState()
                                             currentMode.value = Mode.SIMULATOR
                                             recomposeKey.intValue++
                                         } else {
@@ -346,7 +345,7 @@ fun AutomataScreen(
                                             simulationOutcome = null
                                             animationOverlay.value = null
                                             viewModel.clearInspection()
-                                            machine.setInitialStateAsCurrent()
+                                            machine.resetToInitialState()
                                             currentMode.value = Mode.SIMULATOR
                                             recomposeKey.intValue++
                                         }
@@ -421,10 +420,8 @@ fun AutomataScreen(
                                                         offsetXCanvas = viewModel.offsetXCanvas,
                                                         offsetYCanvas = viewModel.offsetYCanvas,
                                                         onAnimationsEnd = {
-                                                            machine.tree.expandFromStep(
-                                                                simulation.transitionRefs,
-                                                                machine.states,
-                                                                simulation.activeStates,
+                                                            machine.tree.expandActive(
+                                                                simulation.treeBranches
                                                             )
                                                             simulation.onAllComplete()
                                                             machine.tree.attachSnapshots(

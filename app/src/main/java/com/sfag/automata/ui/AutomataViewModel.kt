@@ -50,6 +50,14 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     var inspectedSnapshot by mutableStateOf<NodeSnapshot?>(null)
         private set
 
+    // Track unsaved changes
+    var hasUnsavedChanges by mutableStateOf(false)
+        private set
+
+    // Single-threaded dispatcher serializes saves in submission order (latest state wins)
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val saveDispatcher = Dispatchers.IO.limitedParallelism(1)
+
     fun inspectNode(machine: Machine, nodeId: Int) {
         val node = machine.tree.findNode(nodeId)
         inspectedNodeId = nodeId
@@ -60,10 +68,6 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
         inspectedNodeId = null
         inspectedSnapshot = null
     }
-
-    // Track unsaved changes
-    var hasUnsavedChanges by mutableStateOf(false)
-        private set
 
     fun markDirty() {
         hasUnsavedChanges = true
@@ -80,7 +84,7 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     fun setCurrentMachine(machine: Machine, positions: Map<Int, Point2D> = emptyMap()) {
         clearInspection()
         currentMachine = machine
-        machine.setInitialStateAsCurrent()
+        machine.resetToInitialState()
         loadPositions(positions)
         scaleCanvas = INITIAL_ZOOM
         machineAutoCenter = true
@@ -99,14 +103,14 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
                 scaleCanvas,
                 hasUnsavedChanges,
             )
-        viewModelScope.launch(Dispatchers.IO) { storage.saveRaw(jffContent, metadata) }
+        viewModelScope.launch(saveDispatcher) { storage.save(jffContent, metadata) }
     }
 
     /** Loads the auto-saved machine. Returns true on success. */
     fun loadMachine(): Boolean {
-        val stored = storage.loadMachine() ?: return false
+        val stored = storage.load() ?: return false
         currentMachine = stored.machine
-        stored.machine.setInitialStateAsCurrent()
+        stored.machine.resetToInitialState()
         loadPositions(stored.positions)
         offsetXCanvas = stored.offsetX
         offsetYCanvas = stored.offsetY

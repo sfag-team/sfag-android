@@ -14,7 +14,7 @@ private const val INPUT_TAG = "__input:"
 private const val CANVAS_TAG = "__canvas:"
 private const val DIRTY_TAG = "__dirty:"
 
-internal data class StoredMachine(
+internal data class CurrentMachine(
     val machine: Machine,
     val positions: Map<Int, Point2D>,
     val offsetX: Float,
@@ -36,7 +36,8 @@ class AutomataStorage @Inject constructor(@param:ApplicationContext private val 
     private val metaFile = File(storageDir, "__current.meta")
 
     /** Writes pre-built JFF and metadata strings to disk. Call from IO thread. */
-    internal fun saveRaw(jffContent: String, metadata: String): Boolean =
+    @Synchronized
+    internal fun save(jffContent: String, metadata: String): Boolean =
         try {
             jffFile.writeText(jffContent)
             metaFile.writeText(metadata)
@@ -60,9 +61,10 @@ class AutomataStorage @Inject constructor(@param:ApplicationContext private val 
         appendLine("$DIRTY_TAG$dirty")
     }
 
-    fun hasStoredMachine(): Boolean = jffFile.exists()
+    fun hasMachine(): Boolean = jffFile.exists()
 
-    internal fun loadMachine(): StoredMachine? {
+    @Synchronized
+    internal fun load(): CurrentMachine? {
         if (!jffFile.exists()) {
             return null
         }
@@ -91,7 +93,7 @@ class AutomataStorage @Inject constructor(@param:ApplicationContext private val 
                     .map { StringBuilder(it.removePrefix(INPUT_TAG)) }
                     .toMutableList()
 
-            StoredMachine(
+            CurrentMachine(
                 jff.toMachine(name, savedInputs),
                 jff.positions,
                 offsetX,

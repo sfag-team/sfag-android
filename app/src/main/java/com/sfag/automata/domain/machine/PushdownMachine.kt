@@ -3,20 +3,29 @@ package com.sfag.automata.domain.machine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.TransitionRef
+import com.sfag.automata.domain.tree.Branch
+import com.sfag.main.config.MAX_SIM_PDA_CONFIGS
+import com.sfag.main.config.MAX_SIM_PDA_STALE_STEPS
+import com.sfag.main.config.Symbols
 
 enum class AcceptanceCriteria(val text: String) {
     BY_FINAL_STATE("final state"),
     BY_EMPTY_STACK("empty stack"),
 }
 
-data class PdaConfig(val stateIndex: Int, val stack: List<Char>, val inputOffset: Int = 0)
+data class PdaConfig(
+    val stateIndex: Int,
+    val stack: List<Char>,
+    val inputOffset: Int = 0,
+    val treeNodeId: Int = -1,
+)
 
 class PushdownMachine(
     name: String = "",
     states: MutableList<State> = mutableListOf(),
     savedInputs: MutableList<StringBuilder> = mutableListOf(),
-    val pdaTransitions: MutableList<PushdownTransition> = mutableListOf(),
-    val symbolStack: MutableList<Char> = mutableListOf('Z'),
+    val pdaTransitions: MutableList<PdaTransition> = mutableListOf(),
+    val symbolStack: MutableList<Char> = mutableListOf(Symbols.INITIAL_STACK_SYMBOL),
 ) : Machine(name, states, savedInputs = savedInputs) {
     override val jffTag = "pda"
     override val typeLabel = "PDA"
@@ -32,24 +41,20 @@ class PushdownMachine(
         set(value) {
             currentConfigs.clear()
             if (value != null) {
-                currentConfigs.add(PdaConfig(value, listOf('Z')))
+                currentConfigs.add(PdaConfig(value, listOf(Symbols.INITIAL_STACK_SYMBOL)))
             }
             syncStack()
         }
 
     var acceptanceCriteria = AcceptanceCriteria.BY_FINAL_STATE
-    val activeNodeStacks = mutableMapOf<Int, List<Char>>()
     var selectedNodeId: Int? = null
+    private var staleStepCount = 0
 
-    override fun advanceSimulation(): Simulation {
-        if (currentConfigs.isEmpty()) {
-            if (!ensureCurrentState()) {
-                return Simulation.Ended(SimulationOutcome.ACTIVE)
-            }
-            getStateByIndexOrNull(currentState!!)?.isCurrent = true
-        }
-        return calculateAllPathsStep()
-    }
+    private fun activeNodeIds(): List<Int> =
+        currentConfigs.mapNotNull { it.treeNodeId.takeIf { id -> id >= 0 } }
+
+    private fun stackForNode(nodeId: Int): List<Char>? =
+        currentConfigs.firstOrNull { it.treeNodeId == nodeId }?.stack
 
     override fun removeTransition(transition: Transition) {
         pdaTransitions.remove(transition)
@@ -58,24 +63,21 @@ class PushdownMachine(
     override fun resetSimulation() {
         super.resetSimulation()
         currentConfigs.clear()
-        activeNodeStacks.clear()
         selectedNodeId = null
-        states
-            .firstOrNull { it.initial }
-            ?.index
-            ?.let { currentConfigs.add(PdaConfig(it, listOf('Z'))) }
+        staleStepCount = 0
+        initialState?.index?.let {
+            currentConfigs.add(
+                PdaConfig(it, listOf(Symbols.INITIAL_STACK_SYMBOL), treeNodeId = tree.root!!.id)
+            )
+        }
         syncStack()
     }
 
     fun selectNode(nodeId: Int) {
-        if (nodeId !in activeNodeStacks) {
-            return
-        }
+        val stack = stackForNode(nodeId) ?: return
         selectedNodeId = nodeId
-        activeNodeStacks[nodeId]?.let { stack ->
-            symbolStack.clear()
-            symbolStack.addAll(stack)
-        }
+        symbolStack.clear()
+        symbolStack.addAll(stack)
     }
 
     fun addNewTransition(
@@ -95,27 +97,24 @@ class PushdownMachine(
             }
         if (!alreadyExists) {
             pdaTransitions.add(
-                PushdownTransition(
-                    fromState.index,
-                    toState.index,
-                    read = read,
-                    pop = pop,
-                    push = push,
-                )
+                PdaTransition(fromState.index, toState.index, read = read, pop = pop, push = push)
             )
         }
     }
 
-    private fun calculateAllPathsStep(): Simulation {
-        val allResults = mutableListOf<Triple<PdaConfig, PushdownTransition, PdaConfig>>()
+    override fun calculateAllPathsStep(): Simulation {
+        // Config limit - prevent runaway branching
+        if (currentConfigs.size > MAX_SIM_PDA_CONFIGS) {
+            return terminateSimulation()
+        }
+
+        val allResults = mutableListOf<Triple<PdaConfig, PdaTransition, PdaConfig>>()
 
         for (config in currentConfigs) {
-            val state = getStateByIndexOrNull(config.stateIndex) ?: continue
+            val state = getStateByIndex(config.stateIndex)
             for (transition in getMatchingTransitions(state, config.stack, config.inputOffset)) {
-                val newStack = config.stack.toMutableList()
-                if (!applyStackOperation(transition, newStack)) {
-                    continue
-                }
+                val newStack =
+                    applyStackOp(config.stack, transition.pop, transition.push) ?: continue
                 val newConfig =
                     PdaConfig(
                         transition.toState,
@@ -128,38 +127,28 @@ class PushdownMachine(
 
         // No transitions available - check acceptance
         if (allResults.isEmpty()) {
-            val acceptingConfigs =
-                currentConfigs.filter { config ->
-                    val state = getStateByIndexOrNull(config.stateIndex) ?: return@filter false
-                    config.inputOffset >= remainingInput.length &&
-                        when (acceptanceCriteria) {
-                            AcceptanceCriteria.BY_FINAL_STATE -> state.final
-                            AcceptanceCriteria.BY_EMPTY_STACK -> config.stack.isEmpty()
-                        }
-                }
-            val anyAccepting = acceptingConfigs.isNotEmpty()
-            return Simulation.Ended(
-                outcome =
-                    if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
-                isNodeAccepting =
-                    if (anyAccepting)
-                        { node ->
-                            when (acceptanceCriteria) {
-                                AcceptanceCriteria.BY_FINAL_STATE -> {
-                                    val state = states.firstOrNull { it.name == node.stateName }
-                                    state != null &&
-                                        acceptingConfigs.any { it.stateIndex == state.index }
-                                }
-
-                                AcceptanceCriteria.BY_EMPTY_STACK ->
-                                    activeNodeStacks[node.id]?.isEmpty() == true
-                            }
-                        }
-                    else null,
-            )
+            return terminateSimulation()
         }
 
-        // Fire all transitions (epsilon + input) simultaneously
+        // Build treeBranches and pair each new config with its branch (the branch receives
+        // its tree node id when the tree expands, so configs can read it back directly)
+        val resultsByParent = allResults.groupBy { it.first.treeNodeId }
+        val treeBranches = linkedMapOf<Int, MutableList<Branch>>()
+        val pendingConfigs = mutableListOf<Pair<Branch, PdaConfig>>()
+
+        for (config in currentConfigs) {
+            val results = resultsByParent[config.treeNodeId] ?: continue
+            val branches = mutableListOf<Branch>()
+            for ((_, transition, newConfig) in results) {
+                val toState = getStateByIndex(transition.toState)
+                val branch = Branch(toState.name)
+                branches.add(branch)
+                pendingConfigs.add(branch to newConfig)
+            }
+            treeBranches[config.treeNodeId] = branches
+        }
+
+        // Build transitionRefs for animation
         val transitionRefs =
             allResults.map {
                 TransitionRef(
@@ -168,60 +157,71 @@ class PushdownMachine(
                     pdaTransitions.indexOf(it.second),
                 )
             }
-        val newConfigs = allResults.map { it.third }.toSet()
 
-        // Detect no-progress loop (e.g. epsilon cycle with unchanged stacks)
-        if (newConfigs == currentConfigs.toSet()) {
-            val acceptingConfigs =
-                currentConfigs.filter { config ->
-                    val state = getStateByIndexOrNull(config.stateIndex) ?: return@filter false
-                    config.inputOffset >= remainingInput.length &&
-                        when (acceptanceCriteria) {
-                            AcceptanceCriteria.BY_FINAL_STATE -> state.final
-                            AcceptanceCriteria.BY_EMPTY_STACK -> config.stack.isEmpty()
-                        }
-                }
-            val anyAccepting = acceptingConfigs.isNotEmpty()
-            return Simulation.Ended(
-                outcome =
-                    if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
-                isNodeAccepting =
-                    if (anyAccepting)
-                        { node ->
-                            when (acceptanceCriteria) {
-                                AcceptanceCriteria.BY_FINAL_STATE -> {
-                                    val state = states.firstOrNull { it.name == node.stateName }
-                                    state != null &&
-                                        acceptingConfigs.any { it.stateIndex == state.index }
-                                }
-
-                                AcceptanceCriteria.BY_EMPTY_STACK ->
-                                    activeNodeStacks[node.id]?.isEmpty() == true
-                            }
-                        }
-                    else null,
-            )
+        // No-progress loop: same (state, stack, offset) set — treeNodeId excluded from the key
+        val newKeys = allResults.mapTo(mutableSetOf()) { it.third.copy(treeNodeId = -1) }
+        val currentKeys = currentConfigs.mapTo(mutableSetOf()) { it.copy(treeNodeId = -1) }
+        if (newKeys == currentKeys) {
+            return terminateSimulation()
         }
 
-        // Consume input now so the tape head advances at animation start
-        val minOffset = newConfigs.minOf { it.inputOffset }
-        consumeInput(minOffset)
-        val adjustedConfigs =
-            newConfigs.map { it.copy(inputOffset = it.inputOffset - minOffset) }.toSet()
+        val minOffset = allResults.minOf { it.third.inputOffset }
+
+        // Stale step detection - tape not advancing
+        if (minOffset == 0) {
+            staleStepCount++
+            if (staleStepCount > MAX_SIM_PDA_STALE_STEPS) {
+                return terminateSimulation()
+            }
+        } else {
+            staleStepCount = 0
+        }
 
         return Simulation.Step(
             transitionRefs = transitionRefs,
+            treeBranches = treeBranches,
             onAllComplete = {
+                consumeInput(minOffset)
                 for (config in currentConfigs) {
-                    getStateByIndexOrNull(config.stateIndex)?.isCurrent = false
+                    getStateByIndex(config.stateIndex).isCurrent = false
                 }
                 currentConfigs.clear()
-                currentConfigs.addAll(adjustedConfigs)
+
+                for ((branch, config) in pendingConfigs) {
+                    currentConfigs.add(
+                        config.copy(
+                            inputOffset = config.inputOffset - minOffset,
+                            treeNodeId = branch.assignedId,
+                        )
+                    )
+                }
+
                 for (config in currentConfigs) {
-                    getStateByIndexOrNull(config.stateIndex)?.isCurrent = true
+                    getStateByIndex(config.stateIndex).isCurrent = true
                 }
                 syncStack()
             },
+        )
+    }
+
+    private fun terminateSimulation(): Simulation.Ended {
+        val acceptingConfigs =
+            currentConfigs.filter { config ->
+                val state = getStateByIndex(config.stateIndex)
+                config.inputOffset >= remainingInput.length &&
+                    when (acceptanceCriteria) {
+                        AcceptanceCriteria.BY_FINAL_STATE -> state.final
+                        AcceptanceCriteria.BY_EMPTY_STACK -> config.stack.isEmpty()
+                    }
+            }
+        val anyAccepting = acceptingConfigs.isNotEmpty()
+        return Simulation.Ended(
+            outcome = if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
+            isNodeAccepting =
+                if (anyAccepting) { node -> acceptingConfigs.any { it.treeNodeId == node.id } }
+                else {
+                    null
+                },
         )
     }
 
@@ -231,97 +231,42 @@ class PushdownMachine(
         if (config != null) {
             symbolStack.addAll(config.stack)
         } else {
-            symbolStack.add('Z')
+            symbolStack.add(Symbols.INITIAL_STACK_SYMBOL)
         }
         buildActiveNodeStacks()
     }
 
     private fun buildActiveNodeStacks() {
-        activeNodeStacks.clear()
-        val active = tree.getActiveNodes()
-        if (active.isEmpty() || currentConfigs.isEmpty()) {
+        if (currentConfigs.isEmpty()) {
             return
         }
 
-        // Greedy-match each active node to a config by state index
-        val remainingConfigs = currentConfigs.toMutableList()
-        for (node in active) {
-            val state = states.firstOrNull { it.name == node.stateName } ?: continue
-            val matchIndex = remainingConfigs.indexOfFirst { it.stateIndex == state.index }
-            if (matchIndex >= 0) {
-                activeNodeStacks[node.id] = remainingConfigs[matchIndex].stack
-                remainingConfigs.removeAt(matchIndex)
-            }
-        }
-
-        // Infer stack for unmatched nodes (e.g. tree expanded for transitions
-        // not yet processed - epsilon step shows input-transition branches too)
-        for (node in active) {
-            if (node.id in activeNodeStacks) {
-                continue
-            }
-            val state = states.firstOrNull { it.name == node.stateName } ?: continue
-            for (config in currentConfigs) {
-                val transition =
-                    pdaTransitions.firstOrNull { transition ->
-                        transition.fromState == config.stateIndex &&
-                            transition.toState == state.index
-                    } ?: continue
-                val inferredStack = config.stack.toMutableList()
-                if (applyStackOperation(transition, inferredStack)) {
-                    activeNodeStacks[node.id] = inferredStack
-                    break
-                }
-            }
-        }
+        val activeIds = activeNodeIds()
 
         // Follow same branch as previously selected node, picking the first
         // child alphabetically by state name - keeps the displayed stack stable
-        if (selectedNodeId != null && selectedNodeId !in activeNodeStacks) {
+        if (selectedNodeId != null && selectedNodeId !in activeIds) {
             val prevNode = tree.findNode(selectedNodeId!!)
             selectedNodeId =
-                prevNode
-                    ?.children
-                    ?.filter { it.id in activeNodeStacks }
-                    ?.minByOrNull { it.stateName ?: "" }
-                    ?.id ?: activeNodeStacks.keys.minOrNull()
+                prevNode?.children?.filter { it.id in activeIds }?.minByOrNull { it.stateName }?.id
+                    ?: activeIds.minOrNull()
         } else if (selectedNodeId == null) {
-            selectedNodeId = activeNodeStacks.keys.minOrNull()
+            selectedNodeId = activeIds.minOrNull()
         }
 
-        // Update symbolStack from selected node's stack
         selectedNodeId?.let { id ->
-            activeNodeStacks[id]?.let { stack ->
+            stackForNode(id)?.let { stack ->
                 symbolStack.clear()
                 symbolStack.addAll(stack)
             }
         }
     }
 
-    private fun applyStackOperation(
-        transition: PushdownTransition,
-        stack: MutableList<Char>,
-    ): Boolean {
-        if (transition.pop.isNotEmpty()) {
-            if (stack.size < transition.pop.length) {
-                return false
-            }
-            if (!stackTopMatches(stack, transition.pop)) {
-                return false
-            }
-            repeat(transition.pop.length) { stack.removeAt(stack.lastIndex) }
-        }
-        if (transition.push.isNotEmpty()) {
-            transition.push.reversed().forEach { stack.add(it) }
-        }
-        return true
-    }
-
     private fun getMatchingTransitions(
         fromState: State,
         stack: List<Char>,
         inputOffset: Int,
-    ): List<PushdownTransition> {
+    ): List<PdaTransition> {
         val remaining =
             if (inputOffset < remainingInput.length) {
                 remainingInput.substring(inputOffset)
@@ -334,16 +279,31 @@ class PushdownMachine(
                 (transition.pop.isEmpty() || stackTopMatches(stack, transition.pop))
         }
     }
+}
 
-    private fun stackTopMatches(stack: List<Char>, pop: String): Boolean {
-        if (stack.size < pop.length) {
+/** True if the top of [stack] (rightmost first) matches [pop]. */
+internal fun stackTopMatches(stack: List<Char>, pop: String): Boolean {
+    if (stack.size < pop.length) {
+        return false
+    }
+    for (i in pop.indices) {
+        if (stack[stack.size - 1 - i] != pop[i]) {
             return false
         }
-        for (i in pop.indices) {
-            if (stack[stack.size - 1 - i] != pop[i]) {
-                return false
-            }
-        }
-        return true
     }
+    return true
+}
+
+/**
+ * Applies a PDA pop/push to [stack], returning a new list. Returns null if the pop precondition is
+ * not satisfied. Pure - does not mutate the input stack.
+ */
+internal fun applyStackOp(stack: List<Char>, pop: String, push: String): List<Char>? {
+    if (pop.isNotEmpty() && !stackTopMatches(stack, pop)) {
+        return null
+    }
+    val result = stack.toMutableList()
+    repeat(pop.length) { result.removeAt(result.lastIndex) }
+    push.reversed().forEach { result.add(it) }
+    return result
 }

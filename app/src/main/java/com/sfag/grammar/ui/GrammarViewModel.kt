@@ -37,6 +37,10 @@ class GrammarViewModel @Inject internal constructor(private val storage: Grammar
     var isGrammarFinished by mutableStateOf(false)
         private set
 
+    // Single-threaded dispatcher serializes saves in submission order (latest state wins)
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val saveDispatcher = Dispatchers.IO.limitedParallelism(1)
+
     fun toggleGrammarFinished() {
         isGrammarFinished = !isGrammarFinished
     }
@@ -84,12 +88,12 @@ class GrammarViewModel @Inject internal constructor(private val storage: Grammar
     /** Persists the current grammar to the fixed auto-save slot. */
     fun autoSave() {
         val individualRules = if (rules.isNotEmpty()) getIndividualRules() else return
-        viewModelScope.launch(Dispatchers.IO) { storage.saveGrammar(individualRules) }
+        viewModelScope.launch(saveDispatcher) { storage.save(individualRules) }
     }
 
     /** Loads the auto-saved grammar. Returns true on success. */
     fun loadGrammar(): Boolean {
-        val loaded = storage.loadGrammar() ?: return false
+        val loaded = storage.load() ?: return false
         rules = emptyList()
         loaded.forEach { addRule(it.left, it.right) }
         isGrammarFinished = true

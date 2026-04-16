@@ -3,8 +3,9 @@ package com.sfag.automata.domain.machine
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.TransitionRef
+import com.sfag.automata.domain.tree.Branch
 
-data class FaConfig(val stateIndex: Int, val inputOffset: Int = 0)
+data class FaConfig(val stateIndex: Int, val inputOffset: Int = 0, val treeNodeId: Int = -1)
 
 class FiniteMachine(
     name: String = "",
@@ -16,7 +17,7 @@ class FiniteMachine(
     override val typeLabel = "FA"
 
     // Track multiple current configs for NFA simulation
-    val currentConfigs: MutableSet<FaConfig> = mutableSetOf()
+    val currentConfigs: MutableList<FaConfig> = mutableListOf()
 
     override var currentState: Int?
         get() = currentConfigs.firstOrNull()?.stateIndex
@@ -25,32 +26,14 @@ class FiniteMachine(
             value?.let { currentConfigs.add(FaConfig(it)) }
         }
 
-    override fun advanceSimulation(): Simulation {
-        if (currentConfigs.isEmpty()) {
-            if (!ensureCurrentState()) {
-                return Simulation.Ended(SimulationOutcome.ACTIVE)
-            }
-            getStateByIndexOrNull(currentState!!)?.isCurrent = true
-        }
-        return calculateAllPathsStep()
-    }
-
     override fun removeTransition(transition: Transition) {
         transitions.remove(transition)
-    }
-
-    override fun addNewState(state: State) {
-        if (state.initial && currentConfigs.isEmpty()) {
-            currentConfigs.add(FaConfig(state.index))
-            state.isCurrent = true
-        }
-        states.add(state)
     }
 
     override fun resetSimulation() {
         super.resetSimulation()
         currentConfigs.clear()
-        states.firstOrNull { it.initial }?.index?.let { currentConfigs.add(FaConfig(it)) }
+        initialState?.index?.let { currentConfigs.add(FaConfig(it, treeNodeId = tree.root!!.id)) }
     }
 
     fun addNewTransition(read: String, fromState: State, toState: State) {
@@ -61,44 +44,46 @@ class FiniteMachine(
                     transition.read == read
             }
         if (!alreadyExists) {
-            transitions.add(FiniteTransition(fromState.index, toState.index, read))
+            transitions.add(FaTransition(fromState.index, toState.index, read))
         }
     }
 
-    private fun calculateAllPathsStep(): Simulation {
-        val allTransitions = mutableListOf<Pair<FaConfig, Transition>>()
+    override fun calculateAllPathsStep(): Simulation {
+        val allResults = mutableListOf<Triple<FaConfig, Transition, FaConfig>>()
 
         for (config in currentConfigs) {
             val state = getStateByIndex(config.stateIndex)
             for (transition in getMatchingTransitions(state, config.inputOffset)) {
-                allTransitions.add(config to transition)
+                val newConfig =
+                    FaConfig(transition.toState, config.inputOffset + transition.read.length)
+                allResults.add(Triple(config, transition, newConfig))
             }
         }
 
-        // No transitions available - check acceptance
-        if (allTransitions.isEmpty()) {
-            val acceptingConfigs =
-                currentConfigs.filter { config ->
-                    getStateByIndex(config.stateIndex).final &&
-                        config.inputOffset >= remainingInput.length
-                }
-            val anyAccepting = acceptingConfigs.isNotEmpty()
-            return Simulation.Ended(
-                outcome =
-                    if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
-                isNodeAccepting =
-                    if (anyAccepting)
-                        { node ->
-                            val state = states.firstOrNull { it.name == node.stateName }
-                            state != null && acceptingConfigs.any { it.stateIndex == state.index }
-                        }
-                    else null,
-            )
+        if (allResults.isEmpty()) {
+            return terminateSimulation()
         }
 
-        // Fire all transitions (epsilon + input) simultaneously
+        // Pair each new config with a Branch; the tree fills in branch.assignedId on expand,
+        // and the config reads it back at onAllComplete time (no positional coupling)
+        val resultsByParent = allResults.groupBy { it.first.treeNodeId }
+        val treeBranches = linkedMapOf<Int, MutableList<Branch>>()
+        val pendingConfigs = mutableListOf<Pair<Branch, FaConfig>>()
+
+        for (config in currentConfigs) {
+            val results = resultsByParent[config.treeNodeId] ?: continue
+            val branches = mutableListOf<Branch>()
+            for ((_, transition, newConfig) in results) {
+                val toState = getStateByIndex(transition.toState)
+                val branch = Branch(toState.name)
+                branches.add(branch)
+                pendingConfigs.add(branch to newConfig)
+            }
+            treeBranches[config.treeNodeId] = branches
+        }
+
         val transitionRefs =
-            allTransitions.map { (config, transition) ->
+            allResults.map { (config, transition, _) ->
                 TransitionRef(
                     fromStateIndex = config.stateIndex,
                     toStateIndex = transition.toState,
@@ -106,52 +91,53 @@ class FiniteMachine(
                 )
             }
 
-        val newConfigs =
-            allTransitions
-                .map { (config, transition) ->
-                    FaConfig(transition.toState, config.inputOffset + transition.read.length)
-                }
-                .toSet()
-
-        // Detect no-progress loop (e.g. q0 -e-> q1 -e-> q0 cycling)
-        if (newConfigs == currentConfigs.toSet()) {
-            val acceptingConfigs =
-                currentConfigs.filter { config ->
-                    getStateByIndex(config.stateIndex).final &&
-                        config.inputOffset >= remainingInput.length
-                }
-            val anyAccepting = acceptingConfigs.isNotEmpty()
-            return Simulation.Ended(
-                outcome =
-                    if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
-                isNodeAccepting =
-                    if (anyAccepting)
-                        { node ->
-                            val state = states.firstOrNull { it.name == node.stateName }
-                            state != null && acceptingConfigs.any { it.stateIndex == state.index }
-                        }
-                    else null,
-            )
+        // No-progress loop: same (state, offset) set — treeNodeId excluded from the key
+        val newKeys = allResults.map { it.third.stateIndex to it.third.inputOffset }.toSet()
+        val currentKeys = currentConfigs.map { it.stateIndex to it.inputOffset }.toSet()
+        if (newKeys == currentKeys) {
+            return terminateSimulation()
         }
 
-        // Consume input now so the tape head advances at animation start
-        val minOffset = newConfigs.minOf { it.inputOffset }
-        consumeInput(minOffset)
-        val adjustedConfigs =
-            newConfigs.map { FaConfig(it.stateIndex, it.inputOffset - minOffset) }.toSet()
+        val minOffset = allResults.minOf { it.third.inputOffset }
 
         return Simulation.Step(
             transitionRefs = transitionRefs,
+            treeBranches = treeBranches,
             onAllComplete = {
+                consumeInput(minOffset)
                 for (config in currentConfigs) {
-                    getStateByIndexOrNull(config.stateIndex)?.isCurrent = false
+                    getStateByIndex(config.stateIndex).isCurrent = false
                 }
                 currentConfigs.clear()
-                for (config in adjustedConfigs) {
-                    currentConfigs.add(config)
-                    getStateByIndexOrNull(config.stateIndex)?.isCurrent = true
+                for ((branch, config) in pendingConfigs) {
+                    currentConfigs.add(
+                        config.copy(
+                            inputOffset = config.inputOffset - minOffset,
+                            treeNodeId = branch.assignedId,
+                        )
+                    )
+                }
+                for (config in currentConfigs) {
+                    getStateByIndex(config.stateIndex).isCurrent = true
                 }
             },
+        )
+    }
+
+    private fun terminateSimulation(): Simulation.Ended {
+        val acceptingConfigs =
+            currentConfigs.filter { config ->
+                getStateByIndex(config.stateIndex).final &&
+                    config.inputOffset >= remainingInput.length
+            }
+        val anyAccepting = acceptingConfigs.isNotEmpty()
+        return Simulation.Ended(
+            outcome = if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
+            isNodeAccepting =
+                if (anyAccepting) { node -> acceptingConfigs.any { it.treeNodeId == node.id } }
+                else {
+                    null
+                },
         )
     }
 

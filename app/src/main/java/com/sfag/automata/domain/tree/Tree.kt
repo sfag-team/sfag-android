@@ -1,11 +1,12 @@
 package com.sfag.automata.domain.tree
 
-import com.sfag.automata.domain.machine.State
 import com.sfag.automata.domain.simulation.NodeSnapshot
 import com.sfag.automata.domain.simulation.SimulationOutcome
-import com.sfag.automata.domain.simulation.TransitionRef
 
-data class Branch(val stateName: String?)
+class Branch(val stateName: String) {
+    var assignedId: Int = -1
+        internal set
+}
 
 class Tree {
     var root: TreeNode? = null
@@ -36,6 +37,7 @@ class Tree {
             for (child in children) {
                 val childNode =
                     TreeNode(id = nextId++, stateName = child.stateName, depth = node.depth + 1)
+                child.assignedId = childNode.id
                 node.children.add(childNode)
                 newActive.add(childNode)
             }
@@ -60,11 +62,30 @@ class Tree {
     }
 
     fun markRemainingAsRejected() {
-        fun walk(node: TreeNode) {
-            if (node.status == SimulationOutcome.ACTIVE && node.children.isEmpty()) {
-                node.status = SimulationOutcome.REJECTED
+        fun walk(node: TreeNode): Boolean {
+            // Leaf: ACTIVE means alive at sim end but not accepted → REJECTED
+            if (node.children.isEmpty()) {
+                if (node.status == SimulationOutcome.ACTIVE) {
+                    node.status = SimulationOutcome.REJECTED
+                }
+                return node.status == SimulationOutcome.REJECTED
             }
-            node.children.forEach { walk(it) }
+
+            // Walk ALL children (no short-circuit)
+            var hasRejectedPath = false
+            for (child in node.children) {
+                if (walk(child)) {
+                    hasRejectedPath = true
+                }
+            }
+
+            // ACTIVE interior: REJECTED if any descendant is rejected,
+            // otherwise DEAD (all descendants are dead - dead branch)
+            if (node.status == SimulationOutcome.ACTIVE) {
+                node.status =
+                    if (hasRejectedPath) SimulationOutcome.REJECTED else SimulationOutcome.DEAD
+            }
+            return hasRejectedPath || node.status == SimulationOutcome.REJECTED
         }
         root?.let { walk(it) }
     }
@@ -95,49 +116,6 @@ class Tree {
         currentGeneration = 0
         activeNodes.clear()
     }
-}
-
-/**
- * Expands the derivation tree with exactly the transitions being processed in this step. Called by
- * the UI layer after receiving a simulation step result.
- */
-fun Tree.expandFromStep(
-    transitionRefs: List<TransitionRef>,
-    states: List<State>,
-    activeStates: Set<Int> = emptySet(),
-) {
-    val active = getActiveNodes()
-    if (active.isEmpty()) {
-        return
-    }
-
-    val branches = mutableMapOf<Int, List<Branch>>()
-    for (node in active) {
-        val state = states.firstOrNull { it.name == node.stateName }
-        if (state == null) {
-            branches[node.id] = emptyList()
-            continue
-        }
-        val toStateIndices =
-            transitionRefs
-                .filter { it.fromStateIndex == state.index }
-                .map { it.toStateIndex }
-                .toMutableList()
-        if (state.index in activeStates && state.index !in toStateIndices) {
-            toStateIndices.add(state.index)
-        }
-        if (toStateIndices.isEmpty()) {
-            branches[node.id] = emptyList()
-            continue
-        }
-        branches[node.id] =
-            toStateIndices
-                .mapNotNull { index ->
-                    states.firstOrNull { it.index == index }?.let { Branch(it.name) }
-                }
-                .sortedBy { it.stateName }
-    }
-    expandActive(branches)
 }
 
 /**

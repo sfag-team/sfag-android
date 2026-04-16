@@ -1,5 +1,6 @@
 package com.sfag.automata.domain.simulation
 
+import com.sfag.automata.domain.tree.Branch
 import com.sfag.automata.domain.tree.TreeNode
 
 /**
@@ -29,7 +30,7 @@ sealed class Simulation {
      */
     class Step(
         val transitionRefs: List<TransitionRef>,
-        val activeStates: Set<Int> = emptySet(),
+        val treeBranches: Map<Int, List<Branch>>,
         val onAllComplete: () -> Unit,
     ) : Simulation()
 }

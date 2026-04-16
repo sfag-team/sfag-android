@@ -177,7 +177,7 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
             }
             DefaultButton(
                 onClick = {
-                    loadInput(newFullInput.value)
+                    setInput(newFullInput.value)
                     onConfirm()
                 },
                 text = stringResource(R.string.ok_button),

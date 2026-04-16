@@ -1,6 +1,6 @@
 package com.sfag.grammar.domain.grammar
 
-import com.sfag.main.config.MAX_GRAMMAR_STEPS
+import com.sfag.main.config.MAX_BFS_GRAMMAR_STEPS
 import com.sfag.main.config.Symbols
 
 private data class ParseState(val previousState: String, val appliedRule: GrammarRule)
@@ -49,7 +49,7 @@ fun parse(
     val minLengths = computeMinLengths(rules)
     var steps = 0
 
-    while (states.isNotEmpty() && steps <= MAX_GRAMMAR_STEPS) {
+    while (states.isNotEmpty() && steps <= MAX_BFS_GRAMMAR_STEPS) {
         val currentState = states.removeFirst()
         steps++
         for (rule in rules) {

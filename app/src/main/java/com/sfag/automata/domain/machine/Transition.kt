@@ -12,7 +12,7 @@ sealed class Transition {
     protected fun displayEpsilon(value: String): String = value.ifEmpty { Symbols.EPSILON }
 }
 
-data class FiniteTransition(
+data class FaTransition(
     override val fromState: Int,
     override val toState: Int,
     override var read: String,
@@ -20,7 +20,7 @@ data class FiniteTransition(
     override fun displayLabel(): String = displayEpsilon(read)
 }
 
-data class PushdownTransition(
+data class PdaTransition(
     override val fromState: Int,
     override val toState: Int,
     override var read: String,
@@ -53,7 +53,7 @@ enum class TapeDirection(val symbol: String) {
     }
 }
 
-data class TuringTransition(
+data class TmTransition(
     override val fromState: Int,
     override val toState: Int,
     override var read: String,

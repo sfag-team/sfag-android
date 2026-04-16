@@ -121,7 +121,7 @@ class MainActivity : AppCompatActivity() {
 
                                     HomeScreen(
                                         navToAutomata = {
-                                            if (automataStorage.hasStoredMachine()) {
+                                            if (automataStorage.hasMachine()) {
                                                 navController.navigate(
                                                     Destinations.AUTOMATA.route
                                                 ) {
