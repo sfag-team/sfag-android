@@ -36,7 +36,7 @@ class FiniteMachine(
         initialState?.index?.let { currentConfigs.add(FaConfig(it, treeNodeId = tree.root!!.id)) }
     }
 
-    fun addNewTransition(read: String, fromState: State, toState: State) {
+    fun addNewTransition(fromState: State, toState: State, read: String) {
         val alreadyExists =
             transitions.any { transition ->
                 transition.fromState == fromState.index &&

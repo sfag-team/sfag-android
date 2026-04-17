@@ -2,7 +2,6 @@ package com.sfag.main
 
 import android.net.Uri
 import android.os.Bundle
-import android.provider.OpenableColumns
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -52,6 +51,7 @@ import com.sfag.automata.ui.AutomataViewModel
 import com.sfag.grammar.ui.GrammarScreen
 import com.sfag.grammar.ui.GrammarViewModel
 import com.sfag.main.config.JFF_OPEN_MIME_TYPES
+import com.sfag.main.data.JffUtils
 import com.sfag.main.ui.AboutScreen
 import com.sfag.main.ui.ExamplesScreen
 import com.sfag.main.ui.HomeScreen
@@ -268,32 +268,14 @@ class MainActivity : AppCompatActivity() {
                                             } else if (importUri != null) {
                                                 try {
                                                     val contentUri = importUri.toUri()
-                                                    val fileName =
-                                                        context.contentResolver
-                                                            .query(
-                                                                contentUri,
-                                                                arrayOf(
-                                                                    OpenableColumns.DISPLAY_NAME
-                                                                ),
-                                                                null,
-                                                                null,
-                                                                null,
-                                                            )
-                                                            ?.use { cursor ->
-                                                                if (cursor.moveToFirst()) {
-                                                                    cursor
-                                                                        .getString(0)
-                                                                        ?.substringBeforeLast(".")
-                                                                } else {
-                                                                    null
-                                                                }
-                                                            } ?: ""
+                                                    val machineName =
+                                                        JffUtils.getJffStem(context, contentUri)
                                                     context.contentResolver
                                                         .openInputStream(contentUri)
                                                         ?.use { stream ->
                                                             val jff = Jff.parse(stream)
                                                             viewModel.setCurrentMachine(
-                                                                jff.toMachine(fileName),
+                                                                jff.toMachine(machineName),
                                                                 jff.positions,
                                                             )
                                                         }
@@ -471,7 +453,10 @@ private fun NewMachineDialog(
         buttons = {
             ImportButton(onClick = onImport, modifier = Modifier.weight(1f))
             CreateButton(
-                onClick = { onConfirm(machineName, machineType!!) },
+                onClick = {
+                    val trimmedName = machineName.trim()
+                    onConfirm(trimmedName, machineType!!)
+                },
                 modifier = Modifier.weight(1f),
                 enabled = machineType != null && machineName.isNotBlank(),
             )

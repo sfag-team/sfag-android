@@ -31,27 +31,25 @@ import com.sfag.main.ui.component.DropdownSelector
 internal fun Machine.TransitionDialog(
     from: State,
     to: State,
-    existingTransitionName: String?,
+    transitionName: String?,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
     // PDA-specific state - only initialized for PushdownMachine
-    val existingPdaTransition =
-        if (this@TransitionDialog is PushdownMachine && existingTransitionName != null) {
+    val pdaTransition =
+        if (this@TransitionDialog is PushdownMachine && transitionName != null) {
             pdaTransitions.firstOrNull {
-                it.fromState == from.index &&
-                    it.toState == to.index &&
-                    it.read == existingTransitionName
+                it.fromState == from.index && it.toState == to.index && it.read == transitionName
             }
         } else {
             null
         }
 
-    var transitionName by remember { mutableStateOf(existingTransitionName ?: "") }
-    var popSymbol by remember { mutableStateOf(existingPdaTransition?.pop ?: "") }
-    var pushSymbol by remember { mutableStateOf(existingPdaTransition?.push ?: "") }
     var fromState: State by remember { mutableStateOf(from) }
     var toState: State by remember { mutableStateOf(to) }
+    var newTransitionName by remember { mutableStateOf(transitionName ?: "") }
+    var popSymbol by remember { mutableStateOf(pdaTransition?.pop ?: "") }
+    var pushSymbol by remember { mutableStateOf(pdaTransition?.push ?: "") }
 
     DefaultDialog(
         onDismissRequest = onDismiss,
@@ -59,29 +57,35 @@ internal fun Machine.TransitionDialog(
             CancelButton(onClick = onDismiss)
             ConfirmButton(
                 onClick = {
-                    val normalizedName = JffUtils.normalizeEpsilon(transitionName)
+                    val normalizedName = JffUtils.normalizeEpsilon(newTransitionName.trim())
                     if (this@TransitionDialog is FiniteMachine) {
-                        if (existingTransitionName == null) {
+                        if (transitionName == null) {
                             addNewTransition(
-                                read = normalizedName,
                                 fromState = fromState,
                                 toState = toState,
+                                read = normalizedName,
                             )
                         } else {
                             transitions
                                 .firstOrNull { t ->
-                                    t.fromState == from.index && t.toState == to.index
+                                    t.fromState == from.index &&
+                                        t.toState == to.index &&
+                                        t.read == transitionName
                                 }
-                                ?.let { it.read = normalizedName }
+                                ?.let {
+                                    it.fromState = fromState.index
+                                    it.toState = toState.index
+                                    it.read = normalizedName
+                                }
                         }
                     } else if (this@TransitionDialog is PushdownMachine) {
-                        val normalizedPop = JffUtils.normalizeEpsilon(popSymbol)
-                        val normalizedPush = JffUtils.normalizeEpsilon(pushSymbol)
-                        if (existingTransitionName == null) {
+                        val normalizedPop = JffUtils.normalizeEpsilon(popSymbol.trim())
+                        val normalizedPush = JffUtils.normalizeEpsilon(pushSymbol.trim())
+                        if (transitionName == null) {
                             addNewTransition(
-                                read = normalizedName,
                                 fromState = fromState,
                                 toState = toState,
+                                read = normalizedName,
                                 pop = normalizedPop,
                                 push = normalizedPush,
                             )
@@ -90,9 +94,11 @@ internal fun Machine.TransitionDialog(
                                 .firstOrNull { t ->
                                     t.fromState == from.index &&
                                         t.toState == to.index &&
-                                        t.read == existingTransitionName
+                                        t.read == transitionName
                                 }
                                 ?.let {
+                                    it.fromState = fromState.index
+                                    it.toState = toState.index
                                     it.read = normalizedName
                                     it.pop = normalizedPop
                                     it.push = normalizedPush
@@ -134,8 +140,8 @@ internal fun Machine.TransitionDialog(
 
         // Transition read field
         DefaultTextField(
-            value = transitionName,
-            onValueChange = { transitionName = it },
+            value = newTransitionName,
+            onValueChange = { newTransitionName = it },
             modifier = Modifier.fillMaxWidth(),
             label =
                 if (this@TransitionDialog is PushdownMachine) {

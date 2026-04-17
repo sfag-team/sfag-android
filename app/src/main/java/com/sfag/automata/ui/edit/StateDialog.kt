@@ -58,8 +58,9 @@ internal fun Machine.StateDialog(
             CancelButton(onClick = onDismiss)
             ConfirmButton(
                 onClick = {
+                    val trimmedName = stateName.trim()
                     val isDuplicate =
-                        states.any { it.name == stateName && it.index != selectedState?.index }
+                        states.any { it.name == trimmedName && it.index != selectedState?.index }
                     if (isDuplicate) {
                         scope.launch { tooltipState.show() }
                     } else {
@@ -67,7 +68,7 @@ internal fun Machine.StateDialog(
                             val newIndex = findNewStateIndex()
                             addNewState(
                                 State(
-                                    name = stateName,
+                                    name = trimmedName,
                                     isCurrent = false,
                                     index = newIndex,
                                     final = isFinal,
@@ -76,14 +77,14 @@ internal fun Machine.StateDialog(
                             )
                             onAddPosition(newIndex, tapOffset)
                         } else {
-                            selectedState.name = stateName
+                            selectedState.name = trimmedName
                             selectedState.initial = isInitial
                             selectedState.final = isFinal
                         }
                         onConfirm()
                     }
                 },
-                enabled = stateName.isNotEmpty(),
+                enabled = stateName.isNotBlank(),
             )
         },
     ) {

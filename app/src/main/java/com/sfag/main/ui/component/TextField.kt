@@ -42,9 +42,6 @@ fun DefaultTextField(
     trailingIcon: @Composable (() -> Unit)? = null,
     isRequirementsComplete: (() -> Boolean)? = null,
 ) {
-    val filteredChange = { text: String ->
-        onValueChange(text.filterNot { it == '\n' }.trim().lowercase())
-    }
     var isFocused by remember { mutableStateOf(false) }
     val isError = isRequirementsComplete?.let { !it() } ?: false
     val resolvedTextColor = textColor ?: MaterialTheme.colorScheme.onSurface
@@ -52,7 +49,7 @@ fun DefaultTextField(
 
     TextField(
         value = value,
-        onValueChange = filteredChange,
+        onValueChange = onValueChange,
         modifier = modifier.onFocusChanged { isFocused = it.isFocused },
         label =
             if (label.isNotEmpty()) {

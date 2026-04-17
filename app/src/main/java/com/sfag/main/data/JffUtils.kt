@@ -2,6 +2,8 @@ package com.sfag.main.data
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.core.content.FileProvider
 import com.sfag.main.config.Symbols
 import java.io.File
@@ -9,14 +11,31 @@ import org.w3c.dom.Document
 
 /** Utilities for JFF (JFLAP) file operations. */
 object JffUtils {
+    /** Appends `.jff` unless [name] already ends with it (case-insensitive). */
+    fun addJffExtension(name: String): String =
+        if (name.endsWith(".jff", ignoreCase = true)) name else "$name.jff"
+
+    /** Strips a trailing `.jff` extension if present (case-insensitive). */
+    fun stripJffExtension(name: String): String =
+        if (name.endsWith(".jff", ignoreCase = true)) name.dropLast(4) else name
+
+    /** Reads [uri]'s display name and strips the `.jff` extension; returns "" if unavailable. */
+    fun getJffStem(context: Context, uri: Uri): String {
+        val displayName =
+            context.contentResolver
+                .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null } ?: ""
+        return stripJffExtension(displayName)
+    }
+
     /** Shares JFF file via Android share sheet. */
     fun shareFile(
         context: Context,
+        name: String,
         jffContent: String,
-        filename: String,
         shareMessage: String = "Share file",
     ) {
-        val file = File(context.cacheDir, "$filename.jff")
+        val file = File(context.cacheDir, addJffExtension(name))
         file.writeText(jffContent)
 
         val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
@@ -40,21 +59,19 @@ object JffUtils {
     }
 
     /**
-     * Normalizes epsilon (ε) symbols to empty string. JFLAP uses various representations: empty
-     * string, ε, λ, "eps", "epsilon"
+     * Collapses known epsilon aliases to empty string. Aliases: empty, ε, λ, "eps", "epsilon"
+     * (case-insensitive). Any other value is returned unchanged. Caller is responsible for trim.
      */
-    fun normalizeEpsilon(value: String): String {
-        val trimmed = value.trim()
-        return when (trimmed.lowercase()) {
+    fun normalizeEpsilon(value: String): String =
+        when (value.lowercase()) {
             "",
             Symbols.EPSILON,
             Symbols.LAMBDA,
             "eps",
             "epsilon" -> ""
 
-            else -> trimmed
+            else -> value
         }
-    }
 
     /**
      * Builds a complete JFF XML document with the standard header and structure wrapper. [type] is

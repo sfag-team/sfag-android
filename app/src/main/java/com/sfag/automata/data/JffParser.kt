@@ -97,13 +97,13 @@ internal data class Jff(
                 return null
             }
 
-            val readSymbol = JffUtils.normalizeEpsilon(element.getChildText("read") ?: "")
+            val readSymbol = JffUtils.normalizeEpsilon(element.getChildText("read")?.trim() ?: "")
 
             return when (jffTag) {
                 "fa" -> FaTransition(fromState, toState, readSymbol)
                 "pda" -> {
-                    val pop = JffUtils.normalizeEpsilon(element.getChildText("pop") ?: "")
-                    val push = JffUtils.normalizeEpsilon(element.getChildText("push") ?: "")
+                    val pop = JffUtils.normalizeEpsilon(element.getChildText("pop")?.trim() ?: "")
+                    val push = JffUtils.normalizeEpsilon(element.getChildText("push")?.trim() ?: "")
                     PdaTransition(
                         fromState = fromState,
                         toState = toState,

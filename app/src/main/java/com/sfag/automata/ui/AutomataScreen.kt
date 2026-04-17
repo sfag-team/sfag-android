@@ -1,6 +1,5 @@
 package com.sfag.automata.ui
 
-import android.provider.OpenableColumns
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -135,15 +134,8 @@ fun AutomataScreen(
                                     .toByteArray(Charsets.UTF_8)
                             )
                         }
-                        context.contentResolver
-                            .query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-                            ?.use { cursor ->
-                                if (cursor.moveToFirst()) {
-                                    val fileName = cursor.getString(0) ?: return@use
-                                    machine.name = fileName.substringBeforeLast(".")
-                                    recomposeKey.intValue++
-                                }
-                            }
+                        machine.name = JffUtils.getJffStem(context, it)
+                        recomposeKey.intValue++
                         viewModel.markSaved()
                     }
                 } catch (e: Exception) {
@@ -157,19 +149,10 @@ fun AutomataScreen(
                 uri ->
                 uri?.let {
                     try {
-                        val fileName =
-                            context.contentResolver
-                                .query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-                                ?.use { cursor ->
-                                    if (cursor.moveToFirst()) {
-                                        cursor.getString(0)?.substringBeforeLast(".")
-                                    } else {
-                                        null
-                                    }
-                                } ?: ""
+                        val machineName = JffUtils.getJffStem(context, it)
                         context.contentResolver.openInputStream(it)?.use { stream ->
                             val jff = Jff.parse(stream)
-                            viewModel.setCurrentMachine(jff.toMachine(fileName), jff.positions)
+                            viewModel.setCurrentMachine(jff.toMachine(machineName), jff.positions)
                         }
                     } catch (e: Exception) {
                         Log.e("AutomataScreen", "Failed to import file", e)
@@ -248,7 +231,7 @@ fun AutomataScreen(
                                             context = context,
                                             jffContent =
                                                 machine.exportToJff(viewModel.getPositions()),
-                                            filename = machine.name,
+                                            name = machine.name,
                                         )
                                     },
                                     text = stringResource(R.string.share_file),
@@ -256,7 +239,11 @@ fun AutomataScreen(
                                 )
 
                                 DefaultButton(
-                                    onClick = { exportLauncher.launch("${machine.name}.jff") },
+                                    onClick = {
+                                        exportLauncher.launch(
+                                            JffUtils.addJffExtension(machine.name)
+                                        )
+                                    },
                                     text = stringResource(R.string.save_file),
                                     modifier = Modifier.weight(1f),
                                 )
@@ -603,9 +590,10 @@ private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
             CancelButton(onClick = { onImport(null) })
             CreateButton(
                 onClick = {
+                    val trimmedName = machineName.trim()
                     when (machineType) {
-                        MachineType.FINITE -> onImport(FiniteMachine(name = machineName))
-                        MachineType.PUSHDOWN -> onImport(PushdownMachine(name = machineName))
+                        MachineType.FINITE -> onImport(FiniteMachine(name = trimmedName))
+                        MachineType.PUSHDOWN -> onImport(PushdownMachine(name = trimmedName))
                         null -> {}
                     }
                 },

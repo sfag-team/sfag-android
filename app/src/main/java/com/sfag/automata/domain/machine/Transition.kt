@@ -3,8 +3,8 @@ package com.sfag.automata.domain.machine
 import com.sfag.main.config.Symbols
 
 sealed class Transition {
-    abstract val fromState: Int
-    abstract val toState: Int
+    abstract var fromState: Int
+    abstract var toState: Int
     abstract var read: String
 
     abstract fun displayLabel(): String
@@ -13,16 +13,16 @@ sealed class Transition {
 }
 
 data class FaTransition(
-    override val fromState: Int,
-    override val toState: Int,
+    override var fromState: Int,
+    override var toState: Int,
     override var read: String,
 ) : Transition() {
     override fun displayLabel(): String = displayEpsilon(read)
 }
 
 data class PdaTransition(
-    override val fromState: Int,
-    override val toState: Int,
+    override var fromState: Int,
+    override var toState: Int,
     override var read: String,
     var pop: String,
     var push: String,
@@ -54,8 +54,8 @@ enum class TapeDirection(val symbol: String) {
 }
 
 data class TmTransition(
-    override val fromState: Int,
-    override val toState: Int,
+    override var fromState: Int,
+    override var toState: Int,
     override var read: String,
     var write: Char,
     var direction: TapeDirection,

@@ -81,9 +81,9 @@ class PushdownMachine(
     }
 
     fun addNewTransition(
-        read: String,
         fromState: State,
         toState: State,
+        read: String,
         pop: String,
         push: String,
     ) {
