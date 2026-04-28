@@ -1,17 +1,7 @@
 package com.sfag.automata.domain.machine
 
 import com.sfag.automata.domain.simulation.Simulation
-import com.sfag.automata.domain.simulation.SimulationOutcome
-import com.sfag.automata.domain.simulation.TransitionRef
-import com.sfag.automata.domain.tree.Branch
 import com.sfag.main.config.Symbols
-
-data class TmConfig(
-    val stateIndex: Int,
-    val tape: List<Char>,
-    val headPosition: Int,
-    val treeNodeId: Int = -1,
-)
 
 /**
  * A Turing machine consists of:
@@ -37,22 +27,7 @@ class TuringMachine(
         get() = tmTransitions
 
     // Track multiple current configs for NTM simulation
-    val currentConfigs: MutableList<TmConfig> = mutableListOf()
-
-    override var currentState: Int?
-        get() = currentConfigs.firstOrNull()?.stateIndex
-        set(value) {
-            currentConfigs.clear()
-            value?.let { currentConfigs.add(TmConfig(it, initialTape(), 0)) }
-        }
-
-    /** First config's tape — UI accessor for single-path display. */
-    val tape: List<Char>
-        get() = currentConfigs.firstOrNull()?.tape ?: listOf(blankSymbol)
-
-    /** First config's head position — UI accessor for single-path display. */
-    val headPosition: Int
-        get() = currentConfigs.firstOrNull()?.headPosition ?: 0
+    val currentConfigs: MutableList<Config.Tm> = mutableListOf()
 
     private fun initialTape(): List<Char> =
         if (fullInput.isEmpty()) listOf(blankSymbol) else fullInput.toList()
@@ -62,22 +37,20 @@ class TuringMachine(
     }
 
     override fun resetSimulation() {
-        super.resetSimulation()
         currentConfigs.clear()
         initialState?.index?.let {
-            currentConfigs.add(TmConfig(it, initialTape(), 0, treeNodeId = tree.root!!.id))
+            currentConfigs.add(Config.Tm(it, initialTape(), 0, treeNodeId = tree.root!!.id))
         }
     }
 
-    override fun calculateAllPathsStep(): Simulation {
+    override fun advanceSimulation(): Simulation {
         // TM halts on reaching a final state (JFLAP 7.1 semantics). For NTM, any active
         // config in a final state accepts overall.
         if (currentConfigs.any { getStateByIndex(it.stateIndex).final }) {
             return terminateSimulation()
         }
 
-        val allResults = mutableListOf<Triple<TmConfig, TmTransition, TmConfig>>()
-
+        val stepResults = mutableListOf<StepResult<Config.Tm>>()
         for (config in currentConfigs) {
             val symbol = config.tape.getOrElse(config.headPosition) { blankSymbol }
             for (transition in tmTransitions) {
@@ -88,73 +61,30 @@ class TuringMachine(
                     continue
                 }
                 val (newTape, newHead) = applyTmStep(config.tape, config.headPosition, transition)
-                allResults.add(
-                    Triple(config, transition, TmConfig(transition.toState, newTape, newHead))
-                )
+                val newConfig = Config.Tm(transition.toState, newTape, newHead)
+                stepResults.add(StepResult(src = config, dest = newConfig, transition = transition))
             }
         }
-
-        if (allResults.isEmpty()) {
+        if (stepResults.isEmpty()) {
             return terminateSimulation()
         }
 
-        // Build treeBranches and pair each new config with its branch (the branch receives
-        // its tree node id when the tree expands, so configs can read it back directly)
-        val resultsByParent = allResults.groupBy { it.first.treeNodeId }
-        val treeBranches = linkedMapOf<Int, MutableList<Branch>>()
-        val pendingConfigs = mutableListOf<Pair<Branch, TmConfig>>()
-
-        for (config in currentConfigs) {
-            val results = resultsByParent[config.treeNodeId] ?: continue
-            val branches = mutableListOf<Branch>()
-            for ((_, transition, newConfig) in results) {
-                val toState = getStateByIndex(transition.toState)
-                val branch = Branch(toState.name)
-                branches.add(branch)
-                pendingConfigs.add(branch to newConfig)
-            }
-            treeBranches[config.treeNodeId] = branches
-        }
-
-        val transitionRefs =
-            allResults.map { (config, transition, _) ->
-                TransitionRef(
-                    fromStateIndex = config.stateIndex,
-                    toStateIndex = transition.toState,
-                    transitionIndex = tmTransitions.indexOf(transition),
-                )
-            }
+        val (treeBranches, pendingConfigs) = buildBranches(currentConfigs, stepResults)
 
         return Simulation.Step(
-            transitionRefs = transitionRefs,
+            transitionRefs = buildTransitionRefs(stepResults),
             treeBranches = treeBranches,
             onAllComplete = {
-                for (config in currentConfigs) {
-                    getStateByIndex(config.stateIndex).isCurrent = false
-                }
                 currentConfigs.clear()
                 for ((branch, config) in pendingConfigs) {
-                    currentConfigs.add(config.copy(treeNodeId = branch.assignedId))
-                }
-                for (config in currentConfigs) {
-                    getStateByIndex(config.stateIndex).isCurrent = true
+                    currentConfigs.add(config.copy(treeNodeId = branch.treeNodeId))
                 }
             },
         )
     }
 
-    private fun terminateSimulation(): Simulation.Ended {
-        val acceptingConfigs = currentConfigs.filter { getStateByIndex(it.stateIndex).final }
-        val anyAccepting = acceptingConfigs.isNotEmpty()
-        return Simulation.Ended(
-            outcome = if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
-            isNodeAccepting =
-                if (anyAccepting) { node -> acceptingConfigs.any { it.treeNodeId == node.id } }
-                else {
-                    null
-                },
-        )
-    }
+    private fun terminateSimulation(): Simulation.Ended =
+        terminate(currentConfigs.filter { getStateByIndex(it.stateIndex).final })
 
     private fun applyTmStep(
         tape: List<Char>,

@@ -148,9 +148,7 @@ fun GrammarEditor(
                         } else {
                             val validChars =
                                 editLeft.text.all {
-                                    it.isLetterOrDigit() ||
-                                        it == '|' ||
-                                        "$it" == Symbols.EPSILON
+                                    it.isLetterOrDigit() || it == '|' || "$it" == Symbols.EPSILON
                                 } &&
                                     editRight.text.all {
                                         it.isLetterOrDigit() ||
@@ -158,21 +156,13 @@ fun GrammarEditor(
                                             "$it" == Symbols.EPSILON
                                     }
                             if (!validChars) {
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(invalidCharsError)
-                                }
+                                scope.launch { snackbarHostState.showSnackbar(invalidCharsError) }
                             } else if (!editLeft.text.any { it.isUpperCase() }) {
                                 scope.launch {
                                     snackbarHostState.showSnackbar(nonTerminalMissingError)
                                 }
-                            } else if (
-                                editLeft.text.isNotBlank() && editRight.text.isNotBlank()
-                            ) {
-                                grammarViewModel.updateRule(
-                                    editing,
-                                    editLeft.text,
-                                    editRight.text,
-                                )
+                            } else if (editLeft.text.isNotBlank() && editRight.text.isNotBlank()) {
+                                grammarViewModel.updateRule(editing, editLeft.text, editRight.text)
                                 editingRule = null
                                 grammarViewModel.toggleGrammarFinished()
                             }

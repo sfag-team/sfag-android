@@ -15,3 +15,6 @@ const val MAX_BFS_GRAMMAR_STEPS = 1_000_000
 // PDA step-by-step simulation limits
 const val MAX_SIM_PDA_CONFIGS = 1_000
 const val MAX_SIM_PDA_STALE_STEPS = 100
+
+// Frame pre-compute batch size for step-by-step playback (extended on demand)
+const val MAX_SIM_PRECOMPUTE_STEPS = 100

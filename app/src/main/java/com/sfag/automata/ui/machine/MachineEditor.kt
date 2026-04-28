@@ -41,13 +41,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.sfag.R
 import com.sfag.automata.domain.common.determinismLabel
-import com.sfag.automata.domain.machine.FiniteMachine
+import com.sfag.automata.domain.machine.Config
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.State
-import com.sfag.automata.domain.machine.TuringMachine
-import com.sfag.automata.domain.simulation.NodeSnapshot
-import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.ui.AutomataViewModel
 import com.sfag.automata.ui.bar.Stack
 import com.sfag.automata.ui.bar.Tape
@@ -81,12 +78,15 @@ fun Machine.MachineEditor(
     recomposeKey: Int,
     animationOverlay: (@Composable () -> Unit)?,
     dialogRequest: MutableState<DialogRequest?>,
-    simulationOutcome: SimulationOutcome?,
     onEdit: () -> Unit,
     onRecompose: () -> Unit,
 ) {
     val viewModel: AutomataViewModel = hiltViewModel()
     val density = LocalDensity.current
+    val currentFrame = viewModel.currentFrame
+    val simulationOutcome = currentFrame?.takeIf { it.isTerminal }?.outcome
+    val displayConfig = viewModel.displayConfig
+    val activeStateIndices = currentFrame?.activeStateIndices ?: emptySet()
 
     // Tool state
     var activeTool by remember { mutableStateOf(MachineEditMode.SELECT) }
@@ -109,50 +109,38 @@ fun Machine.MachineEditor(
                     val headColor =
                         if (simulationOutcome != null) primaryColor.copy(alpha = 0.38f)
                         else primaryColor
-                    val snapshot = viewModel.inspectedSnapshot
-                    if (snapshot is NodeSnapshot.TmNodeSnapshot) {
-                        Tape(
-                            symbols = snapshot.tape,
-                            headIndex = snapshot.headPosition,
-                            listState = tapeListState,
-                            headColor = headColor,
-                            onEdit = onEdit,
-                            infiniteRight = true,
-                            infiniteLeft = true,
-                        )
-                    } else if (snapshot != null) {
-                        val headIndex = snapshot.inputConsumed.coerceIn(0, fullInput.length)
-                        Tape(
-                            symbols = fullInput.toList(),
-                            headIndex = headIndex,
-                            listState = tapeListState,
-                            headColor = headColor,
-                            isConsumedShown = true,
-                            onEdit = onEdit,
-                            infiniteRight = false,
-                        )
-                    } else {
-                        when (this@MachineEditor) {
-                            is FiniteMachine ->
-                                Tape(
-                                    listState = tapeListState,
-                                    onEdit = onEdit,
-                                    headColor = headColor,
-                                )
+                    when (displayConfig) {
+                        is Config.Tm ->
+                            Tape(
+                                symbols = displayConfig.tape,
+                                headIndex = displayConfig.headPosition,
+                                listState = tapeListState,
+                                headColor = headColor,
+                                onEdit = onEdit,
+                                infiniteRight = true,
+                                infiniteLeft = true,
+                            )
 
-                            is PushdownMachine ->
-                                Tape(
-                                    listState = tapeListState,
-                                    onEdit = onEdit,
-                                    headColor = headColor,
-                                )
-
-                            is TuringMachine ->
-                                Tape(
-                                    listState = tapeListState,
-                                    onEdit = onEdit,
-                                    headColor = headColor,
-                                )
+                        is Config.Fa,
+                        is Config.Pda,
+                        null -> {
+                            val symbols = fullInput.toList()
+                            val consumed =
+                                when (displayConfig) {
+                                    is Config.Fa -> displayConfig.inputConsumed
+                                    is Config.Pda -> displayConfig.inputConsumed
+                                    null,
+                                    is Config.Tm -> 0
+                                }
+                            Tape(
+                                symbols = symbols,
+                                headIndex = consumed.coerceIn(0, symbols.size),
+                                listState = tapeListState,
+                                headColor = headColor,
+                                isConsumedShown = true,
+                                onEdit = onEdit,
+                                infiniteRight = false,
+                            )
                         }
                     }
                 }
@@ -354,26 +342,21 @@ fun Machine.MachineEditor(
                                                         }
 
                                                     if (hitState != null) {
-                                                        when (activeTool) {
-                                                            MachineEditMode.SELECT ->
-                                                                dialogRequest.value =
-                                                                    DialogRequest.ForState(
-                                                                        Offset.Zero,
-                                                                        hitState,
-                                                                    )
-
-                                                            MachineEditMode.REMOVE -> {
-                                                                removeState(hitState)
-                                                                viewModel.statePositions.remove(
-                                                                    hitState.index
+                                                        if (activeTool == MachineEditMode.SELECT) {
+                                                            dialogRequest.value =
+                                                                DialogRequest.ForState(
+                                                                    Offset.Zero,
+                                                                    hitState,
                                                                 )
-                                                                viewModel.markDirty()
-                                                                onRecompose()
-                                                            }
-
-                                                            MachineEditMode.MOVE,
-                                                            MachineEditMode.ADD_STATE,
-                                                            MachineEditMode.ADD_TRANSITION -> {}
+                                                        } else if (
+                                                            activeTool == MachineEditMode.REMOVE
+                                                        ) {
+                                                            removeState(hitState)
+                                                            viewModel.statePositions.remove(
+                                                                hitState.index
+                                                            )
+                                                            viewModel.markDirty()
+                                                            onRecompose()
                                                         }
                                                         return@awaitEachGesture
                                                     }
@@ -394,39 +377,34 @@ fun Machine.MachineEditor(
                                                                 )
                                                         ) {
                                                             val transition = transitions[index]
-                                                            when (activeTool) {
-                                                                MachineEditMode.SELECT ->
-                                                                    dialogRequest.value =
-                                                                        DialogRequest.ForTransition(
-                                                                            getStateByIndex(
-                                                                                transition.fromState
-                                                                            ),
-                                                                            getStateByIndex(
+                                                            if (
+                                                                activeTool == MachineEditMode.SELECT
+                                                            ) {
+                                                                dialogRequest.value =
+                                                                    DialogRequest.ForTransition(
+                                                                        getStateByIndex(
+                                                                            transition.fromState
+                                                                        ),
+                                                                        getStateByIndex(
+                                                                            transition.toState
+                                                                        ),
+                                                                        transition.read,
+                                                                    )
+                                                            } else if (
+                                                                activeTool == MachineEditMode.REMOVE
+                                                            ) {
+                                                                transitions
+                                                                    .filter {
+                                                                        it.fromState ==
+                                                                            transition.fromState &&
+                                                                            it.toState ==
                                                                                 transition.toState
-                                                                            ),
-                                                                            transition.read,
-                                                                        )
-
-                                                                MachineEditMode.REMOVE -> {
-                                                                    transitions
-                                                                        .filter {
-                                                                            it.fromState ==
-                                                                                transition
-                                                                                    .fromState &&
-                                                                                it.toState ==
-                                                                                    transition
-                                                                                        .toState
-                                                                        }
-                                                                        .forEach {
-                                                                            removeTransition(it)
-                                                                        }
-                                                                    viewModel.markDirty()
-                                                                    onRecompose()
-                                                                }
-
-                                                                MachineEditMode.MOVE,
-                                                                MachineEditMode.ADD_STATE,
-                                                                MachineEditMode.ADD_TRANSITION -> {}
+                                                                    }
+                                                                    .forEach {
+                                                                        removeTransition(it)
+                                                                    }
+                                                                viewModel.markDirty()
+                                                                onRecompose()
                                                             }
                                                             break
                                                         }
@@ -512,6 +490,7 @@ fun Machine.MachineEditor(
                                     offsetX = offsetX,
                                     offsetY = offsetY,
                                     isEditing = true,
+                                    activeStateIndices = activeStateIndices,
                                 )
                             }
                         }
@@ -531,6 +510,7 @@ fun Machine.MachineEditor(
                                 positions = positions,
                                 offsetX = offsetX,
                                 offsetY = offsetY,
+                                activeStateIndices = activeStateIndices,
                                 simulationOutcome = simulationOutcome,
                             )
                         }
@@ -615,9 +595,8 @@ fun Machine.MachineEditor(
             ) {
                 Box(modifier = Modifier.fillMaxWidth().height(cellSize + cellPadding * 2)) {
                     key(recomposeKey) {
-                        val pdaSnapshot =
-                            viewModel.inspectedSnapshot as? NodeSnapshot.PdaNodeSnapshot
-                        Stack(overrideSymbols = pdaSnapshot?.stack)
+                        val pdaConfig = displayConfig as? Config.Pda
+                        Stack(symbols = pdaConfig?.stack ?: emptyList())
                     }
                 }
             }

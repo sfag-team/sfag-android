@@ -107,7 +107,11 @@ fun GrammarScreen(navBack: () -> Unit, snackbarHostState: SnackbarHostState) {
         )
         when (currentMode.value) {
             GrammarMode.GRAMMAR_EDITOR ->
-                GrammarEditor(grammarViewModel, snackbarHostState, modifier = Modifier.fillMaxSize())
+                GrammarEditor(
+                    grammarViewModel,
+                    snackbarHostState,
+                    modifier = Modifier.fillMaxSize(),
+                )
 
             GrammarMode.SINGLE_INPUT ->
                 SingleInputView(

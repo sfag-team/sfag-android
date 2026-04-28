@@ -9,15 +9,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.ui.machine.cellPadding
 import com.sfag.automata.ui.machine.cellSize
 
 /** PDA stack bar. Bottom symbol on the right; stack grows to the left. */
 @Composable
-fun PushdownMachine.Stack(overrideSymbols: List<Char>? = null) {
-    val displaySymbols = overrideSymbols ?: symbolStack
-
+fun Stack(symbols: List<Char>) {
     LazyRow(
         modifier =
             Modifier.fillMaxWidth()
@@ -26,10 +23,10 @@ fun PushdownMachine.Stack(overrideSymbols: List<Char>? = null) {
         horizontalArrangement = Arrangement.spacedBy(cellPadding, Alignment.End),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (displaySymbols.isEmpty()) {
+        if (symbols.isEmpty()) {
             item { Cell(symbol = ' ') }
         } else {
-            items(displaySymbols.reversed()) { Cell(symbol = it) }
+            items(symbols.reversed()) { Cell(symbol = it) }
         }
     }
 }

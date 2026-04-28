@@ -150,10 +150,7 @@ private fun TableRow(
         isValid = isAccepted
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         TextField(
             value = inputText,
             onValueChange = onValueChange,
@@ -170,10 +167,7 @@ private fun TableRow(
         CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
             when {
                 isValid == null && !isInconclusive ->
-                    Box(
-                        modifier = Modifier.size(40.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
+                    Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             strokeWidth = 2.dp,
@@ -181,10 +175,7 @@ private fun TableRow(
                     }
 
                 isInconclusive ->
-                    Box(
-                        modifier = Modifier.size(40.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
+                    Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
                         Text(
                             text = "?",
                             style = MaterialTheme.typography.titleMedium,
@@ -193,10 +184,7 @@ private fun TableRow(
                     }
 
                 isValid == true -> {
-                    Box(
-                        modifier = Modifier.size(40.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
+                    Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = stringResource(R.string.valid_result),
@@ -215,10 +203,7 @@ private fun TableRow(
                 }
 
                 else ->
-                    Box(
-                        modifier = Modifier.size(40.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
+                    Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = stringResource(R.string.invalid_result),

@@ -26,15 +26,15 @@ fun Machine.checkAcceptance(input: StringBuilder): Boolean? =
     }
 
 private fun FiniteMachine.checkFaAcceptance(input: StringBuilder): Boolean? {
-    data class Config(val stateIndex: Int, val inputIndex: Int)
+    data class BfsConfig(val stateIndex: Int, val inputConsumed: Int)
 
     val startIndex = initialState?.index ?: return false
     return bfsCheck(
-        initial = Config(startIndex, 0),
+        initial = BfsConfig(startIndex, 0),
         expand = { config ->
-            val remaining = input.substring(minOf(config.inputIndex, input.length))
+            val remaining = input.substring(minOf(config.inputConsumed, input.length))
             val matching =
-                if (config.inputIndex < input.length) {
+                if (config.inputConsumed < input.length) {
                     transitions.filter {
                         it.fromState == config.stateIndex &&
                             (it.read.isEmpty() || remaining.startsWith(it.read))
@@ -42,33 +42,33 @@ private fun FiniteMachine.checkFaAcceptance(input: StringBuilder): Boolean? {
                 } else {
                     transitions.filter { it.fromState == config.stateIndex && it.read.isEmpty() }
                 }
-            matching.map { Config(it.toState, config.inputIndex + it.read.length) }
+            matching.map { BfsConfig(it.toState, config.inputConsumed + it.read.length) }
         },
         isAccepted = { config ->
-            config.inputIndex == input.length && getStateByIndex(config.stateIndex).final
+            config.inputConsumed == input.length && getStateByIndex(config.stateIndex).final
         },
         maxConfigs = MAX_BFS_FA_CONFIGS,
     )
 }
 
 private fun PushdownMachine.checkPdaAcceptance(input: StringBuilder): Boolean? {
-    data class Config(val stateIndex: Int, val inputIndex: Int, val stack: List<Char>)
+    data class BfsConfig(val stateIndex: Int, val inputConsumed: Int, val stack: List<Char>)
 
     val startIndex = initialState?.index ?: return false
-    val acceptPredicate: (Config) -> Boolean =
+    val acceptPredicate: (BfsConfig) -> Boolean =
         when (acceptanceCriteria) {
             AcceptanceCriteria.BY_FINAL_STATE -> { config ->
-                    config.inputIndex == input.length && getStateByIndex(config.stateIndex).final
+                    config.inputConsumed == input.length && getStateByIndex(config.stateIndex).final
                 }
 
             AcceptanceCriteria.BY_EMPTY_STACK -> { config ->
-                    config.inputIndex == input.length && config.stack.isEmpty()
+                    config.inputConsumed == input.length && config.stack.isEmpty()
                 }
         }
     return bfsCheck(
-        initial = Config(startIndex, 0, listOf(Symbols.INITIAL_STACK_SYMBOL)),
+        initial = BfsConfig(startIndex, 0, listOf(Symbols.INITIAL_STACK_SYMBOL)),
         expand = { config ->
-            val remaining = input.substring(minOf(config.inputIndex, input.length))
+            val remaining = input.substring(minOf(config.inputConsumed, input.length))
             pdaTransitions
                 .filter {
                     it.fromState == config.stateIndex &&
@@ -79,7 +79,7 @@ private fun PushdownMachine.checkPdaAcceptance(input: StringBuilder): Boolean? {
                     val newStack =
                         applyStackOp(config.stack, transition.pop, transition.push)
                             ?: return@mapNotNull null
-                    Config(transition.toState, config.inputIndex + transition.read.length, newStack)
+                    BfsConfig(transition.toState, config.inputConsumed + transition.read.length, newStack)
                 }
         },
         isAccepted = acceptPredicate,
@@ -88,12 +88,12 @@ private fun PushdownMachine.checkPdaAcceptance(input: StringBuilder): Boolean? {
 }
 
 private fun TuringMachine.checkTmAcceptance(input: StringBuilder): Boolean? {
-    data class Config(val stateIndex: Int, val tape: List<Char>, val headPosition: Int)
+    data class BfsConfig(val stateIndex: Int, val tape: List<Char>, val headPosition: Int)
 
     val initialTape = if (input.isEmpty()) listOf(blankSymbol) else input.toList()
     val startIndex = initialState?.index ?: return false
     return bfsCheck(
-        initial = Config(startIndex, initialTape, 0),
+        initial = BfsConfig(startIndex, initialTape, 0),
         expand = { config ->
             val tape = config.tape.toMutableList()
             val head = config.headPosition
@@ -117,7 +117,7 @@ private fun TuringMachine.checkTmAcceptance(input: StringBuilder): Boolean? {
                         newTape.add(0, blankSymbol)
                         newHead = 0
                     }
-                    Config(transition.toState, newTape, newHead)
+                    BfsConfig(transition.toState, newTape, newHead)
                 }
         },
         isAccepted = { config -> getStateByIndex(config.stateIndex).final },
@@ -125,17 +125,17 @@ private fun TuringMachine.checkTmAcceptance(input: StringBuilder): Boolean? {
     )
 }
 
-private fun <Config> bfsCheck(
-    initial: Config,
-    expand: (Config) -> List<Config>,
-    isAccepted: (Config) -> Boolean,
+private fun <T> bfsCheck(
+    initial: T,
+    expand: (T) -> List<T>,
+    isAccepted: (T) -> Boolean,
     maxConfigs: Int,
 ): Boolean? {
-    val visited = mutableSetOf<Config>()
+    val visited = mutableSetOf<T>()
     var current = mutableListOf(initial)
 
     while (current.isNotEmpty()) {
-        val next = mutableListOf<Config>()
+        val next = mutableListOf<T>()
         for (config in current) {
             if (visited.size >= maxConfigs) {
                 return null

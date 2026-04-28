@@ -2,21 +2,20 @@ package com.sfag.automata.domain.machine
 
 import com.sfag.automata.domain.simulation.Simulation
 import com.sfag.automata.domain.simulation.SimulationOutcome
-import com.sfag.automata.domain.simulation.snapshotActiveNodes
+import com.sfag.automata.domain.simulation.TransitionRef
+import com.sfag.automata.domain.tree.Branch
 import com.sfag.automata.domain.tree.Tree
 
 sealed class Machine(
     var name: String,
     val states: MutableList<State>,
     val savedInputs: MutableList<StringBuilder>,
-    var remainingInput: StringBuilder = StringBuilder(),
 ) {
     /** JFF file format tag (e.g. "fa", "pda", "turing"). */
     abstract val jffTag: String
 
     /** Short type label for UI display (e.g. "FA", "PDA", "TM"). */
     abstract val typeLabel: String
-    abstract var currentState: Int?
     abstract val transitions: List<Transition>
 
     var fullInput: String = ""
@@ -27,34 +26,15 @@ sealed class Machine(
     val initialState: State?
         get() = states.firstOrNull { it.initial }
 
-    fun advanceSimulation(): Simulation {
-        if (currentState == null) {
-            if (!ensureCurrentState()) {
-                return Simulation.Ended(SimulationOutcome.ACTIVE)
-            }
-            getStateByIndex(currentState!!).isCurrent = true
-        }
-        return calculateAllPathsStep()
-    }
-
-    protected abstract fun calculateAllPathsStep(): Simulation
+    internal abstract fun advanceSimulation(): Simulation
 
     abstract fun removeTransition(transition: Transition)
 
-    open fun addNewState(state: State) {
-        if (state.initial && currentState == null) {
-            currentState = state.index
-            state.isCurrent = true
-        }
+    fun addNewState(state: State) {
         states.add(state)
     }
 
-    open fun resetSimulation() {
-        val initialStateIndex = initialState?.index
-        for (state in states) {
-            state.isCurrent = state.index == initialStateIndex
-        }
-    }
+    protected abstract fun resetSimulation()
 
     fun setInput(input: String) {
         fullInput = input
@@ -75,16 +55,9 @@ sealed class Machine(
     fun getStateByIndexOrNull(index: Int): State? = states.firstOrNull { it.index == index }
 
     fun resetToInitialState() {
-        currentState?.let { getStateByIndexOrNull(it)?.isCurrent = false }
         tree.clear()
-        initialState?.let { state ->
-            state.isCurrent = true
-            currentState = state.index
-            tree.initialize(state.name)
-        }
-        remainingInput = StringBuilder(fullInput)
+        initialState?.let { tree.initialize(it.name) }
         resetSimulation()
-        tree.attachSnapshots(snapshotActiveNodes())
     }
 
     fun findNewStateIndex(): Int {
@@ -100,16 +73,54 @@ sealed class Machine(
         return usedIndices.last() + 1
     }
 
-    protected fun consumeInput(length: Int) {
-        if (length > 0 && remainingInput.isNotEmpty()) {
-            remainingInput.delete(0, minOf(length, remainingInput.length))
+    /**
+     * Allocates a [Branch] (with a fresh tree-node id) per new config, grouped by parent treeNodeId
+     * for the frame, and pairs each branch with its new config so the per-machine `onAllComplete`
+     * can copy the id into the new config.
+     */
+    protected fun <C : Config> buildBranches(
+        currentConfigs: List<C>,
+        stepResults: List<StepResult<C>>,
+    ): Pair<Map<Int, List<Branch>>, List<Pair<Branch, C>>> {
+        val resultsByParent = stepResults.groupBy { it.src.treeNodeId }
+        val treeBranches = linkedMapOf<Int, MutableList<Branch>>()
+        val pendingConfigs = mutableListOf<Pair<Branch, C>>()
+        for (config in currentConfigs) {
+            val results = resultsByParent[config.treeNodeId] ?: continue
+            val branches = mutableListOf<Branch>()
+            for (result in results) {
+                val branch = tree.allocateBranch(getStateByIndex(result.transition.toState).name)
+                branches.add(branch)
+                pendingConfigs.add(branch to result.dest)
+            }
+            treeBranches[config.treeNodeId] = branches
         }
+        return treeBranches to pendingConfigs
     }
 
-    protected fun ensureCurrentState(): Boolean {
-        if (currentState == null && initialState != null) {
-            resetToInitialState()
+    protected fun <C : Config> buildTransitionRefs(
+        stepResults: List<StepResult<C>>
+    ): List<TransitionRef> =
+        stepResults.map { result ->
+            TransitionRef(
+                fromStateIndex = result.src.stateIndex,
+                toStateIndex = result.transition.toState,
+                transitionIndex = transitions.indexOf(result.transition),
+            )
         }
-        return currentState != null
+
+    /**
+     * Builds a terminal [Simulation.Ended] from the configs that satisfied the machine's accept
+     * criterion. Empty `acceptingConfigs` means rejection.
+     */
+    protected fun terminate(acceptingConfigs: Collection<Config>): Simulation.Ended {
+        if (acceptingConfigs.isEmpty()) {
+            return Simulation.Ended(SimulationOutcome.REJECTED)
+        }
+        val acceptedIds = acceptingConfigs.mapTo(mutableSetOf()) { it.treeNodeId }
+        return Simulation.Ended(
+            outcome = SimulationOutcome.ACCEPTED,
+            isNodeAccepting = { it in acceptedIds },
+        )
     }
 }

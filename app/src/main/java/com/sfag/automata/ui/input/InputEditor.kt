@@ -87,10 +87,7 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
             // PDA acceptance criteria
             if (this@InputEditor is PushdownMachine) {
                 val criteriaOptions =
-                    listOf(
-                        AcceptanceCriteria.BY_FINAL_STATE,
-                        AcceptanceCriteria.BY_EMPTY_STACK,
-                    )
+                    listOf(AcceptanceCriteria.BY_FINAL_STATE, AcceptanceCriteria.BY_EMPTY_STACK)
                 val criteriaLabels =
                     listOf(
                         stringResource(R.string.pda_accept_by_final_state),

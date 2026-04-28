@@ -1,6 +1,7 @@
 package com.sfag.main.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +24,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.annotation.StringRes
 import com.sfag.R
 import com.sfag.main.config.Superscripts
 
@@ -129,7 +129,8 @@ private fun ExamplesSection(
 private object ExampleSources {
     val automataExamples =
         listOf(
-            "automata/dfa_an.jff" to ExampleDescription(R.string.dfa_an_label, R.string.dfa_an_desc),
+            "automata/dfa_an.jff" to
+                ExampleDescription(R.string.dfa_an_label, R.string.dfa_an_desc),
             "automata/dfa_3kplus1.jff" to
                 ExampleDescription(R.string.dfa_3kplus1_label, R.string.dfa_3kplus1_desc),
             "automata/dfa_ends_01_or_10.jff" to
@@ -166,7 +167,6 @@ private object ExampleSources {
                     R.string.reg_ends_01_or_10_label,
                     R.string.reg_ends_01_or_10_desc,
                 ),
-            "grammar/cf_wwR.jff" to
-                ExampleDescription(R.string.cf_wwR_label, R.string.cf_wwR_desc),
+            "grammar/cf_wwR.jff" to ExampleDescription(R.string.cf_wwR_label, R.string.cf_wwR_desc),
         )
 }

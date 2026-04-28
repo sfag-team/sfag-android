@@ -69,7 +69,6 @@ internal fun Machine.StateDialog(
                             addNewState(
                                 State(
                                     name = trimmedName,
-                                    isCurrent = false,
                                     index = newIndex,
                                     final = isFinal,
                                     initial = isInitial,

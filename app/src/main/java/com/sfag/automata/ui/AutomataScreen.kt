@@ -53,10 +53,8 @@ import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.MachineType
 import com.sfag.automata.domain.machine.PushdownMachine
-import com.sfag.automata.domain.simulation.Simulation
+import com.sfag.automata.domain.simulation.MachineFrame
 import com.sfag.automata.domain.simulation.SimulationOutcome
-import com.sfag.automata.domain.simulation.snapshotActiveNodes
-import com.sfag.automata.domain.tree.markSimulationEnd
 import com.sfag.automata.ui.common.FormalDefinitionView
 import com.sfag.automata.ui.edit.StateList
 import com.sfag.automata.ui.edit.TransitionList
@@ -83,6 +81,24 @@ private enum class Mode {
     SIMULATION_STEP,
     INPUT_EDITOR,
     MACHINE_EDITOR,
+}
+
+private fun formatTerminalMessage(
+    machine: Machine,
+    frame: MachineFrame,
+    acceptedMsg: String,
+    rejectedMsg: String,
+): String? {
+    val activeStates = frame.activeStateIndices.mapNotNull { machine.getStateByIndexOrNull(it) }
+    return when (frame.outcome) {
+        SimulationOutcome.ACCEPTED ->
+            acceptedMsg.format(activeStates.filter { it.final }.joinToString(", ") { it.name })
+
+        SimulationOutcome.REJECTED ->
+            rejectedMsg.format(activeStates.joinToString(", ") { it.name })
+
+        SimulationOutcome.ACTIVE -> null
+    }
 }
 
 private sealed interface ActiveDialog {
@@ -114,7 +130,6 @@ fun AutomataScreen(
         val currentMode = remember { mutableStateOf(Mode.SIMULATOR) }
         var showUnsavedDialog by remember { mutableStateOf(viewModel.pendingExampleUri != null) }
         var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
-        var simulationOutcome by remember { mutableStateOf<SimulationOutcome?>(null) }
         val animationOverlay = remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
         val dialogRequest = remember { mutableStateOf<DialogRequest?>(null) }
         var snackbarMsg by remember { mutableStateOf<String?>(null) }
@@ -180,13 +195,13 @@ fun AutomataScreen(
                 }
 
                 Mode.INPUT_EDITOR -> {
-                    machine.resetToInitialState()
+                    viewModel.invalidateSimulation(machine)
                     viewModel.autoSave(machine)
                     currentMode.value = Mode.SIMULATOR
                 }
 
                 Mode.MACHINE_EDITOR -> {
-                    machine.resetToInitialState()
+                    viewModel.invalidateSimulation(machine)
                     viewModel.autoSave(machine)
                     currentMode.value = Mode.SIMULATOR
                     recomposeKey.intValue++
@@ -289,10 +304,9 @@ fun AutomataScreen(
                                     recomposeKey = recomposeKey.intValue,
                                     animationOverlay = animationOverlay.value,
                                     dialogRequest = dialogRequest,
-                                    simulationOutcome = simulationOutcome,
                                     onEdit = {
                                         if (currentMode.value != Mode.SIMULATION_STEP) {
-                                            simulationOutcome = null
+                                            viewModel.invalidateSimulation(machine)
                                             currentMode.value = Mode.INPUT_EDITOR
                                         }
                                     },
@@ -310,7 +324,7 @@ fun AutomataScreen(
                                             return@DefaultIconButton
                                         }
                                         if (currentMode.value == Mode.MACHINE_EDITOR) {
-                                            machine.resetToInitialState()
+                                            viewModel.invalidateSimulation(machine)
                                             currentMode.value = Mode.SIMULATOR
                                             recomposeKey.intValue++
                                         } else {
@@ -327,10 +341,8 @@ fun AutomataScreen(
                                             viewModel.machineAutoCenter = true
                                             recomposeKey.intValue++
                                         } else {
-                                            simulationOutcome = null
                                             animationOverlay.value = null
-                                            viewModel.clearInspection()
-                                            machine.resetToInitialState()
+                                            viewModel.invalidateSimulation(machine)
                                             currentMode.value = Mode.SIMULATOR
                                             recomposeKey.intValue++
                                         }
@@ -355,71 +367,56 @@ fun AutomataScreen(
                                         if (currentMode.value != Mode.SIMULATOR) {
                                             currentMode.value = Mode.SIMULATOR
                                         }
-                                        when (val simulation = viewModel.advanceSimulation()) {
-                                            is Simulation.Ended -> {
-                                                machine.tree.markSimulationEnd(
-                                                    simulation.isNodeAccepting
-                                                )
-                                                viewModel.clearInspection()
-                                                simulationOutcome = simulation.outcome
-                                                recomposeKey.intValue++
-                                                snackbarMsg =
-                                                    when (simulation.outcome) {
-                                                        SimulationOutcome.ACCEPTED -> {
-                                                            val stateNames =
-                                                                machine.states
-                                                                    .filter {
-                                                                        it.isCurrent && it.final
-                                                                    }
-                                                                    .joinToString(", ") { it.name }
-                                                            acceptedMsg.format(stateNames)
-                                                        }
-
-                                                        SimulationOutcome.REJECTED -> {
-                                                            val stateNames =
-                                                                machine.states
-                                                                    .filter { it.isCurrent }
-                                                                    .joinToString(", ") { it.name }
-                                                            rejectedMsg.format(stateNames)
-                                                        }
-
-                                                        else -> null
-                                                    }
-                                            }
-
-                                            is Simulation.Step -> {
-                                                currentMode.value = Mode.SIMULATION_STEP
-                                                recomposeKey.intValue++
-                                                val capturedPositions =
-                                                    viewModel.statePositions.toMap()
-                                                animationOverlay.value = {
-                                                    val animDensity = LocalDensity.current
-                                                    val transitionPaths =
-                                                        machine.computeTransitionPaths(
-                                                            capturedPositions,
-                                                            animDensity.density,
+                                        val nextFrame = viewModel.peekNextFrame(machine)
+                                        if (nextFrame == null) {
+                                            // No further step available - if we're sitting on a
+                                            // terminal frame (incl. simulation that ended on
+                                            // frame 0 with no transitions), surface the result.
+                                            viewModel.currentFrame
+                                                ?.takeIf { it.isTerminal }
+                                                ?.let { terminal ->
+                                                    snackbarMsg =
+                                                        formatTerminalMessage(
+                                                            machine = machine,
+                                                            frame = terminal,
+                                                            acceptedMsg = acceptedMsg,
+                                                            rejectedMsg = rejectedMsg,
                                                         )
-                                                    TransitionAnimation(
-                                                        transitionRefs = simulation.transitionRefs,
-                                                        transitionPaths = transitionPaths,
-                                                        offsetXCanvas = viewModel.offsetXCanvas,
-                                                        offsetYCanvas = viewModel.offsetYCanvas,
-                                                        onAnimationsEnd = {
-                                                            machine.tree.expandActive(
-                                                                simulation.treeBranches
-                                                            )
-                                                            simulation.onAllComplete()
-                                                            machine.tree.attachSnapshots(
-                                                                machine.snapshotActiveNodes()
-                                                            )
-                                                            viewModel.clearInspection()
-                                                            animationOverlay.value = null
-                                                            currentMode.value = Mode.SIMULATOR
-                                                            recomposeKey.intValue++
-                                                        },
-                                                    )
                                                 }
-                                            }
+                                            return@DefaultIconButton
+                                        }
+
+                                        currentMode.value = Mode.SIMULATION_STEP
+                                        recomposeKey.intValue++
+                                        val capturedPositions = viewModel.statePositions.toMap()
+                                        animationOverlay.value = {
+                                            val animDensity = LocalDensity.current
+                                            val transitionPaths =
+                                                machine.computeTransitionPaths(
+                                                    capturedPositions,
+                                                    animDensity.density,
+                                                )
+                                            TransitionAnimation(
+                                                transitionRefs = nextFrame.transitionRefs,
+                                                transitionPaths = transitionPaths,
+                                                offsetXCanvas = viewModel.offsetXCanvas,
+                                                offsetYCanvas = viewModel.offsetYCanvas,
+                                                onAnimationsEnd = {
+                                                    animationOverlay.value = null
+                                                    currentMode.value = Mode.SIMULATOR
+                                                    viewModel.stepForward(machine)
+                                                    recomposeKey.intValue++
+                                                    if (nextFrame.isTerminal) {
+                                                        snackbarMsg =
+                                                            formatTerminalMessage(
+                                                                machine = machine,
+                                                                frame = nextFrame,
+                                                                acceptedMsg = acceptedMsg,
+                                                                rejectedMsg = rejectedMsg,
+                                                            )
+                                                    }
+                                                },
+                                            )
                                         }
                                     },
                                     icon = R.drawable.skip_next,
@@ -448,10 +445,12 @@ fun AutomataScreen(
             ) {
                 machine.InputEditor(
                     onConfirm = {
+                        viewModel.invalidateSimulation(machine)
                         viewModel.autoSave(machine)
                         currentMode.value = Mode.SIMULATOR
                     },
                     onDismiss = {
+                        viewModel.invalidateSimulation(machine)
                         viewModel.autoSave(machine)
                         currentMode.value = Mode.SIMULATOR
                     },
@@ -556,12 +555,9 @@ private fun BottomScreenPart(
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 machine.TreeView(
                     recomposeKey = recomposeKey.intValue,
-                    inspectedNodeId = viewModel.inspectedNodeId,
+                    highlightedNodeId = viewModel.displayNodeId,
                     onSelectNode = { nodeId ->
-                        viewModel.inspectNode(machine, nodeId)
-                        if (machine is PushdownMachine) {
-                            machine.selectNode(nodeId)
-                        }
+                        viewModel.inspectNode(nodeId)
                         recomposeKey.intValue++
                     },
                 )

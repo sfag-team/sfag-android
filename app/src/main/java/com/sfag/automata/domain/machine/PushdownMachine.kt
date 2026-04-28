@@ -1,9 +1,6 @@
 package com.sfag.automata.domain.machine
 
 import com.sfag.automata.domain.simulation.Simulation
-import com.sfag.automata.domain.simulation.SimulationOutcome
-import com.sfag.automata.domain.simulation.TransitionRef
-import com.sfag.automata.domain.tree.Branch
 import com.sfag.main.config.MAX_SIM_PDA_CONFIGS
 import com.sfag.main.config.MAX_SIM_PDA_STALE_STEPS
 import com.sfag.main.config.Symbols
@@ -13,19 +10,11 @@ enum class AcceptanceCriteria {
     BY_EMPTY_STACK,
 }
 
-data class PdaConfig(
-    val stateIndex: Int,
-    val stack: List<Char>,
-    val inputOffset: Int = 0,
-    val treeNodeId: Int = -1,
-)
-
 class PushdownMachine(
     name: String = "",
     states: MutableList<State> = mutableListOf(),
     savedInputs: MutableList<StringBuilder> = mutableListOf(),
     val pdaTransitions: MutableList<PdaTransition> = mutableListOf(),
-    val symbolStack: MutableList<Char> = mutableListOf(Symbols.INITIAL_STACK_SYMBOL),
 ) : Machine(name, states, savedInputs = savedInputs) {
     override val jffTag = "pda"
     override val typeLabel = "PDA"
@@ -34,50 +23,23 @@ class PushdownMachine(
         get() = pdaTransitions
 
     // Track multiple current configs for NPDA simulation
-    val currentConfigs: MutableList<PdaConfig> = mutableListOf()
-
-    override var currentState: Int?
-        get() = currentConfigs.firstOrNull()?.stateIndex
-        set(value) {
-            currentConfigs.clear()
-            if (value != null) {
-                currentConfigs.add(PdaConfig(value, listOf(Symbols.INITIAL_STACK_SYMBOL)))
-            }
-            syncStack()
-        }
+    val currentConfigs: MutableList<Config.Pda> = mutableListOf()
 
     var acceptanceCriteria = AcceptanceCriteria.BY_FINAL_STATE
-    var selectedNodeId: Int? = null
     private var staleStepCount = 0
-
-    private fun activeNodeIds(): List<Int> =
-        currentConfigs.mapNotNull { it.treeNodeId.takeIf { id -> id >= 0 } }
-
-    private fun stackForNode(nodeId: Int): List<Char>? =
-        currentConfigs.firstOrNull { it.treeNodeId == nodeId }?.stack
 
     override fun removeTransition(transition: Transition) {
         pdaTransitions.remove(transition)
     }
 
     override fun resetSimulation() {
-        super.resetSimulation()
         currentConfigs.clear()
-        selectedNodeId = null
         staleStepCount = 0
         initialState?.index?.let {
             currentConfigs.add(
-                PdaConfig(it, listOf(Symbols.INITIAL_STACK_SYMBOL), treeNodeId = tree.root!!.id)
+                Config.Pda(it, listOf(Symbols.INITIAL_STACK_SYMBOL), treeNodeId = tree.root!!.id)
             )
         }
-        syncStack()
-    }
-
-    fun selectNode(nodeId: Int) {
-        val stack = stackForNode(nodeId) ?: return
-        selectedNodeId = nodeId
-        symbolStack.clear()
-        symbolStack.addAll(stack)
     }
 
     fun addNewTransition(
@@ -102,73 +64,48 @@ class PushdownMachine(
         }
     }
 
-    override fun calculateAllPathsStep(): Simulation {
+    override fun advanceSimulation(): Simulation {
         // Config limit - prevent runaway branching
         if (currentConfigs.size > MAX_SIM_PDA_CONFIGS) {
             return terminateSimulation()
         }
 
-        val allResults = mutableListOf<Triple<PdaConfig, PdaTransition, PdaConfig>>()
-
+        val stepResults = mutableListOf<StepResult<Config.Pda>>()
         for (config in currentConfigs) {
             val state = getStateByIndex(config.stateIndex)
-            for (transition in getMatchingTransitions(state, config.stack, config.inputOffset)) {
+            for (transition in getMatchingTransitions(state, config.stack, config.inputConsumed)) {
                 val newStack =
                     applyStackOp(config.stack, transition.pop, transition.push) ?: continue
                 val newConfig =
-                    PdaConfig(
+                    Config.Pda(
                         transition.toState,
                         newStack,
-                        config.inputOffset + transition.read.length,
+                        config.inputConsumed + transition.read.length,
                     )
-                allResults.add(Triple(config, transition, newConfig))
+                stepResults.add(StepResult(src = config, dest = newConfig, transition = transition))
             }
         }
-
-        // No transitions available - check acceptance
-        if (allResults.isEmpty()) {
+        if (stepResults.isEmpty()) {
             return terminateSimulation()
         }
 
-        // Build treeBranches and pair each new config with its branch (the branch receives
-        // its tree node id when the tree expands, so configs can read it back directly)
-        val resultsByParent = allResults.groupBy { it.first.treeNodeId }
-        val treeBranches = linkedMapOf<Int, MutableList<Branch>>()
-        val pendingConfigs = mutableListOf<Pair<Branch, PdaConfig>>()
-
-        for (config in currentConfigs) {
-            val results = resultsByParent[config.treeNodeId] ?: continue
-            val branches = mutableListOf<Branch>()
-            for ((_, transition, newConfig) in results) {
-                val toState = getStateByIndex(transition.toState)
-                val branch = Branch(toState.name)
-                branches.add(branch)
-                pendingConfigs.add(branch to newConfig)
+        // No-progress loop: same (state, stack, consumed) set, ignoring treeNodeId.
+        val newKeys =
+            stepResults.mapTo(mutableSetOf()) {
+                Triple(it.dest.stateIndex, it.dest.stack, it.dest.inputConsumed)
             }
-            treeBranches[config.treeNodeId] = branches
-        }
-
-        // Build transitionRefs for animation
-        val transitionRefs =
-            allResults.map {
-                TransitionRef(
-                    it.first.stateIndex,
-                    it.third.stateIndex,
-                    pdaTransitions.indexOf(it.second),
-                )
+        val currentKeys =
+            currentConfigs.mapTo(mutableSetOf()) {
+                Triple(it.stateIndex, it.stack, it.inputConsumed)
             }
-
-        // No-progress loop: same (state, stack, offset) set — treeNodeId excluded from the key
-        val newKeys = allResults.mapTo(mutableSetOf()) { it.third.copy(treeNodeId = -1) }
-        val currentKeys = currentConfigs.mapTo(mutableSetOf()) { it.copy(treeNodeId = -1) }
         if (newKeys == currentKeys) {
             return terminateSimulation()
         }
 
-        val minOffset = allResults.minOf { it.third.inputOffset }
-
-        // Stale step detection - tape not advancing
-        if (minOffset == 0) {
+        // Stale step detection - the slowest path didn't advance the input floor.
+        val newFloor = stepResults.minOf { it.dest.inputConsumed }
+        val curFloor = currentConfigs.minOf { it.inputConsumed }
+        if (newFloor == curFloor) {
             staleStepCount++
             if (staleStepCount > MAX_SIM_PDA_STALE_STEPS) {
                 return terminateSimulation()
@@ -177,102 +114,38 @@ class PushdownMachine(
             staleStepCount = 0
         }
 
+        val (treeBranches, pendingConfigs) = buildBranches(currentConfigs, stepResults)
+
         return Simulation.Step(
-            transitionRefs = transitionRefs,
+            transitionRefs = buildTransitionRefs(stepResults),
             treeBranches = treeBranches,
             onAllComplete = {
-                consumeInput(minOffset)
-                for (config in currentConfigs) {
-                    getStateByIndex(config.stateIndex).isCurrent = false
-                }
                 currentConfigs.clear()
-
                 for ((branch, config) in pendingConfigs) {
-                    currentConfigs.add(
-                        config.copy(
-                            inputOffset = config.inputOffset - minOffset,
-                            treeNodeId = branch.assignedId,
-                        )
-                    )
+                    currentConfigs.add(config.copy(treeNodeId = branch.treeNodeId))
                 }
-
-                for (config in currentConfigs) {
-                    getStateByIndex(config.stateIndex).isCurrent = true
-                }
-                syncStack()
             },
         )
     }
 
-    private fun terminateSimulation(): Simulation.Ended {
-        val acceptingConfigs =
-            currentConfigs.filter { config ->
-                val state = getStateByIndex(config.stateIndex)
-                config.inputOffset >= remainingInput.length &&
+    private fun terminateSimulation(): Simulation.Ended =
+        terminate(
+            currentConfigs.filter {
+                it.inputConsumed >= fullInput.length &&
                     when (acceptanceCriteria) {
-                        AcceptanceCriteria.BY_FINAL_STATE -> state.final
-                        AcceptanceCriteria.BY_EMPTY_STACK -> config.stack.isEmpty()
+                        AcceptanceCriteria.BY_FINAL_STATE -> getStateByIndex(it.stateIndex).final
+                        AcceptanceCriteria.BY_EMPTY_STACK -> it.stack.isEmpty()
                     }
             }
-        val anyAccepting = acceptingConfigs.isNotEmpty()
-        return Simulation.Ended(
-            outcome = if (anyAccepting) SimulationOutcome.ACCEPTED else SimulationOutcome.REJECTED,
-            isNodeAccepting =
-                if (anyAccepting) { node -> acceptingConfigs.any { it.treeNodeId == node.id } }
-                else {
-                    null
-                },
         )
-    }
-
-    private fun syncStack() {
-        symbolStack.clear()
-        val config = currentConfigs.firstOrNull()
-        if (config != null) {
-            symbolStack.addAll(config.stack)
-        } else {
-            symbolStack.add(Symbols.INITIAL_STACK_SYMBOL)
-        }
-        buildActiveNodeStacks()
-    }
-
-    private fun buildActiveNodeStacks() {
-        if (currentConfigs.isEmpty()) {
-            return
-        }
-
-        val activeIds = activeNodeIds()
-
-        // Follow same branch as previously selected node, picking the first
-        // child alphabetically by state name - keeps the displayed stack stable
-        if (selectedNodeId != null && selectedNodeId !in activeIds) {
-            val prevNode = tree.findNode(selectedNodeId!!)
-            selectedNodeId =
-                prevNode?.children?.filter { it.id in activeIds }?.minByOrNull { it.stateName }?.id
-                    ?: activeIds.minOrNull()
-        } else if (selectedNodeId == null) {
-            selectedNodeId = activeIds.minOrNull()
-        }
-
-        selectedNodeId?.let { id ->
-            stackForNode(id)?.let { stack ->
-                symbolStack.clear()
-                symbolStack.addAll(stack)
-            }
-        }
-    }
 
     private fun getMatchingTransitions(
         fromState: State,
         stack: List<Char>,
-        inputOffset: Int,
+        inputConsumed: Int,
     ): List<PdaTransition> {
         val remaining =
-            if (inputOffset < remainingInput.length) {
-                remainingInput.substring(inputOffset)
-            } else {
-                ""
-            }
+            if (inputConsumed < fullInput.length) fullInput.substring(inputConsumed) else ""
         return pdaTransitions.filter { transition ->
             transition.fromState == fromState.index &&
                 (transition.read.isEmpty() || remaining.startsWith(transition.read)) &&

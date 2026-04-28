@@ -275,8 +275,7 @@ fun SingleInputView(
                     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                         IconButton(
                             onClick = { isTreeShown = false },
-                            modifier =
-                                Modifier.align(Alignment.TopEnd).padding(8.dp).size(40.dp),
+                            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(40.dp),
                         ) {
                             Icon(
                                 Icons.Default.Close,

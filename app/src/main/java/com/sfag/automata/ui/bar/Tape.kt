@@ -6,11 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -29,22 +31,20 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sfag.R
-import com.sfag.automata.domain.machine.FiniteMachine
-import com.sfag.automata.domain.machine.PushdownMachine
-import com.sfag.automata.domain.machine.TuringMachine
 import com.sfag.automata.ui.machine.cellPadding
 import com.sfag.automata.ui.machine.cellSize
 
 /**
- * Unified tape bar for all machine types.
+ * Unified tape bar for all machine types. The button sits flush left next to the cells; the cells
+ * fill the rest of the row and may be clipped at either edge — the LazyRow scrolls so the head
+ * stays centered.
  *
  * Head position behavior:
  * - Start of tape : head drifts from left edge toward center
  * - Middle of tape : head stays at center (tape scrolls under it)
  * - End of tape : head drifts from center toward right edge
  *
- * Both drifts are produced by the natural LazyRow scroll clamping at each end - no explicit
- * start/end padding tricks required.
+ * Both drifts are produced by the natural LazyRow scroll clamping at each end.
  *
  * [listState] must be hoisted outside any key() block in the caller so scroll position survives
  * recomposition-key resets and Tape can animate smoothly between steps.
@@ -63,131 +63,69 @@ fun Tape(
 ) {
     val density = LocalDensity.current
 
-    BarRow(
-        label = { width ->
-            Box(
-                modifier = Modifier.width(width).height(cellSize),
-                contentAlignment = Alignment.CenterStart,
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .height(cellSize + cellPadding * 2)
+                .padding(horizontal = cellPadding),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(cellPadding),
+    ) {
+        Box(
+            modifier =
+                Modifier.size(cellSize)
+                    .clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.secondaryContainer)
+                    .clickable { onEdit() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = stringResource(R.string.input_tape_button),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                lineHeight = 14.sp,
+            )
+        }
+
+        BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxHeight()) {
+            val viewportPx = with(density) { maxWidth.toPx() }
+            val cellPx = with(density) { cellSize.toPx() }
+            val cellStepPx = with(density) { (cellSize + cellPadding).toPx() }
+            val centerOffset = -((viewportPx - cellPx) / 2).toInt()
+            val visibleCells = (viewportPx / cellStepPx).toInt() + 2
+
+            val rightPad =
+                if (infiniteRight) (visibleCells - symbols.size + 1).coerceAtLeast(3) else 0
+            val leftPad = if (infiniteLeft) 3 else 0
+            val displaySymbols =
+                List(leftPad) { blankChar } + symbols + List(rightPad) { blankChar }
+            val adjustedHead = headIndex + leftPad
+
+            LaunchedEffect(adjustedHead, centerOffset) {
+                if (displaySymbols.isNotEmpty() && adjustedHead in displaySymbols.indices) {
+                    listState.animateScrollToItem(adjustedHead, scrollOffset = centerOffset)
+                }
+            }
+
+            LazyRow(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(cellPadding),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(
-                    modifier =
-                        Modifier.size(cellSize)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                            .clickable { onEdit() },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.input_tape_button),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                        lineHeight = 14.sp,
+                itemsIndexed(displaySymbols) { index, symbol ->
+                    Cell(
+                        symbol = symbol,
+                        isHead = index == adjustedHead,
+                        isConsumed = isConsumedShown && index < adjustedHead,
+                        headColor = headColor,
                     )
                 }
             }
-        },
-        cells = { width ->
-            BoxWithConstraints(modifier = Modifier.width(width).fillMaxHeight()) {
-                val viewportPx = with(density) { maxWidth.toPx() }
-                val cellPx = with(density) { cellSize.toPx() }
-                val cellStepPx = with(density) { (cellSize + cellPadding).toPx() }
-                val centerOffset = -((viewportPx - cellPx) / 2).toInt()
-                val visibleCells = (viewportPx / cellStepPx).toInt() + 2
-
-                val rightPad =
-                    if (infiniteRight) (visibleCells - symbols.size + 1).coerceAtLeast(3) else 0
-                val leftPad = if (infiniteLeft) 3 else 0
-                val displaySymbols =
-                    List(leftPad) { blankChar } + symbols + List(rightPad) { blankChar }
-                val adjustedHead = headIndex + leftPad
-
-                LaunchedEffect(adjustedHead, centerOffset) {
-                    if (displaySymbols.isNotEmpty() && adjustedHead in displaySymbols.indices) {
-                        listState.animateScrollToItem(
-                            adjustedHead,
-                            scrollOffset = centerOffset,
-                        )
-                    }
-                }
-
-                LazyRow(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(cellPadding),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    itemsIndexed(displaySymbols) { index, symbol ->
-                        Cell(
-                            symbol = symbol,
-                            isHead = index == adjustedHead,
-                            isConsumed = isConsumedShown && index < adjustedHead,
-                            headColor = headColor,
-                        )
-                    }
-                }
-            }
-        },
-    )
-}
-
-@Composable
-fun FiniteMachine.Tape(
-    listState: LazyListState,
-    onEdit: () -> Unit,
-    headColor: Color = MaterialTheme.colorScheme.primary,
-) {
-    val symbols = fullInput
-    val headIndex = (symbols.length - remainingInput.length).coerceIn(0, symbols.length)
-
-    Tape(
-        symbols = symbols.toList(),
-        headIndex = headIndex,
-        listState = listState,
-        headColor = headColor,
-        isConsumedShown = true,
-        onEdit = onEdit,
-        infiniteRight = false,
-    )
-}
-
-@Composable
-fun PushdownMachine.Tape(
-    listState: LazyListState,
-    onEdit: () -> Unit,
-    headColor: Color = MaterialTheme.colorScheme.primary,
-) {
-    val symbols = fullInput
-    val headIndex = (symbols.length - remainingInput.length).coerceIn(0, symbols.length)
-
-    Tape(
-        symbols = symbols.toList(),
-        headIndex = headIndex,
-        listState = listState,
-        headColor = headColor,
-        isConsumedShown = true,
-        onEdit = onEdit,
-        infiniteRight = false,
-    )
-}
-
-/** Bidirectional tape for Turing machine simulation. */
-@Composable
-fun TuringMachine.Tape(
-    listState: LazyListState,
-    onEdit: () -> Unit,
-    headColor: Color = MaterialTheme.colorScheme.primary,
-) {
-    Tape(
-        symbols = tape,
-        headIndex = headPosition,
-        listState = listState,
-        headColor = headColor,
-        onEdit = onEdit,
-        infiniteRight = true,
-        infiniteLeft = true,
-    )
+        }
+    }
 }
 
 @Composable

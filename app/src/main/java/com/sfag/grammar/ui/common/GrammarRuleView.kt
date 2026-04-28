@@ -50,11 +50,12 @@ fun GrammarRuleView(
             )
             Box(
                 modifier =
-                    Modifier.matchParentSize().clickable(
-                        interactionSource = noOpInteraction,
-                        indication = null,
-                        onClick = { if (!isGrammarFinished) onEdit() },
-                    )
+                    Modifier.matchParentSize()
+                        .clickable(
+                            interactionSource = noOpInteraction,
+                            indication = null,
+                            onClick = { if (!isGrammarFinished) onEdit() },
+                        )
             )
         }
         Text(Symbols.ARROW, style = MaterialTheme.typography.headlineMedium)
@@ -67,11 +68,12 @@ fun GrammarRuleView(
             )
             Box(
                 modifier =
-                    Modifier.matchParentSize().clickable(
-                        interactionSource = noOpInteraction,
-                        indication = null,
-                        onClick = { if (!isGrammarFinished) onEdit() },
-                    )
+                    Modifier.matchParentSize()
+                        .clickable(
+                            interactionSource = noOpInteraction,
+                            indication = null,
+                            onClick = { if (!isGrammarFinished) onEdit() },
+                        )
             )
         }
         if (!isGrammarFinished) {

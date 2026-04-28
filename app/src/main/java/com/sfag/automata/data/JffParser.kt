@@ -77,14 +77,7 @@ internal data class Jff(
             val isInitial = element.hasChild("initial")
             val isFinal = element.hasChild("final")
 
-            val state =
-                State(
-                    final = isFinal,
-                    initial = isInitial,
-                    index = id,
-                    name = name,
-                    isCurrent = false,
-                )
+            val state = State(final = isFinal, initial = isInitial, index = id, name = name)
             return state to Point2D(x, y)
         }
 

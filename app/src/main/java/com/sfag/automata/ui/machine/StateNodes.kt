@@ -34,6 +34,7 @@ internal fun Machine.StateNodes(
     offsetX: Float,
     offsetY: Float,
     isEditing: Boolean = false,
+    activeStateIndices: Set<Int> = emptySet(),
     simulationOutcome: SimulationOutcome? = null,
     borderColor: Color = MaterialTheme.colorScheme.onSurface,
     currentStateFillColor: Color = MaterialTheme.colorScheme.primaryContainer,
@@ -70,7 +71,7 @@ internal fun Machine.StateNodes(
                     (position.y + NODE_RADIUS / 2f) * pxPerDp,
                 )
 
-            val showCurrent = state.isCurrent && !isEditing
+            val showCurrent = state.index in activeStateIndices && !isEditing
             val fillColor: Color
             val textArgb: Int
             if (showCurrent && simulationOutcome != null) {
@@ -89,8 +90,7 @@ internal fun Machine.StateNodes(
                         textArgb = rejectedText.toArgb()
                     }
 
-                    SimulationOutcome.ACTIVE,
-                    SimulationOutcome.DEAD -> {
+                    SimulationOutcome.ACTIVE -> {
                         fillColor = currentStateFillColor
                         textArgb = currentStateTextColor.toArgb()
                     }
