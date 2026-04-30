@@ -53,8 +53,10 @@
     <string name="state_name">state name</string>
     <string name="tap_to_add_states">Tap (a)+ to add states</string>
     <string name="to_state">to</string>
-    <string name="transition_name">transition name</string>
+    <string name="transition_direction">direction</string>
     <string name="transition_read">read</string>
+    <string name="transition_write">write</string>
+    <string name="turing_machine">Turing</string>
     <string name="unsaved_changes">Unsaved changes</string>
     <string name="unsaved_changes_message">You have unsaved changes. Would you like to save them before continuing?</string>
 
@@ -108,7 +110,7 @@
 
     <!-- Automata examples -->
     <string name="automata_example">Automata examples</string>
-    <string name="dfa_3kplus1_label">3k +1</string>
+    <string name="dfa_3kplus1_a_label">3k+1 a</string>
     <string name="dfa_3kplus1_desc">Deterministic finite automaton</string>
     <string name="dfa_an_label">a^n</string>
     <string name="dfa_an_desc">Deterministic finite automaton</string>
@@ -141,9 +143,9 @@
     <string name="reg_ends_01_or_10_desc">Regular grammar</string>
 
     <!-- About Screen -->
-    <string name="about_automata_features">The simulator allows for finite/pushdown automata:</string>
+    <string name="about_automata_features">The simulator allows for finite/pushdown automata and Turing machines:</string>
     <string name="about_automata_tab">Automata</string>
-    <string name="about_description">AutoGram simulator is an application that helps to understand working with formal languages of the Chomsky hierarchy. The application includes simulators for finite and pushdown automata and a grammar simulator.</string>
+    <string name="about_description">AutoGram simulator is an application that helps to understand working with formal languages of the Chomsky hierarchy. The application includes simulators for finite automata, pushdown automata, Turing machines, and a grammar simulator.</string>
     <string name="about_grammar_features">The simulator allows for grammars:</string>
     <string name="about_grammar_tab">Grammars</string>
     <string name="authors_label">Authors:</string>

@@ -92,12 +92,9 @@ fun Tape(
         BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxHeight()) {
             val viewportPx = with(density) { maxWidth.toPx() }
             val cellPx = with(density) { cellSize.toPx() }
-            val cellStepPx = with(density) { (cellSize + cellPadding).toPx() }
             val centerOffset = -((viewportPx - cellPx) / 2).toInt()
-            val visibleCells = (viewportPx / cellStepPx).toInt() + 2
 
-            val rightPad =
-                if (infiniteRight) (visibleCells - symbols.size + 1).coerceAtLeast(3) else 0
+            val rightPad = if (infiniteRight) 3 else 0
             val leftPad = if (infiniteLeft) 3 else 0
             val displaySymbols =
                 List(leftPad) { blankChar } + symbols + List(rightPad) { blankChar }

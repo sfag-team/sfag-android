@@ -54,6 +54,7 @@ import com.sfag.automata.ui.edit.StateDialog
 import com.sfag.automata.ui.edit.TransitionDialog
 import com.sfag.main.config.MAX_ZOOM
 import com.sfag.main.config.MIN_ZOOM
+import com.sfag.main.config.Symbols
 
 private const val TAP_RADIUS = NODE_RADIUS * 0.5f
 
@@ -64,11 +65,8 @@ internal val cellPadding = 4.dp
 sealed interface DialogRequest {
     data class ForState(val tapOffset: Offset, val state: State?) : DialogRequest
 
-    data class ForTransition(
-        val fromState: State,
-        val toState: State,
-        val transitionName: String?,
-    ) : DialogRequest
+    data class ForTransition(val fromState: State, val toState: State, val readSymbol: String?) :
+        DialogRequest
 }
 
 /** Unified view for both simulation and editing modes. */
@@ -119,6 +117,7 @@ fun Machine.MachineEditor(
                                 onEdit = onEdit,
                                 infiniteRight = true,
                                 infiniteLeft = true,
+                                blankChar = Symbols.BLANK_CHAR,
                             )
 
                         is Config.Fa,
@@ -570,7 +569,7 @@ fun Machine.MachineEditor(
                         TransitionDialog(
                             request.fromState,
                             request.toState,
-                            request.transitionName,
+                            request.readSymbol,
                             onDismiss = {
                                 dialogRequest.value = null
                                 onRecompose()

@@ -58,7 +58,7 @@ fun GrammarRuleView(
                         )
             )
         }
-        Text(Symbols.ARROW, style = MaterialTheme.typography.headlineMedium)
+        Text(Symbols.PRODUCTION, style = MaterialTheme.typography.headlineMedium)
         Box(modifier = Modifier.weight(1f)) {
             OutlinedTextField(
                 value = grammarRule.right,

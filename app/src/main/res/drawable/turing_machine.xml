@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="35dp"
+    android:height="35dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Tape outline (cells 3.4w × 5.1h, ratio 1:1.5) -->
+    <path
+        android:fillColor="#FF000000"
+        android:fillType="evenOdd"
+        android:pathData="M4.5,10.45 L19.5,10.45 a2,2 0 0,1 2,2 L21.5,15.55 a2,2 0 0,1 -2,2 L4.5,17.55 a2,2 0 0,1 -2,-2 L2.5,12.45 a2,2 0 0,1 2,-2 Z M4.5,11.45 L19.5,11.45 a1,1 0 0,1 1,1 L20.5,15.55 a1,1 0 0,1 -1,1 L4.5,16.55 a1,1 0 0,1 -1,-1 L3.5,12.45 a1,1 0 0,1 1,-1 Z" />
+
+    <!-- 4 dividers (5 cells) -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M6.65,11.45 L7.15,11.45 L7.15,16.55 L6.65,16.55 Z M10.05,11.45 L10.55,11.45 L10.55,16.55 L10.05,16.55 Z M13.45,11.45 L13.95,11.45 L13.95,16.55 L13.45,16.55 Z M16.85,11.45 L17.35,11.45 L17.35,16.55 L16.85,16.55 Z" />
+
+    <!-- Head pointer over 4th cell, height 4 -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M15.4,10.45 L13.7,6.45 L17.1,6.45 Z" />
+</vector>

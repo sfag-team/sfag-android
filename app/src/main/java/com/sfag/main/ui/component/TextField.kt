@@ -88,7 +88,7 @@ fun DefaultTextField(
                 focusedTextColor = resolvedTextColor,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                 unfocusedIndicatorColor = Color.Transparent,
-                unfocusedLabelColor = labelColor ?: MaterialTheme.colorScheme.outline,
+                unfocusedLabelColor = labelColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
                 unfocusedTextColor = resolvedTextColor,
             ),
         isError = isError,

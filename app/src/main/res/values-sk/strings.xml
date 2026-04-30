@@ -53,8 +53,10 @@
     <string name="state_name">názov stavu</string>
     <string name="tap_to_add_states">Klepnutím na (a)+ pridáte stavy</string>
     <string name="to_state">do</string>
-    <string name="transition_name">názov prechodu</string>
-    <string name="transition_read">vstup</string>
+    <string name="transition_direction">smer</string>
+    <string name="transition_read">čítaj</string>
+    <string name="transition_write">zapíš</string>
+    <string name="turing_machine">Turingov</string>
     <string name="unsaved_changes">Neuložené zmeny</string>
     <string name="unsaved_changes_message">Máte neuložené zmeny. Chcete ich uložiť pred pokračovaním?</string>
 
@@ -108,7 +110,7 @@
 
     <!-- Automata examples -->
     <string name="automata_example">Príklady automatov</string>
-    <string name="dfa_3kplus1_label">3k +1</string>
+    <string name="dfa_3kplus1_a_label">3k+1 a</string>
     <string name="dfa_3kplus1_desc">Deterministický konečný automat</string>
     <string name="dfa_an_label">a^n</string>
     <string name="dfa_an_desc">Deterministický konečný automat</string>
@@ -141,9 +143,9 @@
     <string name="reg_ends_01_or_10_desc">Regulárna gramatika</string>
 
     <!-- About Screen -->
-    <string name="about_automata_features">Simulátor umožňuje pre konečný/zásobníkový automat:</string>
+    <string name="about_automata_features">Simulátor umožňuje pre konečné, zásobníkové automaty a Turingove stroje:</string>
     <string name="about_automata_tab">Automaty</string>
-    <string name="about_description">AutoGram simulátor je aplikácia umožňujúca pochopiť prácu s formálnymi jazykmi Chomského hierarchie jazykov. V aplikácii možno pracovať so simulátorom konečných a zásobníkových automatov a simulátorom gramatík.</string>
+    <string name="about_description">AutoGram simulátor je aplikácia umožňujúca pochopiť prácu s formálnymi jazykmi Chomského hierarchie jazykov. V aplikácii možno pracovať so simulátorom konečných automatov, zásobníkových automatov, Turingových strojov a simulátorom gramatík.</string>
     <string name="about_grammar_features">Simulátor umožňuje pre gramatiky:</string>
     <string name="about_grammar_tab">Gramatiky</string>
     <string name="authors_label">Autori:</string>

@@ -131,8 +131,8 @@ private object ExampleSources {
         listOf(
             "automata/dfa_an.jff" to
                 ExampleDescription(R.string.dfa_an_label, R.string.dfa_an_desc),
-            "automata/dfa_3kplus1.jff" to
-                ExampleDescription(R.string.dfa_3kplus1_label, R.string.dfa_3kplus1_desc),
+            "automata/dfa_3kplus1_a.jff" to
+                ExampleDescription(R.string.dfa_3kplus1_a_label, R.string.dfa_3kplus1_desc),
             "automata/dfa_ends_01_or_10.jff" to
                 ExampleDescription(
                     R.string.dfa_ends_01_or_10_label,

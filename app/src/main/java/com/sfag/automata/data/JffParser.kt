@@ -11,7 +11,6 @@ import com.sfag.automata.domain.machine.TapeDirection
 import com.sfag.automata.domain.machine.TmTransition
 import com.sfag.automata.domain.machine.Transition
 import com.sfag.automata.domain.machine.TuringMachine
-import com.sfag.main.config.Symbols
 import com.sfag.main.data.JffUtils
 import com.sfag.main.data.Point2D
 import com.sfag.main.data.XmlUtils
@@ -90,34 +89,32 @@ internal data class Jff(
                 return null
             }
 
-            val readSymbol = JffUtils.normalizeEpsilon(element.getChildText("read")?.trim() ?: "")
-
             return when (jffTag) {
-                "fa" -> FaTransition(fromState, toState, readSymbol)
+                "fa" -> {
+                    val read = JffUtils.normalizeEpsilon(element.getChildText("read")?.trim() ?: "")
+                    FaTransition(fromState, toState, read)
+                }
                 "pda" -> {
+                    val read = JffUtils.normalizeEpsilon(element.getChildText("read")?.trim() ?: "")
                     val pop = JffUtils.normalizeEpsilon(element.getChildText("pop")?.trim() ?: "")
                     val push = JffUtils.normalizeEpsilon(element.getChildText("push")?.trim() ?: "")
                     PdaTransition(
                         fromState = fromState,
                         toState = toState,
-                        read = readSymbol,
+                        read = read,
                         pop = pop,
                         push = push,
                     )
                 }
 
                 "turing" -> {
-                    val readText = element.getChildText("read")?.trim()
-                    val turingRead =
-                        if (readText.isNullOrEmpty()) Symbols.BLANK_CHAR.toString() else readText
-                    val writeText = element.getChildText("write")?.trim()
-                    val write =
-                        if (writeText.isNullOrEmpty()) Symbols.BLANK_CHAR else writeText.first()
+                    val read = JffUtils.normalizeBlank(element.getChildText("read") ?: "")
+                    val write = JffUtils.normalizeBlank(element.getChildText("write") ?: "").first()
                     val directionSymbol = element.getChildText("move")?.trim() ?: "R"
                     TmTransition(
                         fromState = fromState,
                         toState = toState,
-                        read = turingRead,
+                        read = read,
                         write = write,
                         direction = TapeDirection.fromSymbol(directionSymbol),
                     )

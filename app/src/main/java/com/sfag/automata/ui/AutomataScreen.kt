@@ -53,6 +53,7 @@ import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.MachineType
 import com.sfag.automata.domain.machine.PushdownMachine
+import com.sfag.automata.domain.machine.TuringMachine
 import com.sfag.automata.domain.simulation.MachineFrame
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.ui.common.FormalDefinitionView
@@ -589,6 +590,7 @@ private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
                     when (machineType) {
                         MachineType.FINITE -> onImport(FiniteMachine(name = trimmedName))
                         MachineType.PUSHDOWN -> onImport(PushdownMachine(name = trimmedName))
+                        MachineType.TURING -> onImport(TuringMachine(name = trimmedName))
                         null -> {}
                     }
                 },
@@ -597,7 +599,7 @@ private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
         },
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().height(120.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -614,6 +616,13 @@ private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
                 isActive = machineType == MachineType.PUSHDOWN,
             ) {
                 machineType = MachineType.PUSHDOWN
+            }
+            ItemSpecificationIcon(
+                icon = R.drawable.turing_machine,
+                text = stringResource(R.string.turing_machine),
+                isActive = machineType == MachineType.TURING,
+            ) {
+                machineType = MachineType.TURING
             }
         }
 
