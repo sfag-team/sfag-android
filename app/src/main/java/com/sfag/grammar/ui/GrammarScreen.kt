@@ -10,9 +10,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.outlined.Build
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -169,17 +169,17 @@ private fun GrammarTopBar(
                 listOf(
                     NavAction(
                         GrammarMode.GRAMMAR_EDITOR,
-                        Icons.Default.Build,
+                        Icons.Outlined.Build,
                         stringResource(R.string.grammar_editor),
                     ),
                     NavAction(
                         GrammarMode.SINGLE_INPUT,
-                        Icons.Default.PlayArrow,
+                        Icons.Outlined.PlayCircle,
                         stringResource(R.string.single_input),
                     ),
                     NavAction(
                         GrammarMode.MULTI_INPUT,
-                        Icons.AutoMirrored.Filled.List,
+                        Icons.AutoMirrored.Outlined.List,
                         stringResource(R.string.multi_input),
                     ),
                 )

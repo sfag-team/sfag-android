@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -47,6 +46,7 @@ import com.sfag.automata.data.toMachine
 import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.MachineType
 import com.sfag.automata.domain.machine.PushdownMachine
+import com.sfag.automata.domain.machine.TuringMachine
 import com.sfag.automata.ui.AutomataScreen
 import com.sfag.automata.ui.AutomataViewModel
 import com.sfag.grammar.ui.GrammarScreen
@@ -267,6 +267,9 @@ class MainActivity : AppCompatActivity() {
                                                         MachineType.PUSHDOWN.name ->
                                                             PushdownMachine(name = name ?: "")
 
+                                                        MachineType.TURING.name ->
+                                                            TuringMachine(name = name ?: "")
+
                                                         else ->
                                                             throw IllegalArgumentException(
                                                                 "Unknown machine type: $machineType"
@@ -466,7 +469,7 @@ private fun NewMachineDialog(
         },
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().height(120.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -483,6 +486,13 @@ private fun NewMachineDialog(
                 isActive = machineType == MachineType.PUSHDOWN,
             ) {
                 machineType = MachineType.PUSHDOWN
+            }
+            ItemSpecificationIcon(
+                icon = R.drawable.turing_machine,
+                text = stringResource(R.string.turing_machine),
+                isActive = machineType == MachineType.TURING,
+            ) {
+                machineType = MachineType.TURING
             }
         }
 

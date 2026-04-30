@@ -39,7 +39,6 @@ sealed class FormalDefinition {
         override val finalStateNames: List<String>,
         override val transitionLabels: List<String>,
         val tapeAlphabet: Set<Char>,
-        val blankSymbol: Char,
     ) : FormalDefinition()
 }
 
@@ -77,7 +76,6 @@ fun Machine.getFormalDefinition(): FormalDefinition {
                 finalStateNames,
                 transitionLabels(),
                 tapeAlphabet = tapeAlphabet(),
-                blankSymbol = blankSymbol,
             )
     }
 }
@@ -104,7 +102,7 @@ private fun TuringMachine.transitionLabels(): List<String> =
     tmTransitions.map { transition ->
         val fromStateName = getStateByIndex(transition.fromState).name
         val toStateName = getStateByIndex(transition.toState).name
-        val readSymbol = transition.read.ifEmpty { Symbols.EPSILON }
+        val readSymbol = transition.read.ifEmpty { Symbols.BLANK }
         "${Symbols.DELTA}($fromStateName, $readSymbol) = ($toStateName, ${transition.write}, ${transition.direction})"
     }
 

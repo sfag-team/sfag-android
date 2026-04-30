@@ -79,7 +79,11 @@ private fun PushdownMachine.checkPdaAcceptance(input: StringBuilder): Boolean? {
                     val newStack =
                         applyStackOp(config.stack, transition.pop, transition.push)
                             ?: return@mapNotNull null
-                    BfsConfig(transition.toState, config.inputConsumed + transition.read.length, newStack)
+                    BfsConfig(
+                        transition.toState,
+                        config.inputConsumed + transition.read.length,
+                        newStack,
+                    )
                 }
         },
         isAccepted = acceptPredicate,

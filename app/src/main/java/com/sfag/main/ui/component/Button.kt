@@ -17,6 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -67,6 +69,55 @@ fun DefaultIconButton(
     iconSize: Dp = 32.dp,
     isActive: Boolean = false,
 ) {
+    DefaultIconButtonBox(
+        onClick = onClick,
+        modifier = modifier,
+        height = height,
+        isActive = isActive,
+    ) { tint ->
+        Icon(
+            painter = painterResource(id = icon),
+            contentDescription = contentDescription,
+            modifier = Modifier.size(iconSize),
+            tint = tint,
+        )
+    }
+}
+
+/** Same as [DefaultIconButton] but takes a Material [ImageVector] (e.g. `Icons.Outlined.Edit`). */
+@Composable
+fun DefaultIconButton(
+    onClick: () -> Unit,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    contentDescription: String = "",
+    height: Dp = 56.dp,
+    iconSize: Dp = 32.dp,
+    isActive: Boolean = false,
+) {
+    DefaultIconButtonBox(
+        onClick = onClick,
+        modifier = modifier,
+        height = height,
+        isActive = isActive,
+    ) { tint ->
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(iconSize),
+            tint = tint,
+        )
+    }
+}
+
+@Composable
+private fun DefaultIconButtonBox(
+    onClick: () -> Unit,
+    modifier: Modifier,
+    height: Dp,
+    isActive: Boolean,
+    content: @Composable (tint: Color) -> Unit,
+) {
     Box(
         modifier =
             modifier
@@ -82,16 +133,9 @@ fun DefaultIconButton(
                 .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            painter = painterResource(id = icon),
-            contentDescription = contentDescription,
-            modifier = Modifier.size(iconSize),
-            tint =
-                if (isActive) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                },
-        )
+        val tint =
+            if (isActive) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onSecondaryContainer
+        content(tint)
     }
 }

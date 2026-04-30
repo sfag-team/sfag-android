@@ -74,6 +74,24 @@ object JffUtils {
         }
 
     /**
+     * Collapses known blank aliases to [Symbols.BLANK]. Aliases: empty/whitespace-only, "_", "␣",
+     * "□", "blank" (case-insensitive). Other values are returned trimmed with original case
+     * preserved.
+     */
+    fun normalizeBlank(value: String): String {
+        if (value.isBlank()) return Symbols.BLANK
+        val trimmed = value.trim()
+        return when (trimmed.lowercase()) {
+            "_",
+            "␣",
+            Symbols.BLANK,
+            "blank" -> Symbols.BLANK
+
+            else -> trimmed
+        }
+    }
+
+    /**
      * Builds a complete JFF XML document with the standard header and structure wrapper. [type] is
      * the JFF type tag (fa, pda, turing, grammar). [body] appends the type-specific XML content.
      */

@@ -1,6 +1,7 @@
 package com.sfag.grammar.ui.edit
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,18 +16,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,9 +30,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -46,6 +44,7 @@ import com.sfag.grammar.ui.GrammarViewModel
 import com.sfag.grammar.ui.common.FormalDefinitionView
 import com.sfag.grammar.ui.common.GrammarRuleView
 import com.sfag.main.config.Symbols
+import com.sfag.main.ui.component.DefaultButton
 import kotlinx.coroutines.launch
 
 @Composable
@@ -75,19 +74,19 @@ fun GrammarEditor(
     val nonTerminalMissingError = stringResource(R.string.non_terminal_missing)
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Spacer(Modifier.height(16.dp))
-
-        Text(
-            text = stringResource(R.string.rules_p),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp),
-        )
         // LazyColumn for displaying rules and input fields
         LazyColumn(
-            modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+            item {
+                Text(
+                    text = stringResource(R.string.rules_p),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             items(rules) { rule ->
                 if (editingRule == rule) {
                     AddRule(
@@ -139,8 +138,11 @@ fun GrammarEditor(
                         },
                     )
                 }
-                Button(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                DefaultButton(
+                    text =
+                        if (isGrammarFinished) stringResource(R.string.edit_grammar)
+                        else stringResource(R.string.editing_done),
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                     onClick = {
                         val editing = editingRule
                         if (editing == null) {
@@ -168,12 +170,7 @@ fun GrammarEditor(
                             }
                         }
                     },
-                ) {
-                    Text(
-                        if (isGrammarFinished) stringResource(R.string.edit_grammar)
-                        else stringResource(R.string.editing_done)
-                    )
-                }
+                )
             }
         }
         Box(
@@ -220,7 +217,7 @@ private fun AddRule(
                     }
                 },
         )
-        Text(Symbols.ARROW, style = MaterialTheme.typography.headlineMedium)
+        Text(Symbols.PRODUCTION, style = MaterialTheme.typography.headlineMedium)
         OutlinedTextField(
             value = rightText,
             onValueChange = { onRightChange(it) },
@@ -233,70 +230,61 @@ private fun AddRule(
                     }
                 },
         )
-        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(3.dp),
-                modifier = Modifier.height(56.dp).width(40.dp),
-            ) {
-                FilledTonalButton(
-                    onClick = {
-                        when (focusedField) {
-                            "left" ->
-                                onLeftChange(
-                                    TextFieldValue(
-                                        leftText.text + "|",
-                                        TextRange(leftText.text.length + 1),
-                                    )
+        Column(
+            verticalArrangement = Arrangement.spacedBy(3.dp),
+            modifier = Modifier.height(56.dp).width(42.dp),
+        ) {
+            SymbolInsertButton(
+                symbol = "|",
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                onClick = {
+                    when (focusedField) {
+                        "left" ->
+                            onLeftChange(
+                                TextFieldValue(
+                                    leftText.text + "|",
+                                    TextRange(leftText.text.length + 1),
                                 )
+                            )
 
-                            "right" ->
-                                onRightChange(
-                                    TextFieldValue(
-                                        rightText.text + "|",
-                                        TextRange(rightText.text.length + 1),
-                                    )
+                        "right" ->
+                            onRightChange(
+                                TextFieldValue(
+                                    rightText.text + "|",
+                                    TextRange(rightText.text.length + 1),
                                 )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentPadding = PaddingValues(0.dp),
-                    shape = MaterialTheme.shapes.extraSmall,
-                ) {
-                    Text("|", style = MaterialTheme.typography.labelLarge)
-                }
+                            )
+                    }
+                },
+            )
+            SymbolInsertButton(
+                symbol = Symbols.EPSILON,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                onClick = {
+                    when (focusedField) {
+                        "left" ->
+                            onLeftChange(
+                                TextFieldValue(
+                                    leftText.text + Symbols.EPSILON,
+                                    TextRange(leftText.text.length + 1),
+                                )
+                            )
 
-                FilledTonalButton(
-                    onClick = {
-                        when (focusedField) {
-                            "left" ->
-                                onLeftChange(
-                                    TextFieldValue(
-                                        leftText.text + Symbols.EPSILON,
-                                        TextRange(leftText.text.length + 1),
-                                    )
+                        "right" ->
+                            onRightChange(
+                                TextFieldValue(
+                                    rightText.text + Symbols.EPSILON,
+                                    TextRange(rightText.text.length + 1),
                                 )
-
-                            "right" ->
-                                onRightChange(
-                                    TextFieldValue(
-                                        rightText.text + Symbols.EPSILON,
-                                        TextRange(rightText.text.length + 1),
-                                    )
-                                )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentPadding = PaddingValues(0.dp),
-                    shape = MaterialTheme.shapes.extraSmall,
-                ) {
-                    Text(Symbols.EPSILON, style = MaterialTheme.typography.labelLarge)
-                }
-            }
+                            )
+                    }
+                },
+            )
         }
 
-        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-            FilledIconButton(
-                onClick = {
+        Box(
+            modifier =
+                Modifier.height(56.dp).width(42.dp).clickable {
                     val validChars =
                         leftText.text.all {
                             it.isLetterOrDigit() || it == '|' || "$it" == Symbols.EPSILON
@@ -313,11 +301,36 @@ private fun AddRule(
                         focusManager.clearFocus()
                     }
                 },
-                modifier = Modifier.size(40.dp),
-                shape = MaterialTheme.shapes.extraSmall,
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_rule))
-            }
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Outlined.Add,
+                contentDescription = stringResource(R.string.add_rule),
+                modifier = Modifier.size(28.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
+    }
+}
+
+/** Filled tonal helper button that inserts [symbol] into the focused field. */
+@Composable
+private fun SymbolInsertButton(symbol: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Box(
+        modifier =
+            modifier
+                .clip(MaterialTheme.shapes.extraSmall)
+                .background(MaterialTheme.colorScheme.secondaryContainer)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = symbol,
+            style =
+                MaterialTheme.typography.labelLarge.copy(
+                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                ),
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+        )
     }
 }

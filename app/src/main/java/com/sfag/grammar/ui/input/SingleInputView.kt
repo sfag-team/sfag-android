@@ -16,11 +16,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -196,7 +196,7 @@ fun SingleInputView(
                     modifier = Modifier.size(40.dp),
                 ) {
                     Icon(
-                        Icons.Default.CheckCircle,
+                        Icons.Outlined.CheckCircle,
                         contentDescription = stringResource(R.string.check_input),
                         tint = MaterialTheme.colorScheme.primary,
                     )
@@ -278,7 +278,7 @@ fun SingleInputView(
                             modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(40.dp),
                         ) {
                             Icon(
-                                Icons.Default.Close,
+                                Icons.Outlined.Close,
                                 contentDescription = stringResource(R.string.close_tree),
                             )
                         }
@@ -288,7 +288,7 @@ fun SingleInputView(
                                 Modifier.align(Alignment.BottomCenter).padding(4.dp).size(40.dp),
                         ) {
                             Icon(
-                                Icons.Default.Refresh,
+                                Icons.Outlined.Refresh,
                                 contentDescription = stringResource(R.string.reset_simulation),
                             )
                         }
@@ -436,7 +436,7 @@ fun SingleInputView(
                             modifier = Modifier.size(40.dp),
                         ) {
                             Icon(
-                                Icons.AutoMirrored.Filled.ArrowForward,
+                                Icons.AutoMirrored.Outlined.ArrowForward,
                                 stringResource(R.string.linear_derivation),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
@@ -449,7 +449,7 @@ fun SingleInputView(
                             modifier = Modifier.size(40.dp),
                         ) {
                             Icon(
-                                Icons.Default.Menu,
+                                Icons.Outlined.Menu,
                                 stringResource(R.string.table_derivation),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
@@ -479,7 +479,7 @@ fun SingleInputView(
                 text = stringResource(R.string.grammar_rule),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp),
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
             LazyColumn(
                 modifier = Modifier.padding(horizontal = 16.dp),

@@ -19,6 +19,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CropFree
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -53,6 +58,7 @@ import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.MachineType
 import com.sfag.automata.domain.machine.PushdownMachine
+import com.sfag.automata.domain.machine.TuringMachine
 import com.sfag.automata.domain.simulation.MachineFrame
 import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.ui.common.FormalDefinitionView
@@ -331,7 +337,7 @@ fun AutomataScreen(
                                             currentMode.value = Mode.MACHINE_EDITOR
                                         }
                                     },
-                                    icon = R.drawable.edit,
+                                    icon = Icons.Outlined.Edit,
                                     modifier = Modifier.weight(1f),
                                     isActive = currentMode.value == Mode.MACHINE_EDITOR,
                                 )
@@ -349,9 +355,9 @@ fun AutomataScreen(
                                     },
                                     icon =
                                         if (currentMode.value == Mode.MACHINE_EDITOR) {
-                                            R.drawable.center_focus
+                                            Icons.Outlined.CropFree
                                         } else {
-                                            R.drawable.replay
+                                            Icons.Outlined.Replay
                                         },
                                     modifier = Modifier.weight(1f),
                                 )
@@ -419,7 +425,7 @@ fun AutomataScreen(
                                             )
                                         }
                                     },
-                                    icon = R.drawable.skip_next,
+                                    icon = Icons.Outlined.SkipNext,
                                     modifier = Modifier.weight(1f),
                                 )
                             }
@@ -589,6 +595,7 @@ private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
                     when (machineType) {
                         MachineType.FINITE -> onImport(FiniteMachine(name = trimmedName))
                         MachineType.PUSHDOWN -> onImport(PushdownMachine(name = trimmedName))
+                        MachineType.TURING -> onImport(TuringMachine(name = trimmedName))
                         null -> {}
                     }
                 },
@@ -597,7 +604,7 @@ private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
         },
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().height(120.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -614,6 +621,13 @@ private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
                 isActive = machineType == MachineType.PUSHDOWN,
             ) {
                 machineType = MachineType.PUSHDOWN
+            }
+            ItemSpecificationIcon(
+                icon = R.drawable.turing_machine,
+                text = stringResource(R.string.turing_machine),
+                isActive = machineType == MachineType.TURING,
+            ) {
+                machineType = MachineType.TURING
             }
         }
 

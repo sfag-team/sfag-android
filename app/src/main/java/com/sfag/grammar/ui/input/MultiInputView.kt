@@ -14,9 +14,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -186,7 +186,7 @@ private fun TableRow(
                 isValid == true -> {
                     Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Default.Check,
+                            imageVector = Icons.Outlined.Check,
                             contentDescription = stringResource(R.string.valid_result),
                             tint = MaterialTheme.colorScheme.primary,
                         )
@@ -196,7 +196,7 @@ private fun TableRow(
                         modifier = Modifier.size(40.dp),
                     ) {
                         Icon(
-                            Icons.Default.PlayArrow,
+                            Icons.Outlined.PlayArrow,
                             contentDescription = stringResource(R.string.see_derivation),
                         )
                     }
@@ -205,7 +205,7 @@ private fun TableRow(
                 else ->
                     Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Default.Close,
+                            imageVector = Icons.Outlined.Close,
                             contentDescription = stringResource(R.string.invalid_result),
                             tint = MaterialTheme.colorScheme.error,
                         )

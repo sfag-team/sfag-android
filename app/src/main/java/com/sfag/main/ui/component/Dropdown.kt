@@ -6,9 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,7 +45,7 @@ fun <T> DropdownSelector(
     textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var selectedText by remember { mutableStateOf(label) }
+    var selectedText by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         if (items.isNotEmpty() && defaultSelectedIndex in items.indices) {
@@ -64,6 +64,7 @@ fun <T> DropdownSelector(
             onValueChange = {},
             readOnly = true,
             singleLine = true,
+            label = if (label.isNotEmpty()) ({ Text(label) }) else null,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             textStyle = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
             shape = MaterialTheme.shapes.extraSmall,
@@ -103,14 +104,14 @@ fun RowScope.ItemSpecificationIcon(
     onClick: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxHeight().weight(3.5f),
+        modifier = Modifier.weight(1f),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Box(
             modifier =
-                Modifier.weight(1f)
-                    .fillMaxWidth()
+                Modifier.fillMaxWidth()
+                    .height(88.dp)
                     .clip(MaterialTheme.shapes.small)
                     .background(
                         if (isActive) {
@@ -130,7 +131,7 @@ fun RowScope.ItemSpecificationIcon(
                     if (isActive) {
                         MaterialTheme.colorScheme.onSecondaryContainer
                     } else {
-                        MaterialTheme.colorScheme.onSurface
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     },
             )
         }

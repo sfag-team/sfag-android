@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.Create
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
@@ -58,7 +58,7 @@ fun GrammarRuleView(
                         )
             )
         }
-        Text(Symbols.ARROW, style = MaterialTheme.typography.headlineMedium)
+        Text(Symbols.PRODUCTION, style = MaterialTheme.typography.headlineMedium)
         Box(modifier = Modifier.weight(1f)) {
             OutlinedTextField(
                 value = grammarRule.right,
@@ -80,7 +80,7 @@ fun GrammarRuleView(
             CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                 IconButton(onClick = { onEdit() }, modifier = Modifier.size(40.dp)) {
                     Icon(
-                        Icons.Default.Create,
+                        Icons.Outlined.Create,
                         contentDescription = stringResource(R.string.edit_rule),
                     )
                 }
@@ -89,7 +89,7 @@ fun GrammarRuleView(
                     modifier = Modifier.size(40.dp),
                 ) {
                     Icon(
-                        Icons.Default.Delete,
+                        Icons.Outlined.Delete,
                         contentDescription = stringResource(R.string.remove_rule),
                     )
                 }
