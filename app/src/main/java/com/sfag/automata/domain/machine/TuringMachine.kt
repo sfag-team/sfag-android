@@ -10,7 +10,7 @@ import com.sfag.main.config.Symbols
  * - An input alphabet Σ ⊆ Γ
  * - A transition function δ: Q × Γ -> Q × Γ × {L, R, S}
  * - An initial state q0
- * - A blank symbol (default '␣')
+ * - A blank symbol (default '□')
  * - A set of accepting/final states F
  */
 class TuringMachine(
@@ -34,6 +34,26 @@ class TuringMachine(
 
     override fun removeTransition(transition: Transition) {
         tmTransitions.remove(transition)
+    }
+
+    fun addNewTransition(
+        fromState: State,
+        toState: State,
+        read: String,
+        write: Char,
+        direction: TapeDirection,
+    ) {
+        val alreadyExists =
+            tmTransitions.any {
+                it.fromState == fromState.index &&
+                    it.toState == toState.index &&
+                    it.read == read &&
+                    it.write == write &&
+                    it.direction == direction
+            }
+        if (!alreadyExists) {
+            tmTransitions.add(TmTransition(fromState.index, toState.index, read, write, direction))
+        }
     }
 
     override fun resetSimulation() {

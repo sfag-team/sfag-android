@@ -31,7 +31,7 @@ data class PdaTransition(
         val readLabel = displayEpsilon(read)
         val popLabel = displayEpsilon(pop)
         val pushLabel = displayEpsilon(push)
-        return "$readLabel, $popLabel ${Symbols.ARROW} $pushLabel"
+        return "$readLabel , $popLabel ; $pushLabel"
     }
 }
 
@@ -61,7 +61,7 @@ data class TmTransition(
     var direction: TapeDirection,
 ) : Transition() {
     override fun displayLabel(): String {
-        val readLabel = displayEpsilon(read)
-        return "$readLabel/$write,${direction.symbol}"
+        val readLabel = read.ifEmpty { Symbols.BLANK }
+        return "$readLabel ; $write , ${direction.symbol}"
     }
 }

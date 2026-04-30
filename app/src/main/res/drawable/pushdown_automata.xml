@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="35dp"
+    android:height="35dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Stack frame outline (open top, smaller bottom curve so cells stay equal, band 1.0) -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M6,4 L6,18.5 a1.5,1.5 0 0,0 1.5,1.5 L16.5,20 a1.5,1.5 0 0,0 1.5,-1.5 L18,4 L17,4 L17,18.5 a0.5,0.5 0 0,1 -0.5,0.5 L7.5,19 a0.5,0.5 0 0,1 -0.5,-0.5 L7,4 Z" />
+
+    <!-- 3 dividers at equal y=8/12/16 (cells visually 4 tall each) -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M6.5,7.75 L17.5,7.75 L17.5,8.25 L6.5,8.25 Z M6.5,11.75 L17.5,11.75 L17.5,12.25 L6.5,12.25 Z M6.5,15.75 L17.5,15.75 L17.5,16.25 L6.5,16.25 Z" />
+</vector>

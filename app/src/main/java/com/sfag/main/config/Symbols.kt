@@ -10,10 +10,10 @@ object Symbols {
     const val DELTA = "\u03B4" // δ - transition function
 
     // Special symbols
-    const val BLANK = "\u2423" // ␣ - blank string
-    const val BLANK_CHAR = '\u2423' // ␣ - blank char for tape operations
+    const val BLANK = "\u25A1" // □ - blank string
+    const val BLANK_CHAR = '\u25A1' // □ - blank char for tape operations
     const val INITIAL_STACK_SYMBOL = 'Z' // PDA initial stack symbol
 
     // Notations
-    const val ARROW = "->" // production rule arrow
+    const val PRODUCTION = "\u2192" // → - grammar production rule arrow
 }

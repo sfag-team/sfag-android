@@ -43,7 +43,7 @@ private fun FormalDefinition.tupleHeader(): String {
         when (this@tupleHeader) {
             is FormalDefinition.Finite -> Unit
             is FormalDefinition.Pushdown -> add(initialStackSymbol.toString())
-            is FormalDefinition.Turing -> add(blankSymbol.toString())
+            is FormalDefinition.Turing -> add(Symbols.BLANK)
         }
         add("F")
     }
@@ -60,10 +60,8 @@ private fun FormalDefinition.componentLines(): List<String> = buildList {
             add("Z = '$initialStackSymbol'")
         }
 
-        is FormalDefinition.Turing -> {
+        is FormalDefinition.Turing ->
             add("${Symbols.GAMMA} = { ${tapeAlphabet.joinToString(", ")} }")
-            add("${Symbols.BLANK} = '$blankSymbol'")
-        }
     }
     add("F = { ${finalStateNames.joinToString(", ")} }")
 }

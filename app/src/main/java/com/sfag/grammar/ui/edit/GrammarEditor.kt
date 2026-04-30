@@ -220,7 +220,7 @@ private fun AddRule(
                     }
                 },
         )
-        Text(Symbols.ARROW, style = MaterialTheme.typography.headlineMedium)
+        Text(Symbols.PRODUCTION, style = MaterialTheme.typography.headlineMedium)
         OutlinedTextField(
             value = rightText,
             onValueChange = { onRightChange(it) },
