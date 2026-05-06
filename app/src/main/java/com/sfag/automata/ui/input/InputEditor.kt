@@ -1,17 +1,22 @@
 package com.sfag.automata.ui.input
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
@@ -33,12 +38,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.unit.dp
 import com.sfag.R
+import com.sfag.automata.domain.common.checkAcceptance
 import com.sfag.automata.domain.machine.AcceptanceCriteria
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
+import com.sfag.automata.domain.machine.TuringMachine
 import com.sfag.main.config.Symbols
+import com.sfag.main.data.JffUtils
 import com.sfag.main.ui.component.DefaultButton
 import com.sfag.main.ui.component.DefaultTextField
 import com.sfag.main.ui.component.DropdownSelector
@@ -58,6 +67,16 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     var recomposeKey by remember { mutableIntStateOf(0) }
     val newFullInput = remember { mutableStateOf(fullInput) }
 
+    // Maps spaces to BLANK_CHAR for TM tape; identity for FA/PDA. Applied when persisting
+    // (saved inputs, setInput) and live validation, never to the visible text field value.
+    val normalize: (String) -> String = { text ->
+        if (this@InputEditor is TuringMachine) {
+            text.map { JffUtils.normalizeBlank(it.toString()).first() }.joinToString("")
+        } else {
+            text
+        }
+    }
+
     val acceptedFill = MaterialTheme.extendedColorScheme.accepted.colorContainer
     val rejectedFill = MaterialTheme.extendedColorScheme.rejected.colorContainer
     val acceptedColor = MaterialTheme.extendedColorScheme.accepted.onColorContainer
@@ -67,10 +86,12 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         modifier =
             Modifier.fillMaxSize()
                 .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        Spacer(Modifier.height(16.dp))
+
         // TOP: PDA acceptance criteria + text field card
         Column(
             modifier =
@@ -82,10 +103,12 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         ) {
             // PDA acceptance criteria
             if (this@InputEditor is PushdownMachine) {
-                val listOfCriteria =
+                val criteriaOptions =
+                    listOf(AcceptanceCriteria.BY_FINAL_STATE, AcceptanceCriteria.BY_EMPTY_STACK)
+                val criteriaLabels =
                     listOf(
-                        AcceptanceCriteria.BY_FINAL_STATE.text,
-                        AcceptanceCriteria.BY_EMPTY_STACK.text,
+                        stringResource(R.string.pda_accept_by_final_state),
+                        stringResource(R.string.pda_accept_by_empty_stack),
                     )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -97,15 +120,12 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     DropdownSelector(
-                        items = listOfCriteria,
-                        defaultSelectedIndex = listOfCriteria.indexOf(acceptanceCriteria.text),
-                        onSelectItem = { newCriteria ->
+                        items = criteriaLabels,
+                        defaultSelectedIndex = criteriaOptions.indexOf(acceptanceCriteria),
+                        onSelectItem = { selectedLabel ->
                             acceptanceCriteria =
-                                if (newCriteria == AcceptanceCriteria.BY_FINAL_STATE.text) {
-                                    AcceptanceCriteria.BY_FINAL_STATE
-                                } else {
-                                    AcceptanceCriteria.BY_EMPTY_STACK
-                                }
+                                criteriaOptions[criteriaLabels.indexOf(selectedLabel)]
+                            recomposeKey++
                         },
                         modifier = Modifier.weight(1f),
                     )
@@ -113,11 +133,12 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
             }
 
             // Text field + add button
+            val currentCriteria = (this@InputEditor as? PushdownMachine)?.acceptanceCriteria
             var isInputAccepted by remember { mutableStateOf<Boolean?>(null) }
-            LaunchedEffect(newFullInput.value, recomposeKey) {
-                val text = newFullInput.value
+            LaunchedEffect(newFullInput.value, recomposeKey, currentCriteria) {
+                val normalized = normalize(newFullInput.value)
                 isInputAccepted =
-                    withContext(Dispatchers.Default) { isAccepted(StringBuilder(text)) }
+                    withContext(Dispatchers.Default) { checkAcceptance(StringBuilder(normalized)) }
             }
             val validationColor =
                 when (isInputAccepted) {
@@ -126,28 +147,56 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                     null -> null
                 }
 
-            DefaultTextField(
-                value = newFullInput.value,
-                onValueChange = { value -> newFullInput.value = value },
-                modifier = Modifier.fillMaxWidth(),
-                label = stringResource(R.string.tape_input),
-                labelColor = validationColor,
-                textColor = validationColor,
-                trailingIcon = {
-                    IconButton(
-                        onClick = {
-                            this@InputEditor.savedInputs.add(StringBuilder(newFullInput.value))
-                            recomposeKey++
-                        }
+            Row(
+                verticalAlignment = CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            ) {
+                DefaultTextField(
+                    value = newFullInput.value,
+                    onValueChange = { value -> newFullInput.value = value },
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(R.string.input_tape_field),
+                    labelColor = validationColor,
+                    textColor = validationColor,
+                )
+                if (this@InputEditor is TuringMachine) {
+                    Box(
+                        modifier =
+                            Modifier.fillMaxHeight()
+                                .width(56.dp)
+                                .clip(MaterialTheme.shapes.extraSmall)
+                                .background(MaterialTheme.colorScheme.secondaryContainer)
+                                .clickable { newFullInput.value += Symbols.BLANK },
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.add),
-                            contentDescription = stringResource(R.string.add_input),
-                            tint = MaterialTheme.colorScheme.onSurface,
+                        Text(
+                            text = Symbols.BLANK,
+                            style =
+                                MaterialTheme.typography.titleLarge.copy(
+                                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                                ),
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                     }
-                },
-            )
+                }
+                Box(
+                    modifier =
+                        Modifier.fillMaxHeight().width(56.dp).clickable {
+                            this@InputEditor.savedInputs.add(
+                                StringBuilder(normalize(newFullInput.value))
+                            )
+                            recomposeKey++
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.add),
+                        contentDescription = stringResource(R.string.add_input),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
         }
 
         // MIDDLE: Save / Discard buttons
@@ -174,7 +223,7 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
             }
             DefaultButton(
                 onClick = {
-                    loadInput(newFullInput.value)
+                    setInput(normalize(newFullInput.value))
                     onConfirm()
                 },
                 text = stringResource(R.string.ok_button),
@@ -213,19 +262,19 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                     ) {
                         items(this@InputEditor.savedInputs.toList()) { savedInput ->
                             val savedText = savedInput.toString()
-                            var isAccepted by remember(savedText) { mutableStateOf<Boolean?>(null) }
+                            var accepted by remember(savedText) { mutableStateOf<Boolean?>(null) }
                             LaunchedEffect(savedText) {
-                                isAccepted =
-                                    withContext(Dispatchers.Default) { isAccepted(savedInput) }
+                                accepted =
+                                    withContext(Dispatchers.Default) { checkAcceptance(savedInput) }
                             }
                             val bgColor =
-                                when (isAccepted) {
+                                when (accepted) {
                                     true -> acceptedFill
                                     false -> rejectedFill
                                     null -> MaterialTheme.colorScheme.surfaceContainerHigh
                                 }
                             val textColor =
-                                when (isAccepted) {
+                                when (accepted) {
                                     true -> acceptedColor
                                     false -> rejectedColor
                                     null -> MaterialTheme.colorScheme.onSurface
@@ -257,5 +306,7 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                 }
             }
         }
+
+        Spacer(Modifier.height(16.dp))
     }
 }

@@ -2,7 +2,6 @@ package com.sfag.main
 
 import android.net.Uri
 import android.os.Bundle
-import android.provider.OpenableColumns
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -11,9 +10,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -47,11 +46,13 @@ import com.sfag.automata.data.toMachine
 import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.MachineType
 import com.sfag.automata.domain.machine.PushdownMachine
+import com.sfag.automata.domain.machine.TuringMachine
 import com.sfag.automata.ui.AutomataScreen
 import com.sfag.automata.ui.AutomataViewModel
 import com.sfag.grammar.ui.GrammarScreen
 import com.sfag.grammar.ui.GrammarViewModel
 import com.sfag.main.config.JFF_OPEN_MIME_TYPES
+import com.sfag.main.data.JffUtils
 import com.sfag.main.ui.AboutScreen
 import com.sfag.main.ui.ExamplesScreen
 import com.sfag.main.ui.HomeScreen
@@ -88,9 +89,17 @@ class MainActivity : AppCompatActivity() {
             AppTheme {
                 PortraitPillarbox {
                     val navController = rememberNavController()
-                    Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest) {
-                        innerPadding ->
-                        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                    val snackbarHostState = remember { SnackbarHostState() }
+                    Scaffold(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                        snackbarHost = { DefaultSnackbarHost(snackbarHostState) },
+                    ) { innerPadding ->
+                        Column(
+                            modifier =
+                                Modifier.fillMaxSize()
+                                    .padding(innerPadding)
+                                    .consumeWindowInsets(innerPadding)
+                        ) {
                             NavHost(
                                 navController = navController,
                                 startDestination = Destinations.HOME.route,
@@ -121,7 +130,7 @@ class MainActivity : AppCompatActivity() {
 
                                     HomeScreen(
                                         navToAutomata = {
-                                            if (automataStorage.hasStoredMachine()) {
+                                            if (automataStorage.hasMachine()) {
                                                 navController.navigate(
                                                     Destinations.AUTOMATA.route
                                                 ) {
@@ -258,6 +267,9 @@ class MainActivity : AppCompatActivity() {
                                                         MachineType.PUSHDOWN.name ->
                                                             PushdownMachine(name = name ?: "")
 
+                                                        MachineType.TURING.name ->
+                                                            TuringMachine(name = name ?: "")
+
                                                         else ->
                                                             throw IllegalArgumentException(
                                                                 "Unknown machine type: $machineType"
@@ -268,32 +280,14 @@ class MainActivity : AppCompatActivity() {
                                             } else if (importUri != null) {
                                                 try {
                                                     val contentUri = importUri.toUri()
-                                                    val fileName =
-                                                        context.contentResolver
-                                                            .query(
-                                                                contentUri,
-                                                                arrayOf(
-                                                                    OpenableColumns.DISPLAY_NAME
-                                                                ),
-                                                                null,
-                                                                null,
-                                                                null,
-                                                            )
-                                                            ?.use { cursor ->
-                                                                if (cursor.moveToFirst()) {
-                                                                    cursor
-                                                                        .getString(0)
-                                                                        ?.substringBeforeLast(".")
-                                                                } else {
-                                                                    null
-                                                                }
-                                                            } ?: ""
+                                                    val machineName =
+                                                        JffUtils.getJffStem(context, contentUri)
                                                     context.contentResolver
                                                         .openInputStream(contentUri)
                                                         ?.use { stream ->
                                                             val jff = Jff.parse(stream)
                                                             viewModel.setCurrentMachine(
-                                                                jff.toMachine(fileName),
+                                                                jff.toMachine(machineName),
                                                                 jff.positions,
                                                             )
                                                         }
@@ -364,21 +358,12 @@ class MainActivity : AppCompatActivity() {
                                         return@composable
                                     }
 
-                                    val snackbarHostState = remember { SnackbarHostState() }
-                                    Scaffold(
-                                        containerColor =
-                                            MaterialTheme.colorScheme.surfaceContainerLowest,
-                                        snackbarHost = { DefaultSnackbarHost(snackbarHostState) },
-                                    ) { automataInnerPadding ->
-                                        if (viewModel.currentMachine != null) {
-                                            AutomataScreen(
-                                                modifier =
-                                                    Modifier.fillMaxSize()
-                                                        .padding(automataInnerPadding),
-                                                snackbarHostState = snackbarHostState,
-                                                navBack = { navController.popBackStack() },
-                                            )
-                                        }
+                                    if (viewModel.currentMachine != null) {
+                                        AutomataScreen(
+                                            modifier = Modifier.fillMaxSize(),
+                                            snackbarHostState = snackbarHostState,
+                                            navBack = { navController.popBackStack() },
+                                        )
                                     }
                                 }
                                 composable(
@@ -446,7 +431,10 @@ class MainActivity : AppCompatActivity() {
                                         return@composable
                                     }
 
-                                    GrammarScreen(navBack = { navController.popBackStack() })
+                                    GrammarScreen(
+                                        navBack = { navController.popBackStack() },
+                                        snackbarHostState = snackbarHostState,
+                                    )
                                 }
                             }
                         }
@@ -471,14 +459,17 @@ private fun NewMachineDialog(
         buttons = {
             ImportButton(onClick = onImport, modifier = Modifier.weight(1f))
             CreateButton(
-                onClick = { onConfirm(machineName, machineType!!) },
+                onClick = {
+                    val trimmedName = machineName.trim()
+                    onConfirm(trimmedName, machineType!!)
+                },
                 modifier = Modifier.weight(1f),
                 enabled = machineType != null && machineName.isNotBlank(),
             )
         },
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().height(120.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -495,6 +486,13 @@ private fun NewMachineDialog(
                 isActive = machineType == MachineType.PUSHDOWN,
             ) {
                 machineType = MachineType.PUSHDOWN
+            }
+            ItemSpecificationIcon(
+                icon = R.drawable.turing_machine,
+                text = stringResource(R.string.turing_machine),
+                isActive = machineType == MachineType.TURING,
+            ) {
+                machineType = MachineType.TURING
             }
         }
 

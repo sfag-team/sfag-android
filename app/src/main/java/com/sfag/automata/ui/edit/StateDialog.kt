@@ -3,7 +3,6 @@ package com.sfag.automata.ui.edit
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
@@ -58,8 +57,9 @@ internal fun Machine.StateDialog(
             CancelButton(onClick = onDismiss)
             ConfirmButton(
                 onClick = {
+                    val trimmedName = stateName.trim()
                     val isDuplicate =
-                        states.any { it.name == stateName && it.index != selectedState?.index }
+                        states.any { it.name == trimmedName && it.index != selectedState?.index }
                     if (isDuplicate) {
                         scope.launch { tooltipState.show() }
                     } else {
@@ -67,8 +67,7 @@ internal fun Machine.StateDialog(
                             val newIndex = findNewStateIndex()
                             addNewState(
                                 State(
-                                    name = stateName,
-                                    isCurrent = false,
+                                    name = trimmedName,
                                     index = newIndex,
                                     final = isFinal,
                                     initial = isInitial,
@@ -76,14 +75,14 @@ internal fun Machine.StateDialog(
                             )
                             onAddPosition(newIndex, tapOffset)
                         } else {
-                            selectedState.name = stateName
+                            selectedState.name = trimmedName
                             selectedState.initial = isInitial
                             selectedState.final = isFinal
                         }
                         onConfirm()
                     }
                 },
-                enabled = stateName.isNotEmpty(),
+                enabled = stateName.isNotBlank(),
             )
         },
     ) {
@@ -94,7 +93,7 @@ internal fun Machine.StateDialog(
             state = tooltipState,
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().height(120.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
                 verticalAlignment = CenterVertically,
             ) {

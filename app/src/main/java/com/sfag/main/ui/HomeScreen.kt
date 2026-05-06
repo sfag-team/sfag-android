@@ -1,13 +1,15 @@
 package com.sfag.main.ui
 
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -20,8 +22,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.os.LocaleListCompat
 import com.sfag.R
 import com.sfag.main.ui.component.DefaultButton
+import com.sfag.main.ui.component.PillToggle
+import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -30,32 +35,33 @@ fun HomeScreen(
     navToExamples: () -> Unit,
     navToAbout: () -> Unit,
 ) {
-    BoxWithConstraints(
+    Box(
         modifier =
             Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLowest)
     ) {
         Column(
             modifier =
-                Modifier.fillMaxWidth()
-                    .defaultMinSize(minHeight = maxHeight)
+                Modifier.fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp),
+                    .padding(horizontal = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
             Image(
                 painter = painterResource(id = R.drawable.logo_square),
-                modifier = Modifier.size(312.dp),
+                modifier = Modifier.size(280.dp),
                 contentDescription = "",
             )
+
+            Spacer(Modifier.height(28.dp))
 
             Column(
                 modifier =
                     Modifier.fillMaxWidth()
                         .clip(MaterialTheme.shapes.medium)
                         .background(MaterialTheme.colorScheme.surfaceContainer)
-                        .padding(horizontal = 24.dp, vertical = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(32.dp),
+                        .padding(28.dp),
+                verticalArrangement = Arrangement.spacedBy(28.dp),
             ) {
                 DefaultButton(
                     onClick = { navToAutomata() },
@@ -83,5 +89,32 @@ fun HomeScreen(
                 )
             }
         }
+
+        LanguageToggle(modifier = Modifier.align(Alignment.TopEnd).padding(28.dp))
     }
+}
+
+@Composable
+private fun LanguageToggle(modifier: Modifier = Modifier) {
+    val current =
+        AppCompatDelegate.getApplicationLocales().get(0)?.language ?: Locale.getDefault().language
+    val options = listOf("en", "sk")
+    val selectedIndex = options.indexOf(current).coerceAtLeast(0)
+
+    PillToggle(
+        options = options,
+        selectedIndex = selectedIndex,
+        onSelect = { changeLanguage(options[it]) },
+        modifier = modifier,
+    )
+}
+
+private fun changeLanguage(languageCode: String) {
+    val current =
+        AppCompatDelegate.getApplicationLocales().get(0)?.language ?: Locale.getDefault().language
+    if (current == languageCode) {
+        return
+    }
+    val appLocale = LocaleListCompat.forLanguageTags(languageCode)
+    AppCompatDelegate.setApplicationLocales(appLocale)
 }

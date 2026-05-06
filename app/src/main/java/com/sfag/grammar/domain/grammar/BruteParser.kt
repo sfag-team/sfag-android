@@ -1,6 +1,6 @@
 package com.sfag.grammar.domain.grammar
 
-import com.sfag.main.config.MAX_GRAMMAR_STEPS
+import com.sfag.main.config.MAX_BFS_GRAMMAR_STEPS
 import com.sfag.main.config.Symbols
 
 private data class ParseState(val previousState: String, val appliedRule: GrammarRule)
@@ -42,15 +42,24 @@ fun parse(
     rules
         .filter { it.left == "S" }
         .forEach { rule ->
-            states.add(rule.right)
-            stateHistory[rule.right] = ParseState("S", rule)
+            val initialState = rule.right.replace(Symbols.EPSILON, "")
+            if (!stateHistory.containsKey(initialState)) {
+                states.add(initialState)
+                stateHistory[initialState] = ParseState("S", rule)
+            }
         }
 
     val minLengths = computeMinLengths(rules)
     var steps = 0
 
-    while (states.isNotEmpty() && steps <= MAX_GRAMMAR_STEPS) {
+    while (states.isNotEmpty() && steps <= MAX_BFS_GRAMMAR_STEPS) {
         val currentState = states.removeFirst()
+
+        // Check if the current sentential form already matches the input
+        if (currentState == input) {
+            return ParseResult.Success(reconstructDerivation(currentState, stateHistory))
+        }
+
         steps++
         for (rule in rules) {
             var newState = currentState.replaceFirst(rule.left, rule.right)

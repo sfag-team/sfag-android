@@ -37,12 +37,12 @@ fun Machine.exportToJff(positions: Map<Int, Point2D>): String =
 
 private fun Machine.exportTransitionsToJff(builder: StringBuilder) =
     when (this) {
-        is FiniteMachine -> exportFiniteTransitions(builder)
-        is PushdownMachine -> exportPushdownTransitions(builder)
-        is TuringMachine -> exportTuringTransitions(builder)
+        is FiniteMachine -> exportFaTransitions(builder)
+        is PushdownMachine -> exportPdaTransitions(builder)
+        is TuringMachine -> exportTmTransitions(builder)
     }
 
-private fun FiniteMachine.exportFiniteTransitions(builder: StringBuilder) {
+private fun FiniteMachine.exportFaTransitions(builder: StringBuilder) {
     for (transition in transitions) {
         builder.appendLine("        <transition>")
         builder.appendLine("            <from>${transition.fromState}</from>")
@@ -52,7 +52,7 @@ private fun FiniteMachine.exportFiniteTransitions(builder: StringBuilder) {
     }
 }
 
-private fun PushdownMachine.exportPushdownTransitions(builder: StringBuilder) {
+private fun PushdownMachine.exportPdaTransitions(builder: StringBuilder) {
     for (transition in pdaTransitions) {
         builder.appendLine("        <transition>")
         builder.appendLine("            <from>${transition.fromState}</from>")
@@ -64,8 +64,8 @@ private fun PushdownMachine.exportPushdownTransitions(builder: StringBuilder) {
     }
 }
 
-private fun TuringMachine.exportTuringTransitions(builder: StringBuilder) {
-    for (transition in turingTransitions) {
+private fun TuringMachine.exportTmTransitions(builder: StringBuilder) {
+    for (transition in tmTransitions) {
         builder.appendLine("        <transition>")
         builder.appendLine("            <from>${transition.fromState}</from>")
         builder.appendLine("            <to>${transition.toState}</to>")

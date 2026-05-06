@@ -1,9 +1,6 @@
 package com.sfag.automata.domain.machine
 
 import com.sfag.automata.domain.simulation.Simulation
-import com.sfag.automata.domain.simulation.SimulationOutcome
-import com.sfag.automata.domain.simulation.TransitionRef
-import com.sfag.main.config.MAX_TURING_CONFIGS
 import com.sfag.main.config.Symbols
 
 /**
@@ -13,158 +10,127 @@ import com.sfag.main.config.Symbols
  * - An input alphabet Σ ⊆ Γ
  * - A transition function δ: Q × Γ -> Q × Γ × {L, R, S}
  * - An initial state q0
- * - A blank symbol (default '␣')
+ * - A blank symbol (default '□')
  * - A set of accepting/final states F
  */
 class TuringMachine(
     name: String = "",
     states: MutableList<State> = mutableListOf(),
     savedInputs: MutableList<StringBuilder> = mutableListOf(),
-    val turingTransitions: MutableList<TuringTransition> = mutableListOf(),
+    val tmTransitions: MutableList<TmTransition> = mutableListOf(),
     val blankSymbol: Char = Symbols.BLANK_CHAR,
 ) : Machine(name, states, savedInputs = savedInputs) {
     override val jffTag = "turing"
     override val typeLabel = "TM"
-    override var currentState: Int? = null
 
     override val transitions: List<Transition>
-        get() = turingTransitions
+        get() = tmTransitions
 
-    // Tape represented as a mutable list that can grow in both directions
-    val tape: MutableList<Char> = mutableListOf()
-    var headPosition: Int = 0
+    // Track multiple current configs for NTM simulation
+    val currentConfigs: MutableList<Config.Tm> = mutableListOf()
 
-    override fun advanceSimulation(): Simulation {
-        if (!ensureCurrentState()) {
-            return Simulation.Ended(SimulationOutcome.ACTIVE)
-        }
-        val currentStateIndex = currentState!!
-
-        val fromState = getStateByIndex(currentStateIndex)
-        if (fromState.final) {
-            return Simulation.Ended(SimulationOutcome.ACCEPTED)
-        }
-
-        val currentSymbol = readSymbol()
-        val transition =
-            turingTransitions.firstOrNull { transition ->
-                transition.fromState == currentState &&
-                    transition.read.firstOrNull() == currentSymbol
-            }
-
-        if (transition == null) {
-            return Simulation.Ended(SimulationOutcome.REJECTED)
-        }
-
-        writeSymbol(transition.write)
-        moveHead(transition.direction)
-
-        val toState = getStateByIndex(transition.toState)
-
-        return Simulation.Step(
-            transitionRefs =
-                listOf(
-                    TransitionRef(
-                        fromStateIndex = fromState.index,
-                        toStateIndex = toState.index,
-                        transitionIndex = turingTransitions.indexOf(transition),
-                    )
-                ),
-            onAllComplete = {
-                fromState.isCurrent = false
-                toState.isCurrent = true
-                currentState = toState.index
-            },
-        )
-    }
-
-    override fun canReachFinalState(input: StringBuilder, fromInit: Boolean): Boolean? {
-        data class Config(val stateIndex: Int, val tape: List<Char>, val headPosition: Int)
-
-        val initialTape = if (input.isEmpty()) listOf(blankSymbol) else input.toList()
-        val startIndex = findStartStateIndex(fromInit) ?: return false
-        return bfsReachability(
-            initialConfigs = listOf(Config(startIndex, initialTape, 0)),
-            expand = { config ->
-                val tape = config.tape.toMutableList()
-                val head = config.headPosition
-                while (head >= tape.size) {
-                    tape.add(blankSymbol)
-                }
-                val symbol = tape.getOrNull(head) ?: blankSymbol
-                turingTransitions
-                    .filter { it.fromState == config.stateIndex && it.read.firstOrNull() == symbol }
-                    .map { transition ->
-                        val newTape = tape.toMutableList()
-                        newTape[head] = transition.write
-                        var newHead =
-                            head +
-                                when (transition.direction) {
-                                    TapeDirection.LEFT -> -1
-                                    TapeDirection.RIGHT -> 1
-                                    TapeDirection.STAY -> 0
-                                }
-                        if (newHead < 0) {
-                            newTape.add(0, blankSymbol)
-                            newHead = 0
-                        }
-                        Config(transition.toState, newTape, newHead)
-                    }
-            },
-            isAccepted = { config -> getStateByIndexOrNull(config.stateIndex)?.final == true },
-            maxConfigs = MAX_TURING_CONFIGS,
-        )
-    }
+    private fun initialTape(): List<Char> =
+        if (fullInput.isEmpty()) listOf(blankSymbol) else fullInput.toList()
 
     override fun removeTransition(transition: Transition) {
-        turingTransitions.remove(transition)
+        tmTransitions.remove(transition)
+    }
+
+    fun addNewTransition(
+        fromState: State,
+        toState: State,
+        read: String,
+        write: Char,
+        direction: TapeDirection,
+    ) {
+        val alreadyExists =
+            tmTransitions.any {
+                it.fromState == fromState.index &&
+                    it.toState == toState.index &&
+                    it.read == read &&
+                    it.write == write &&
+                    it.direction == direction
+            }
+        if (!alreadyExists) {
+            tmTransitions.add(TmTransition(fromState.index, toState.index, read, write, direction))
+        }
     }
 
     override fun resetSimulation() {
-        super.resetSimulation()
-        tape.clear()
-        if (fullInput.isNotEmpty()) {
-            tape.addAll(fullInput.toList())
-        } else {
-            tape.add(blankSymbol)
-        }
-        headPosition = 0
-    }
-
-    private fun readSymbol(): Char {
-        expandTapeIfNeeded()
-        return tape.getOrNull(headPosition) ?: blankSymbol
-    }
-
-    private fun writeSymbol(symbol: Char) {
-        expandTapeIfNeeded()
-        if (headPosition in tape.indices) {
-            tape[headPosition] = symbol
+        currentConfigs.clear()
+        initialState?.index?.let {
+            currentConfigs.add(Config.Tm(it, initialTape(), 0, treeNodeId = tree.root!!.id))
         }
     }
 
-    private fun moveHead(direction: TapeDirection) {
-        when (direction) {
-            TapeDirection.LEFT -> {
-                headPosition--
-                if (headPosition < 0) {
-                    tape.add(0, blankSymbol)
-                    headPosition = 0
+    override fun advanceSimulation(): Simulation {
+        // TM halts on reaching a final state (JFLAP 7.1 semantics). For NTM, any active
+        // config in a final state accepts overall.
+        if (currentConfigs.any { getStateByIndex(it.stateIndex).final }) {
+            return terminateSimulation()
+        }
+
+        val stepResults = mutableListOf<StepResult<Config.Tm>>()
+        for (config in currentConfigs) {
+            val symbol = config.tape.getOrElse(config.headPosition) { blankSymbol }
+            for (transition in tmTransitions) {
+                if (
+                    transition.fromState != config.stateIndex ||
+                        transition.read.firstOrNull() != symbol
+                ) {
+                    continue
                 }
+                val (newTape, newHead) = applyTmStep(config.tape, config.headPosition, transition)
+                val newConfig = Config.Tm(transition.toState, newTape, newHead)
+                stepResults.add(StepResult(src = config, dest = newConfig, transition = transition))
             }
-
-            TapeDirection.RIGHT -> {
-                headPosition++
-                expandTapeIfNeeded()
-            }
-
-            TapeDirection.STAY -> {}
         }
+        if (stepResults.isEmpty()) {
+            return terminateSimulation()
+        }
+
+        val (treeBranches, pendingConfigs) = buildBranches(currentConfigs, stepResults)
+
+        return Simulation.Step(
+            transitionRefs = buildTransitionRefs(stepResults),
+            treeBranches = treeBranches,
+            onAllComplete = {
+                currentConfigs.clear()
+                for ((branch, config) in pendingConfigs) {
+                    currentConfigs.add(config.copy(treeNodeId = branch.treeNodeId))
+                }
+            },
+        )
     }
 
-    private fun expandTapeIfNeeded() {
-        while (headPosition >= tape.size) {
-            tape.add(blankSymbol)
+    private fun terminateSimulation(): Simulation.Ended =
+        terminate(currentConfigs.filter { getStateByIndex(it.stateIndex).final })
+
+    private fun applyTmStep(
+        tape: List<Char>,
+        headPosition: Int,
+        transition: TmTransition,
+    ): Pair<List<Char>, Int> {
+        val newTape = tape.toMutableList()
+        while (headPosition >= newTape.size) {
+            newTape.add(blankSymbol)
         }
+        newTape[headPosition] = transition.write
+        var newHead =
+            headPosition +
+                when (transition.direction) {
+                    TapeDirection.LEFT -> -1
+                    TapeDirection.RIGHT -> 1
+                    TapeDirection.STAY -> 0
+                }
+        if (newHead < 0) {
+            newTape.add(0, blankSymbol)
+            newHead = 0
+        } else {
+            while (newHead >= newTape.size) {
+                newTape.add(blankSymbol)
+            }
+        }
+        return newTape to newHead
     }
 }

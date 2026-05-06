@@ -1,17 +1,16 @@
 package com.sfag.automata.data
 
 import android.util.Log
+import com.sfag.automata.domain.machine.FaTransition
 import com.sfag.automata.domain.machine.FiniteMachine
-import com.sfag.automata.domain.machine.FiniteTransition
 import com.sfag.automata.domain.machine.Machine
+import com.sfag.automata.domain.machine.PdaTransition
 import com.sfag.automata.domain.machine.PushdownMachine
-import com.sfag.automata.domain.machine.PushdownTransition
 import com.sfag.automata.domain.machine.State
 import com.sfag.automata.domain.machine.TapeDirection
+import com.sfag.automata.domain.machine.TmTransition
 import com.sfag.automata.domain.machine.Transition
 import com.sfag.automata.domain.machine.TuringMachine
-import com.sfag.automata.domain.machine.TuringTransition
-import com.sfag.main.config.Symbols
 import com.sfag.main.data.JffUtils
 import com.sfag.main.data.Point2D
 import com.sfag.main.data.XmlUtils
@@ -77,14 +76,7 @@ internal data class Jff(
             val isInitial = element.hasChild("initial")
             val isFinal = element.hasChild("final")
 
-            val state =
-                State(
-                    final = isFinal,
-                    initial = isInitial,
-                    index = id,
-                    name = name,
-                    isCurrent = false,
-                )
+            val state = State(final = isFinal, initial = isInitial, index = id, name = name)
             return state to Point2D(x, y)
         }
 
@@ -97,34 +89,32 @@ internal data class Jff(
                 return null
             }
 
-            val readSymbol = JffUtils.normalizeEpsilon(element.getChildText("read") ?: "")
-
             return when (jffTag) {
-                "fa" -> FiniteTransition(fromState, toState, readSymbol)
+                "fa" -> {
+                    val read = JffUtils.normalizeEpsilon(element.getChildText("read")?.trim() ?: "")
+                    FaTransition(fromState, toState, read)
+                }
                 "pda" -> {
-                    val pop = JffUtils.normalizeEpsilon(element.getChildText("pop") ?: "")
-                    val push = JffUtils.normalizeEpsilon(element.getChildText("push") ?: "")
-                    PushdownTransition(
+                    val read = JffUtils.normalizeEpsilon(element.getChildText("read")?.trim() ?: "")
+                    val pop = JffUtils.normalizeEpsilon(element.getChildText("pop")?.trim() ?: "")
+                    val push = JffUtils.normalizeEpsilon(element.getChildText("push")?.trim() ?: "")
+                    PdaTransition(
                         fromState = fromState,
                         toState = toState,
-                        read = readSymbol,
+                        read = read,
                         pop = pop,
                         push = push,
                     )
                 }
 
                 "turing" -> {
-                    val readText = element.getChildText("read")?.trim()
-                    val turingRead =
-                        if (readText.isNullOrEmpty()) Symbols.BLANK_CHAR.toString() else readText
-                    val writeText = element.getChildText("write")?.trim()
-                    val write =
-                        if (writeText.isNullOrEmpty()) Symbols.BLANK_CHAR else writeText.first()
+                    val read = JffUtils.normalizeBlank(element.getChildText("read") ?: "")
+                    val write = JffUtils.normalizeBlank(element.getChildText("write") ?: "").first()
                     val directionSymbol = element.getChildText("move")?.trim() ?: "R"
-                    TuringTransition(
+                    TmTransition(
                         fromState = fromState,
                         toState = toState,
-                        read = turingRead,
+                        read = read,
                         write = write,
                         direction = TapeDirection.fromSymbol(directionSymbol),
                     )
@@ -148,7 +138,7 @@ internal fun Jff.toMachine(
             FiniteMachine(
                 name = name,
                 states = states.toMutableList(),
-                transitions = transitions.filterIsInstance<FiniteTransition>().toMutableList(),
+                transitions = transitions.filterIsInstance<FaTransition>().toMutableList(),
                 savedInputs = savedInputs,
             )
 
@@ -156,7 +146,7 @@ internal fun Jff.toMachine(
             PushdownMachine(
                 name = name,
                 states = states.toMutableList(),
-                pdaTransitions = transitions.filterIsInstance<PushdownTransition>().toMutableList(),
+                pdaTransitions = transitions.filterIsInstance<PdaTransition>().toMutableList(),
                 savedInputs = savedInputs,
             )
 
@@ -164,8 +154,7 @@ internal fun Jff.toMachine(
             TuringMachine(
                 name = name,
                 states = states.toMutableList(),
-                turingTransitions =
-                    transitions.filterIsInstance<TuringTransition>().toMutableList(),
+                tmTransitions = transitions.filterIsInstance<TmTransition>().toMutableList(),
                 savedInputs = savedInputs,
             )
 

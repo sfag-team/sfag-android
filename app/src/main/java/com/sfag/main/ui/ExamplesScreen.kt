@@ -1,13 +1,16 @@
 package com.sfag.main.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,6 +40,8 @@ fun ExamplesScreen(
                 .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        Spacer(Modifier.height(16.dp))
+
         ExamplesSection(
             title = stringResource(R.string.automata_example),
             items = ExampleSources.automataExamples,
@@ -52,9 +57,16 @@ fun ExamplesScreen(
         ) { uri, name ->
             navToGrammar(uri, name)
         }
+
+        Spacer(Modifier.height(16.dp))
     }
     BackHandler { navBack() }
 }
+
+private data class ExampleDescription(
+    @param:StringRes val labelRes: Int,
+    @param:StringRes val descRes: Int,
+)
 
 @Composable
 private fun ExamplesSection(
@@ -82,25 +94,27 @@ private fun ExamplesSection(
         ) {
             items(items) { example ->
                 val description = example.second
+                val localizedLabel = stringResource(description.labelRes)
+                val localizedDescription = stringResource(description.descRes)
                 Column(
                     modifier =
                         Modifier.fillMaxWidth()
                             .heightIn(min = 96.dp)
                             .clip(MaterialTheme.shapes.small)
                             .background(MaterialTheme.colorScheme.secondaryContainer)
-                            .clickable { onItemClicked(example.first, description.name) },
+                            .clickable { onItemClicked(example.first, localizedLabel) },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = Superscripts.toDisplayString(description.name),
+                        text = Superscripts.toDisplayString(localizedLabel),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 16.dp),
                     )
                     Text(
-                        text = description.description,
+                        text = localizedDescription,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                         textAlign = TextAlign.Center,
@@ -115,29 +129,44 @@ private fun ExamplesSection(
 private object ExampleSources {
     val automataExamples =
         listOf(
-            "automata/a-n.jff" to ExampleDescription("a^n", "Deterministic finite automaton"),
-            "automata/3k-1.jff" to ExampleDescription("3k +1", "Deterministic finite automaton"),
-            "automata/ends-dfa.jff" to
-                ExampleDescription("Ends 01 or 10", "Deterministic finite automaton"),
-            "automata/ends-nfa.jff" to
-                ExampleDescription("Ends 01 or 10", "Non-deterministic finite automaton"),
-            "automata/an-bn-pda.jff" to
-                ExampleDescription("a^n b^n", "Deterministic pushdown automaton"),
-            "automata/wcw-r.jff" to ExampleDescription("wcwR", "Deterministic pushdown automaton"),
-            "automata/ww-r.jff" to ExampleDescription("wwR", "Non-deterministic pushdown automaton"),
+            "automata/dfa_an.jff" to
+                ExampleDescription(R.string.dfa_an_label, R.string.dfa_an_desc),
+            "automata/dfa_3kplus1_a.jff" to
+                ExampleDescription(R.string.dfa_3kplus1_a_label, R.string.dfa_3kplus1_desc),
+            "automata/dfa_ends_01_or_10.jff" to
+                ExampleDescription(
+                    R.string.dfa_ends_01_or_10_label,
+                    R.string.dfa_ends_01_or_10_desc,
+                ),
+            "automata/nfa_ends_01_or_10.jff" to
+                ExampleDescription(
+                    R.string.nfa_ends_01_or_10_label,
+                    R.string.nfa_ends_01_or_10_desc,
+                ),
+            "automata/dpda_an_bn.jff" to
+                ExampleDescription(R.string.dpda_an_bn_label, R.string.dpda_an_bn_desc),
+            "automata/dpda_wcwR.jff" to
+                ExampleDescription(R.string.dpda_wcwR_label, R.string.dpda_wcwR_desc),
+            "automata/npda_wwR.jff" to
+                ExampleDescription(R.string.npda_wwR_label, R.string.npda_wwR_desc),
         )
 
     val grammarExamples =
         listOf(
-            "grammar/g-reg.jff" to ExampleDescription("a^n", "Regular grammar"),
-            "grammar/g-cf.jff" to ExampleDescription("a^n b^n", "Context-free grammar"),
-            "grammar/ab_norm.jff" to
-                ExampleDescription("Normalized a^n b^n", "Context-free grammar"),
-            "grammar/g-cs.jff" to ExampleDescription("a^n b^n c^n", "Context-sensitive grammar"),
-            "grammar/gram-3kplus1-a.jff" to ExampleDescription("3k+1 a", "Regular grammar"),
-            "grammar/gram-01.jff" to ExampleDescription("Ends 01 or 10", "Regular grammar"),
-            "grammar/gram-wwR.jff" to ExampleDescription("wwR", "Context-free grammar"),
+            "grammar/reg_an.jff" to ExampleDescription(R.string.reg_an_label, R.string.reg_an_desc),
+            "grammar/cf_an_bn.jff" to
+                ExampleDescription(R.string.cf_an_bn_label, R.string.cf_an_bn_desc),
+            "grammar/cf_an_bn_norm.jff" to
+                ExampleDescription(R.string.cf_an_bn_norm_label, R.string.cf_an_bn_norm_desc),
+            "grammar/cs_an_bn_cn.jff" to
+                ExampleDescription(R.string.cs_an_bn_cn_label, R.string.cs_an_bn_cn_desc),
+            "grammar/reg_3kplus1_a.jff" to
+                ExampleDescription(R.string.reg_3kplus1_a_label, R.string.reg_3kplus1_a_desc),
+            "grammar/reg_ends_01_or_10.jff" to
+                ExampleDescription(
+                    R.string.reg_ends_01_or_10_label,
+                    R.string.reg_ends_01_or_10_desc,
+                ),
+            "grammar/cf_wwR.jff" to ExampleDescription(R.string.cf_wwR_label, R.string.cf_wwR_desc),
         )
 }
-
-private data class ExampleDescription(val name: String, val description: String)

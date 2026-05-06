@@ -74,7 +74,7 @@ fun FormalDefinitionView(nonTerminals: Set<Char>, terminals: Set<Char>, grammarT
             modifier = Modifier.padding(horizontal = 16.dp),
         )
         Text(
-            text = grammarType.toString(),
+            text = if (grammarType != null) stringResource(grammarType.displayNameRes) else "",
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
             modifier = Modifier.padding(horizontal = 16.dp),

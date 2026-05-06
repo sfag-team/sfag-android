@@ -21,7 +21,8 @@ constructor(@param:ApplicationContext private val context: Context) {
         }
 
     /** Auto-save the current grammar rules to a fixed internal file. */
-    fun saveGrammar(rules: List<GrammarRule>): Boolean =
+    @Synchronized
+    fun save(rules: List<GrammarRule>): Boolean =
         try {
             File(storageDir, "__current.jff").writeText(rules.exportToJff())
             true
@@ -31,7 +32,8 @@ constructor(@param:ApplicationContext private val context: Context) {
         }
 
     /** Load the auto-saved grammar. Returns the rules, or null if no saved grammar exists. */
-    fun loadGrammar(): List<GrammarRule>? {
+    @Synchronized
+    fun load(): List<GrammarRule>? {
         val jffFile = File(storageDir, "__current.jff")
         if (!jffFile.exists()) {
             return null

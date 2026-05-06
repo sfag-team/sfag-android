@@ -33,8 +33,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.sfag.automata.domain.common.isDeterministic
 import com.sfag.automata.domain.machine.Machine
-import com.sfag.automata.domain.machine.PushdownMachine
-import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.automata.domain.tree.NodeStatus
 import com.sfag.automata.domain.tree.TreeNode
 import com.sfag.automata.ui.common.NODE_OUTLINE
 import com.sfag.automata.ui.common.NODE_RADIUS
@@ -47,17 +46,13 @@ import com.sfag.main.ui.theme.extendedColorScheme
 @Composable
 fun Machine.TreeView(
     recomposeKey: Int,
-    inspectedNodeId: Int? = null,
+    highlightedNodeId: Int? = null,
     onSelectNode: ((Int) -> Unit)?,
 ) {
     val canvasHeight = if (isDeterministic() == true) 100.dp else 300.dp
     if (tree.root == null) {
-        val initialState = states.firstOrNull { it.initial }
-        if (initialState != null) {
-            tree.initialize(initialState.name)
-        } else {
-            return
-        }
+        val initial = initialState ?: return
+        tree.initialize(initial.name)
     }
 
     val density = LocalDensity.current
@@ -86,8 +81,7 @@ fun Machine.TreeView(
             }
         }
 
-    // PDA node selection - only PushdownMachine tracks which tree node the user tapped
-    val badgeNodeId = inspectedNodeId ?: (this@TreeView as? PushdownMachine)?.selectedNodeId
+    val badgeNodeId = highlightedNodeId
 
     val positions = remember(recomposeKey) { calculateLayout(tree) }
 
@@ -239,34 +233,39 @@ fun Machine.TreeView(
                         }
                     }
         ) {
-            // Leaf nodes: active = primary, accepted = green, rejected = red
-            // Dead-end nodes use same colors but dimmed via alpha
-            // Interior nodes stay neutral (surface fill)
+            // Accepted path: green from root to accepting leaf
+            // Rejected path: red from rejected leaf up to first accepted ancestor
+            // Dead branches: dimmed neutral
             fun fillColor(node: TreeNode): Color =
                 when (node.status) {
-                    SimulationOutcome.ACTIVE if node.children.isEmpty() -> colors.primaryContainer
+                    NodeStatus.ACTIVE if node.children.isEmpty() -> colors.primaryContainer
 
-                    SimulationOutcome.ACCEPTED -> extendedColors.accepted.colorContainer
+                    NodeStatus.ACCEPTED -> extendedColors.accepted.colorContainer
 
-                    SimulationOutcome.REJECTED -> extendedColors.rejected.colorContainer
+                    NodeStatus.REJECTED -> extendedColors.rejected.colorContainer
 
                     else -> colors.surfaceContainerLowest
                 }
 
             fun textColor(node: TreeNode): Int =
                 when (node.status) {
-                    SimulationOutcome.ACTIVE if node.children.isEmpty() ->
+                    NodeStatus.ACTIVE if node.children.isEmpty() ->
                         colors.onPrimaryContainer.toArgb()
 
-                    SimulationOutcome.ACCEPTED -> extendedColors.accepted.onColorContainer.toArgb()
+                    NodeStatus.ACCEPTED -> extendedColors.accepted.onColorContainer.toArgb()
 
-                    SimulationOutcome.REJECTED -> extendedColors.rejected.onColorContainer.toArgb()
+                    NodeStatus.REJECTED -> extendedColors.rejected.onColorContainer.toArgb()
 
                     else -> colors.onSurface.toArgb()
                 }
 
             fun nodeAlpha(node: TreeNode): Float =
-                if (node.status == SimulationOutcome.DEAD) 0.38f else 1f
+                when (node.status) {
+                    NodeStatus.DEAD -> 0.38f
+                    NodeStatus.ACTIVE,
+                    NodeStatus.ACCEPTED,
+                    NodeStatus.REJECTED -> 1f
+                }
 
             translate(left = offsetX, top = offsetY) {
                 scale(scale = scale, pivot = Offset.Zero) {
@@ -299,7 +298,7 @@ fun Machine.TreeView(
                             outlineColor = colors.onSurface,
                             fillColor = fillColor(node),
                             textArgb = textColor(node),
-                            name = node.stateName ?: "",
+                            name = node.stateName,
                             textPaint = textPaint,
                             baseTextSize = baseTextSize,
                             alpha = alpha,

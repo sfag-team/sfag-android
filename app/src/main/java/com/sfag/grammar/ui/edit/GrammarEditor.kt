@@ -1,29 +1,32 @@
 package com.sfag.grammar.ui.edit
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,9 +34,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -63,22 +68,30 @@ fun GrammarEditor(
     // Track which TextField is focused
     var focusedField by remember { mutableStateOf("") }
     var editingRule by remember { mutableStateOf<GrammarRule?>(null) }
+    var editLeft by remember { mutableStateOf(TextFieldValue("")) }
+    var editRight by remember { mutableStateOf(TextFieldValue("")) }
     val isGrammarFinished = grammarViewModel.isGrammarFinished
 
+    val scope = rememberCoroutineScope()
+    val invalidCharsError = stringResource(R.string.invalid_chars_error)
+    val nonTerminalMissingError = stringResource(R.string.non_terminal_missing)
+
     Column(modifier = modifier.fillMaxWidth()) {
+        Spacer(Modifier.height(16.dp))
+
         Text(
             text = stringResource(R.string.rules_p),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 8.dp, start = 24.dp, end = 24.dp),
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp),
         )
         // LazyColumn for displaying rules and input fields
-        LazyColumn(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
+        LazyColumn(
+            modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             items(rules) { rule ->
                 if (editingRule == rule) {
-                    var editLeft by remember(rule) { mutableStateOf(TextFieldValue(rule.left)) }
-                    var editRight by remember(rule) { mutableStateOf(TextFieldValue(rule.right)) }
-
                     AddRule(
                         leftText = editLeft,
                         rightText = editRight,
@@ -99,7 +112,11 @@ fun GrammarEditor(
                         grammarRule = rule,
                         grammarViewModel = grammarViewModel,
                         isGrammarFinished,
-                        onEdit = { editingRule = rule },
+                        onEdit = {
+                            editingRule = rule
+                            editLeft = TextFieldValue(rule.left)
+                            editRight = TextFieldValue(rule.right)
+                        },
                     )
                 }
             }
@@ -126,7 +143,33 @@ fun GrammarEditor(
                 }
                 Button(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    onClick = { grammarViewModel.toggleGrammarFinished() },
+                    onClick = {
+                        val editing = editingRule
+                        if (editing == null) {
+                            grammarViewModel.toggleGrammarFinished()
+                        } else {
+                            val validChars =
+                                editLeft.text.all {
+                                    it.isLetterOrDigit() || it == '|' || "$it" == Symbols.EPSILON
+                                } &&
+                                    editRight.text.all {
+                                        it.isLetterOrDigit() ||
+                                            it == '|' ||
+                                            "$it" == Symbols.EPSILON
+                                    }
+                            if (!validChars) {
+                                scope.launch { snackbarHostState.showSnackbar(invalidCharsError) }
+                            } else if (!editLeft.text.any { it.isUpperCase() }) {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(nonTerminalMissingError)
+                                }
+                            } else if (editLeft.text.isNotBlank() && editRight.text.isNotBlank()) {
+                                grammarViewModel.updateRule(editing, editLeft.text, editRight.text)
+                                editingRule = null
+                                grammarViewModel.toggleGrammarFinished()
+                            }
+                        }
+                    },
                 ) {
                     Text(
                         if (isGrammarFinished) stringResource(R.string.edit_grammar)
@@ -142,6 +185,8 @@ fun GrammarEditor(
         ) {
             FormalDefinitionView(nonTerminals, terminals, grammarType)
         }
+
+        Spacer(Modifier.height(16.dp))
     }
 }
 
@@ -161,7 +206,7 @@ private fun AddRule(
     val invalidCharsError = stringResource(R.string.invalid_chars_error)
     val nonTerminalMissingError = stringResource(R.string.non_terminal_missing)
     Row(
-        modifier = Modifier.fillMaxWidth().height(60.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -177,7 +222,7 @@ private fun AddRule(
                     }
                 },
         )
-        Text(Symbols.ARROW, style = MaterialTheme.typography.headlineMedium)
+        Text(Symbols.PRODUCTION, style = MaterialTheme.typography.headlineMedium)
         OutlinedTextField(
             value = rightText,
             onValueChange = { onRightChange(it) },
@@ -192,9 +237,11 @@ private fun AddRule(
         )
         Column(
             verticalArrangement = Arrangement.spacedBy(3.dp),
-            modifier = Modifier.fillMaxHeight().width(48.dp),
+            modifier = Modifier.height(56.dp).width(40.dp),
         ) {
-            FilledTonalButton(
+            SymbolInsertButton(
+                symbol = "|",
+                modifier = Modifier.fillMaxSize().weight(1f),
                 onClick = {
                     when (focusedField) {
                         "left" ->
@@ -214,14 +261,10 @@ private fun AddRule(
                             )
                     }
                 },
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                contentPadding = PaddingValues(0.dp),
-                shape = MaterialTheme.shapes.extraSmall,
-            ) {
-                Text("|", style = MaterialTheme.typography.labelLarge)
-            }
-
-            FilledTonalButton(
+            )
+            SymbolInsertButton(
+                symbol = Symbols.EPSILON,
+                modifier = Modifier.fillMaxSize().weight(1f),
                 onClick = {
                     when (focusedField) {
                         "left" ->
@@ -241,35 +284,54 @@ private fun AddRule(
                             )
                     }
                 },
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                contentPadding = PaddingValues(0.dp),
-                shape = MaterialTheme.shapes.extraSmall,
-            ) {
-                Text(Symbols.EPSILON, style = MaterialTheme.typography.labelLarge)
-            }
+            )
         }
 
-        FilledIconButton(
-            onClick = {
-                val validChars =
-                    leftText.text.all {
-                        it.isLetterOrDigit() || it == '|' || "$it" == Symbols.EPSILON
-                    } &&
-                        rightText.text.all {
+        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+            IconButton(
+                onClick = {
+                    val validChars =
+                        leftText.text.all {
                             it.isLetterOrDigit() || it == '|' || "$it" == Symbols.EPSILON
-                        }
-                if (!validChars) {
-                    scope.launch { snackbarHostState.showSnackbar(invalidCharsError) }
-                } else if (!leftText.text.any { it.isUpperCase() }) {
-                    scope.launch { snackbarHostState.showSnackbar(nonTerminalMissingError) }
-                } else {
-                    onAddRule()
-                    focusManager.clearFocus()
-                }
-            },
-            shape = MaterialTheme.shapes.extraSmall,
-        ) {
-            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_rule))
+                        } &&
+                            rightText.text.all {
+                                it.isLetterOrDigit() || it == '|' || "$it" == Symbols.EPSILON
+                            }
+                    if (!validChars) {
+                        scope.launch { snackbarHostState.showSnackbar(invalidCharsError) }
+                    } else if (!leftText.text.any { it.isUpperCase() }) {
+                        scope.launch { snackbarHostState.showSnackbar(nonTerminalMissingError) }
+                    } else {
+                        onAddRule()
+                        focusManager.clearFocus()
+                    }
+                },
+                modifier = Modifier.size(56.dp),
+            ) {
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_rule))
+            }
         }
+    }
+}
+
+/** Filled tonal helper button that inserts [symbol] into the focused field. */
+@Composable
+private fun SymbolInsertButton(symbol: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Box(
+        modifier =
+            modifier
+                .clip(MaterialTheme.shapes.extraSmall)
+                .background(MaterialTheme.colorScheme.secondaryContainer)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = symbol,
+            style =
+                MaterialTheme.typography.labelLarge.copy(
+                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                ),
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+        )
     }
 }
