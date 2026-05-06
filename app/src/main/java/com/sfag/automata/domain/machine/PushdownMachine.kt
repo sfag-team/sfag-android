@@ -177,6 +177,11 @@ internal fun applyStackOp(stack: List<Char>, pop: String, push: String): List<Ch
     }
     val result = stack.toMutableList()
     repeat(pop.length) { result.removeAt(result.lastIndex) }
-    push.reversed().forEach { result.add(it) }
+    push.reversed().forEach {
+        if (it == Symbols.INITIAL_STACK_SYMBOL && result.contains(Symbols.INITIAL_STACK_SYMBOL)) {
+            return@forEach
+        }
+        result.add(it)
+    }
     return result
 }

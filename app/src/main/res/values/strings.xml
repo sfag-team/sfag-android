@@ -118,11 +118,11 @@
     <string name="dfa_ends_01_or_10_desc">Deterministic finite automaton</string>
     <string name="dpda_an_bn_label">a^n b^n</string>
     <string name="dpda_an_bn_desc">Deterministic pushdown automaton</string>
-    <string name="dpda_wcwR_label">wcwR</string>
+    <string name="dpda_wcwR_label">wcwʳ | w ∈ {a,b}</string>
     <string name="dpda_wcwR_desc">Deterministic pushdown automaton</string>
     <string name="nfa_ends_01_or_10_label">Ends 01 or 10</string>
     <string name="nfa_ends_01_or_10_desc">Non-deterministic finite automaton</string>
-    <string name="npda_wwR_label">wwR</string>
+    <string name="npda_wwR_label">wwʳ | w ∈ {a,b}</string>
     <string name="npda_wwR_desc">Non-deterministic pushdown automaton</string>
 
     <!--  Grammar examples -->
@@ -131,7 +131,7 @@
     <string name="cf_an_bn_desc">Context-free grammar</string>
     <string name="cf_an_bn_norm_label">Normalized a^n b^n</string>
     <string name="cf_an_bn_norm_desc">Context-free grammar</string>
-    <string name="cf_wwR_label">wwR</string>
+    <string name="cf_wwR_label">wwʳ | w ∈ {a,b}</string>
     <string name="cf_wwR_desc">Context-free grammar</string>
     <string name="cs_an_bn_cn_label">a^n b^n c^n</string>
     <string name="cs_an_bn_cn_desc">Context-sensitive grammar</string>

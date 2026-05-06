@@ -6,6 +6,7 @@
             <x>42.74</x>
             <y>354.76</y>
             <initial/>
+            <final/>
         </state>
         <state id="2" name="q1">
             <x>239.58</x>
@@ -60,6 +61,13 @@
         </transition>
         <transition>
             <from>1</from>
+            <to>1</to>
+            <read></read>
+            <pop>Z</pop>
+            <push></push>
+        </transition>
+        <transition>
+            <from>1</from>
             <to>2</to>
             <read>a</read>
             <pop>A</pop>
@@ -91,7 +99,7 @@
             <to>3</to>
             <read></read>
             <pop>Z</pop>
-            <push>Z</push>
+            <push></push>
         </transition>
     </automaton>
 </structure>

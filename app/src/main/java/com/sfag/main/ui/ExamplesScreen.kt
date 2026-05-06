@@ -129,8 +129,6 @@ private fun ExamplesSection(
 private object ExampleSources {
     val automataExamples =
         listOf(
-            "automata/dfa_an.jff" to
-                ExampleDescription(R.string.dfa_an_label, R.string.dfa_an_desc),
             "automata/dfa_3kplus1_a.jff" to
                 ExampleDescription(R.string.dfa_3kplus1_a_label, R.string.dfa_3kplus1_desc),
             "automata/dfa_ends_01_or_10.jff" to
@@ -138,17 +136,19 @@ private object ExampleSources {
                     R.string.dfa_ends_01_or_10_label,
                     R.string.dfa_ends_01_or_10_desc,
                 ),
+            "automata/dpda_an_bn.jff" to
+                ExampleDescription(R.string.dpda_an_bn_label, R.string.dpda_an_bn_desc),
+            "automata/npda_wwR.jff" to
+                ExampleDescription(R.string.npda_wwR_label, R.string.npda_wwR_desc),
+            "automata/dpda_wcwR.jff" to
+                ExampleDescription(R.string.dpda_wcwR_label, R.string.dpda_wcwR_desc),
             "automata/nfa_ends_01_or_10.jff" to
                 ExampleDescription(
                     R.string.nfa_ends_01_or_10_label,
                     R.string.nfa_ends_01_or_10_desc,
                 ),
-            "automata/dpda_an_bn.jff" to
-                ExampleDescription(R.string.dpda_an_bn_label, R.string.dpda_an_bn_desc),
-            "automata/dpda_wcwR.jff" to
-                ExampleDescription(R.string.dpda_wcwR_label, R.string.dpda_wcwR_desc),
-            "automata/npda_wwR.jff" to
-                ExampleDescription(R.string.npda_wwR_label, R.string.npda_wwR_desc),
+            "automata/dfa_an.jff" to
+                ExampleDescription(R.string.dfa_an_label, R.string.dfa_an_desc),
         )
 
     val grammarExamples =
