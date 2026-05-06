@@ -23,6 +23,7 @@
         <state id="5" name="q4">
             <x>267.75986</x>
             <y>386.01013</y>
+            <final/>
         </state>
         <transition>
             <from>1</from>

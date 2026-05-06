@@ -6,6 +6,7 @@
             <x>20.269989</x>
             <y>236.1499</y>
             <initial/>
+            <final/>
         </state>
         <state id="2" name="q1">
             <x>130.07986</x>
@@ -39,19 +40,19 @@
             <to>3</to>
             <read>b</read>
             <pop>A</pop>
-            <push></push>
+            <push/>
         </transition>
         <transition>
             <from>3</from>
             <to>3</to>
             <read>b</read>
             <pop>A</pop>
-            <push></push>
+            <push/>
         </transition>
         <transition>
             <from>3</from>
             <to>4</to>
-            <read></read>
+            <read/>
             <pop>Z</pop>
             <push>Z</push>
         </transition>

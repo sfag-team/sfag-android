@@ -2,7 +2,7 @@
 <structure>
     <type>fa</type>
     <automaton>
-        <state id="1" name="q1">
+        <state id="1" name="q0">
             <x>149.54993</x>
             <y>248.96999</y>
             <initial/>

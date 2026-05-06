@@ -110,34 +110,34 @@
 
     <!-- Automata examples -->
     <string name="automata_example">Príklady automatov</string>
-    <string name="dfa_3kplus1_a_label">3k+1 a</string>
+    <string name="dfa_3kplus1_a_label">počet a je 3k+1</string>
     <string name="dfa_3kplus1_desc">Deterministický konečný automat</string>
-    <string name="dfa_an_label">a^n</string>
+    <string name="dfa_an_label">aⁿ</string>
     <string name="dfa_an_desc">Deterministický konečný automat</string>
     <string name="dfa_ends_01_or_10_label">Končí na 01 alebo 10</string>
     <string name="dfa_ends_01_or_10_desc">Deterministický konečný automat</string>
-    <string name="dpda_an_bn_label">a^n b^n</string>
+    <string name="dpda_an_bn_label">aⁿbⁿ</string>
     <string name="dpda_an_bn_desc">Deterministický zásobníkový automat</string>
-    <string name="dpda_wcwR_label">wcwR</string>
+    <string name="dpda_wcwR_label">wcwᴿ | w ∈ {a,b}*</string>
     <string name="dpda_wcwR_desc">Deterministický zásobníkový automat</string>
     <string name="nfa_ends_01_or_10_label">Končí na 01 alebo 10</string>
     <string name="nfa_ends_01_or_10_desc">Nedeterministický konečný automat</string>
-    <string name="npda_wwR_label">wwR</string>
+    <string name="npda_wwR_label">wwᴿ | w ∈ {a,b}*</string>
     <string name="npda_wwR_desc">Nedeterministický zásobníkový automat</string>
 
     <!--  Grammar examples -->
     <string name="grammar_example">Príklady gramatík</string>
-    <string name="cf_an_bn_label">a^n b^n</string>
+    <string name="cf_an_bn_label">aⁿbⁿ</string>
     <string name="cf_an_bn_desc">Bezkontextová gramatika</string>
-    <string name="cf_an_bn_norm_label">Normalizovaná a^n b^n</string>
+    <string name="cf_an_bn_norm_label">Normalizovaná aⁿbⁿ</string>
     <string name="cf_an_bn_norm_desc">Bezkontextová gramatika</string>
-    <string name="cf_wwR_label">wwR</string>
+    <string name="cf_wwR_label">wwᴿ | w ∈ {a,b}*</string>
     <string name="cf_wwR_desc">Bezkontextová gramatika</string>
-    <string name="cs_an_bn_cn_label">a^n b^n c^n</string>
+    <string name="cs_an_bn_cn_label">aⁿbⁿcⁿ</string>
     <string name="cs_an_bn_cn_desc">Kontextová gramatika</string>
-    <string name="reg_3kplus1_a_label">3k+1 a</string>
+    <string name="reg_3kplus1_a_label">počet a je 3k+1</string>
     <string name="reg_3kplus1_a_desc">Regulárna gramatika</string>
-    <string name="reg_an_label">a^n</string>
+    <string name="reg_an_label">aⁿ</string>
     <string name="reg_an_desc">Regulárna gramatika</string>
     <string name="reg_ends_01_or_10_label">Končí na 01 alebo 10</string>
     <string name="reg_ends_01_or_10_desc">Regulárna gramatika</string>

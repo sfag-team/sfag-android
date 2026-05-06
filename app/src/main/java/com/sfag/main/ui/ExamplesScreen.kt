@@ -25,7 +25,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.sfag.R
-import com.sfag.main.config.Superscripts
 
 @Composable
 fun ExamplesScreen(
@@ -107,7 +106,7 @@ private fun ExamplesSection(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = Superscripts.toDisplayString(localizedLabel),
+                        text = localizedLabel,
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                         textAlign = TextAlign.Center,
@@ -129,6 +128,7 @@ private fun ExamplesSection(
 private object ExampleSources {
     val automataExamples =
         listOf(
+            // DFA (deterministic finite)
             "automata/dfa_an.jff" to
                 ExampleDescription(R.string.dfa_an_label, R.string.dfa_an_desc),
             "automata/dfa_3kplus1_a.jff" to
@@ -138,28 +138,26 @@ private object ExampleSources {
                     R.string.dfa_ends_01_or_10_label,
                     R.string.dfa_ends_01_or_10_desc,
                 ),
+            // NFA (non-deterministic finite)
             "automata/nfa_ends_01_or_10.jff" to
                 ExampleDescription(
                     R.string.nfa_ends_01_or_10_label,
                     R.string.nfa_ends_01_or_10_desc,
                 ),
+            // DPDA (deterministic pushdown)
             "automata/dpda_an_bn.jff" to
                 ExampleDescription(R.string.dpda_an_bn_label, R.string.dpda_an_bn_desc),
             "automata/dpda_wcwR.jff" to
                 ExampleDescription(R.string.dpda_wcwR_label, R.string.dpda_wcwR_desc),
+            // NPDA (non-deterministic pushdown)
             "automata/npda_wwR.jff" to
                 ExampleDescription(R.string.npda_wwR_label, R.string.npda_wwR_desc),
         )
 
     val grammarExamples =
         listOf(
+            // Type 3 - Regular
             "grammar/reg_an.jff" to ExampleDescription(R.string.reg_an_label, R.string.reg_an_desc),
-            "grammar/cf_an_bn.jff" to
-                ExampleDescription(R.string.cf_an_bn_label, R.string.cf_an_bn_desc),
-            "grammar/cf_an_bn_norm.jff" to
-                ExampleDescription(R.string.cf_an_bn_norm_label, R.string.cf_an_bn_norm_desc),
-            "grammar/cs_an_bn_cn.jff" to
-                ExampleDescription(R.string.cs_an_bn_cn_label, R.string.cs_an_bn_cn_desc),
             "grammar/reg_3kplus1_a.jff" to
                 ExampleDescription(R.string.reg_3kplus1_a_label, R.string.reg_3kplus1_a_desc),
             "grammar/reg_ends_01_or_10.jff" to
@@ -167,6 +165,14 @@ private object ExampleSources {
                     R.string.reg_ends_01_or_10_label,
                     R.string.reg_ends_01_or_10_desc,
                 ),
+            // Type 2 - Context-Free
+            "grammar/cf_an_bn.jff" to
+                ExampleDescription(R.string.cf_an_bn_label, R.string.cf_an_bn_desc),
+            "grammar/cf_an_bn_norm.jff" to
+                ExampleDescription(R.string.cf_an_bn_norm_label, R.string.cf_an_bn_norm_desc),
             "grammar/cf_wwR.jff" to ExampleDescription(R.string.cf_wwR_label, R.string.cf_wwR_desc),
+            // Type 1 - Context-Sensitive
+            "grammar/cs_an_bn_cn.jff" to
+                ExampleDescription(R.string.cs_an_bn_cn_label, R.string.cs_an_bn_cn_desc),
         )
 }

@@ -61,37 +61,44 @@
         <transition>
             <from>1</from>
             <to>2</to>
-            <read>a</read>
+            <read/>
             <pop>A</pop>
-            <push></push>
+            <push>A</push>
         </transition>
         <transition>
             <from>1</from>
             <to>2</to>
-            <read>b</read>
+            <read/>
             <pop>B</pop>
-            <push></push>
+            <push>B</push>
+        </transition>
+        <transition>
+            <from>1</from>
+            <to>2</to>
+            <read/>
+            <pop>Z</pop>
+            <push>Z</push>
         </transition>
         <transition>
             <from>2</from>
             <to>2</to>
             <read>a</read>
             <pop>A</pop>
-            <push></push>
+            <push/>
         </transition>
         <transition>
             <from>2</from>
             <to>2</to>
             <read>b</read>
             <pop>B</pop>
-            <push></push>
+            <push/>
         </transition>
         <transition>
             <from>2</from>
             <to>3</to>
-            <read></read>
+            <read/>
             <pop>Z</pop>
-            <push>Z</push>
+            <push/>
         </transition>
     </automaton>
 </structure>

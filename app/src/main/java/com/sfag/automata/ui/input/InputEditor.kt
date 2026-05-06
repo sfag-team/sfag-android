@@ -187,6 +187,7 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                             this@InputEditor.savedInputs.add(
                                 StringBuilder(normalize(newFullInput.value))
                             )
+                            newFullInput.value = ""
                             recomposeKey++
                         },
                     contentAlignment = Alignment.Center,

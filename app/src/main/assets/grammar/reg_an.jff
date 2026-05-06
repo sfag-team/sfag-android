@@ -9,4 +9,8 @@
 		<left>S</left>&#13;
 		<right>aS</right>&#13;
 	</production>&#13;
+	<production>&#13;
+		<left>S</left>&#13;
+		<right/>&#13;
+	</production>&#13;
 </structure>
