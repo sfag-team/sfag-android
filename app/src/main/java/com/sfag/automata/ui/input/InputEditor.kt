@@ -184,11 +184,12 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                 Box(
                     modifier =
                         Modifier.fillMaxHeight().width(42.dp).clickable {
-                            this@InputEditor.savedInputs.add(
-                                StringBuilder(normalize(newFullInput.value))
-                            )
+                            val normalized = normalize(newFullInput.value)
+                            if (this@InputEditor.savedInputs.none { it.toString() == normalized }) {
+                                this@InputEditor.savedInputs.add(StringBuilder(normalized))
+                                recomposeKey++
+                            }
                             newFullInput.value = ""
-                            recomposeKey++
                         },
                     contentAlignment = Alignment.Center,
                 ) {

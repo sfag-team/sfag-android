@@ -54,8 +54,8 @@
     <string name="tap_to_add_states">Klepnutím na (a)+ pridáte stavy</string>
     <string name="to_state">do</string>
     <string name="transition_direction">smer</string>
-    <string name="transition_read">čítaj</string>
-    <string name="transition_write">zapíš</string>
+    <string name="transition_read">číta</string>
+    <string name="transition_write">zapisuje</string>
     <string name="turing_machine">Turingov</string>
     <string name="unsaved_changes">Neuložené zmeny</string>
     <string name="unsaved_changes_message">Máte neuložené zmeny. Chcete ich uložiť pred pokračovaním?</string>
