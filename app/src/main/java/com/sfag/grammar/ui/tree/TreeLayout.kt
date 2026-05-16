@@ -23,15 +23,15 @@ internal fun buildTree(steps: List<DerivationStep>): TreeNode {
 
     for ((stepIndex, step) in steps.withIndex()) {
         val replaceIndex = findReplacementIndex(step.appliedRule, step.previous, step.derived)
-        if (replaceIndex < 0 || replaceIndex + step.appliedRule.left.length > currentLeaves.size) {
+        if (replaceIndex < 0 || replaceIndex + step.appliedRule.lhs.length > currentLeaves.size) {
             continue
         }
         val newChildren =
-            step.appliedRule.right.mapTo(LinkedHashSet()) { symbol ->
+            step.appliedRule.rhs.mapTo(LinkedHashSet()) { symbol ->
                 TreeNode(stepIndex + 1, symbol, LinkedHashSet(), LinkedHashSet())
             }
 
-        for (i in 0..<step.appliedRule.left.length) {
+        for (i in 0..<step.appliedRule.lhs.length) {
             val targetNode = currentLeaves[replaceIndex + i]
             for (child in newChildren) {
                 targetNode.addChild(child)

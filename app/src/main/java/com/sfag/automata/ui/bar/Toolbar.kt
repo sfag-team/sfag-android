@@ -30,7 +30,7 @@ import com.sfag.automata.ui.machine.cellPadding
 import com.sfag.automata.ui.machine.cellSize
 
 @Composable
-internal fun Toolbar(activeTool: MachineEditMode, onSelectTool: (MachineEditMode) -> Unit) {
+internal fun Toolbar(currentTool: MachineEditMode, onSelectTool: (MachineEditMode) -> Unit) {
     Row(
         modifier =
             Modifier.fillMaxWidth()
@@ -43,35 +43,35 @@ internal fun Toolbar(activeTool: MachineEditMode, onSelectTool: (MachineEditMode
             Icons.Outlined.NearMe,
             R.string.select_tool,
             MachineEditMode.SELECT,
-            activeTool,
+            currentTool,
             onSelectTool,
         )
         ToolIcon(
             Icons.Outlined.OpenWith,
             R.string.move_tool,
             MachineEditMode.MOVE,
-            activeTool,
+            currentTool,
             onSelectTool,
         )
         ToolIcon(
             R.drawable.add_states,
             R.string.add_state,
             MachineEditMode.ADD_STATE,
-            activeTool,
+            currentTool,
             onSelectTool,
         )
         ToolIcon(
             R.drawable.add_transitions,
             R.string.add_transition,
             MachineEditMode.ADD_TRANSITION,
-            activeTool,
+            currentTool,
             onSelectTool,
         )
         ToolIcon(
             Icons.Outlined.Delete,
             R.string.remove_item,
             MachineEditMode.REMOVE,
-            activeTool,
+            currentTool,
             onSelectTool,
         )
     }
@@ -82,10 +82,10 @@ private fun ToolIcon(
     icon: Int,
     label: Int,
     tool: MachineEditMode,
-    activeTool: MachineEditMode,
+    currentTool: MachineEditMode,
     onSelectTool: (MachineEditMode) -> Unit,
 ) {
-    ToolIconBox(tool, activeTool, onSelectTool) { tint ->
+    ToolIconBox(tool, currentTool, onSelectTool) { tint ->
         Icon(
             painter = painterResource(id = icon),
             contentDescription = stringResource(label),
@@ -100,10 +100,10 @@ private fun ToolIcon(
     icon: ImageVector,
     label: Int,
     tool: MachineEditMode,
-    activeTool: MachineEditMode,
+    currentTool: MachineEditMode,
     onSelectTool: (MachineEditMode) -> Unit,
 ) {
-    ToolIconBox(tool, activeTool, onSelectTool) { tint ->
+    ToolIconBox(tool, currentTool, onSelectTool) { tint ->
         Icon(
             imageVector = icon,
             contentDescription = stringResource(label),
@@ -116,11 +116,11 @@ private fun ToolIcon(
 @Composable
 private fun ToolIconBox(
     tool: MachineEditMode,
-    activeTool: MachineEditMode,
+    currentTool: MachineEditMode,
     onSelectTool: (MachineEditMode) -> Unit,
     content: @Composable (tint: Color) -> Unit,
 ) {
-    val isSelected = activeTool == tool
+    val isSelected = currentTool == tool
     Box(
         modifier =
             Modifier.size(cellSize)

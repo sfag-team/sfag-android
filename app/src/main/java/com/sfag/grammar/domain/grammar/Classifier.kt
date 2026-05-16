@@ -5,7 +5,7 @@ import com.sfag.main.config.Symbols
 fun classifyGrammar(rules: List<GrammarRule>): GrammarType {
     val individual =
         rules.flatMap { rule ->
-            rule.right.split('|').map { GrammarRule(rule.left.trim(), it.trim()) }
+            rule.rhs.split('|').map { GrammarRule(rule.lhs.trim(), it.trim()) }
         }
 
     if (individual.isEmpty() || !individual.all(::isValidRule)) {
@@ -39,19 +39,19 @@ private fun normalizedRight(right: String): String {
 
 // Valid rule has only terminals and non-terminals, with at least one non-terminal on LHS
 private fun isValidRule(rule: GrammarRule): Boolean {
-    val allChars = rule.left + normalizedRight(rule.right)
+    val allChars = rule.lhs + normalizedRight(rule.rhs)
     val validVocabulary = allChars.all { isNonTerminal(it) || isTerminal(it) }
 
-    return validVocabulary && rule.left.any(::isNonTerminal)
+    return validVocabulary && rule.lhs.any(::isNonTerminal)
 }
 
 // Type 3 Right-Linear form is A -> wB or A -> w where w is a (possibly empty) string of terminals
 private fun isType3RLRule(rule: GrammarRule): Boolean {
-    if (!isSingleNonTerminal(rule.left)) {
+    if (!isSingleNonTerminal(rule.lhs)) {
         return false
     }
 
-    val right = normalizedRight(rule.right)
+    val right = normalizedRight(rule.rhs)
     if (right.isEmpty() || right.all(::isTerminal)) {
         return true
     }
@@ -61,11 +61,11 @@ private fun isType3RLRule(rule: GrammarRule): Boolean {
 
 // Type 3 Left-Linear form is A -> Bw or A -> w where w is a (possibly empty) string of terminals
 private fun isType3LLRule(rule: GrammarRule): Boolean {
-    if (!isSingleNonTerminal(rule.left)) {
+    if (!isSingleNonTerminal(rule.lhs)) {
         return false
     }
 
-    val right = normalizedRight(rule.right)
+    val right = normalizedRight(rule.rhs)
     if (right.isEmpty() || right.all(::isTerminal)) {
         return true
     }
@@ -75,10 +75,10 @@ private fun isType3LLRule(rule: GrammarRule): Boolean {
 
 // Type 2 rule requires the LHS to be a single non-terminal
 private fun isType2Rule(rule: GrammarRule): Boolean {
-    return isSingleNonTerminal(rule.left)
+    return isSingleNonTerminal(rule.lhs)
 }
 
 // Type 1 rule requires |LHS| <= |RHS| (epsilon is length 0, so S -> ε is not Type 1)
 private fun isType1Rule(rule: GrammarRule): Boolean {
-    return rule.left.length <= normalizedRight(rule.right).length
+    return rule.lhs.length <= normalizedRight(rule.rhs).length
 }

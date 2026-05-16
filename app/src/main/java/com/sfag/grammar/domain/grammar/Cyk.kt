@@ -10,9 +10,7 @@ import com.sfag.main.config.Symbols
 fun cykAccepts(input: String, originalRules: List<GrammarRule>): Boolean {
     if (input.isEmpty()) {
         val individual =
-            originalRules.flatMap { rule ->
-                rule.right.split('|').map { GrammarRule(rule.left, it) }
-            }
+            originalRules.flatMap { rule -> rule.rhs.split('|').map { GrammarRule(rule.lhs, it) } }
         return canDeriveEmpty("S", individual, mutableSetOf())
     }
 
@@ -26,8 +24,8 @@ fun cykAccepts(input: String, originalRules: List<GrammarRule>): Boolean {
     for (i in 0 until n) {
         val c = input[i].toString()
         for (rule in cnfRules) {
-            if (rule.right.size == 1 && rule.right[0] == c) {
-                table[i][0].add(rule.left)
+            if (rule.rhs.size == 1 && rule.rhs[0] == c) {
+                table[i][0].add(rule.lhs)
             }
         }
     }
@@ -38,11 +36,11 @@ fun cykAccepts(input: String, originalRules: List<GrammarRule>): Boolean {
             for (k in 0 until len) {
                 for (rule in cnfRules) {
                     if (
-                        rule.right.size == 2 &&
-                            rule.right[0] in table[i][k] &&
-                            rule.right[1] in table[i + k + 1][len - k - 1]
+                        rule.rhs.size == 2 &&
+                            rule.rhs[0] in table[i][k] &&
+                            rule.rhs[1] in table[i + k + 1][len - k - 1]
                     ) {
-                        table[i][len].add(rule.left)
+                        table[i][len].add(rule.lhs)
                     }
                 }
             }
@@ -53,39 +51,39 @@ fun cykAccepts(input: String, originalRules: List<GrammarRule>): Boolean {
 }
 
 private fun canDeriveEmpty(
-    symbol: String,
+    nonTerminal: String,
     rules: List<GrammarRule>,
     visited: MutableSet<String>,
 ): Boolean {
-    if (!visited.add(symbol)) {
+    if (!visited.add(nonTerminal)) {
         return false
     }
     return rules.any { rule ->
-        rule.left == symbol &&
-            (rule.right == Symbols.EPSILON ||
-                rule.right.all { c ->
+        rule.lhs == nonTerminal &&
+            (rule.rhs == Symbols.EPSILON ||
+                rule.rhs.all { c ->
                     c.isUpperCase() && canDeriveEmpty(c.toString(), rules, visited)
                 })
     }
 }
 
 // Internal CNF rule: right is either [terminal] or [nonterminal, nonterminal]
-private data class CnfRule(val left: String, val right: List<String>)
+private data class CnfRule(val lhs: String, val rhs: List<String>)
 
 private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
-    var nextId = 0
+    var ntCounter = 0
 
-    fun freshNt() = "_X${nextId++}"
+    fun freshNt() = "_X${ntCounter++}"
 
     // Expand | into individual rules
     var rules =
         originalRules
             .flatMap { rule ->
-                rule.right.split('|').map { rhs ->
+                rule.rhs.split('|').map { rhs ->
                     if (rhs == Symbols.EPSILON) {
-                        CnfRule(rule.left, listOf(Symbols.EPSILON))
+                        CnfRule(rule.lhs, listOf(Symbols.EPSILON))
                     } else {
-                        CnfRule(rule.left, rhs.map { it.toString() })
+                        CnfRule(rule.lhs, rhs.map { it.toString() })
                     }
                 }
             }
@@ -97,10 +95,8 @@ private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
     while (changed) {
         changed = false
         for (rule in rules) {
-            if (
-                rule.left !in nullable && rule.right.all { it == Symbols.EPSILON || it in nullable }
-            ) {
-                nullable.add(rule.left)
+            if (rule.lhs !in nullable && rule.rhs.all { it == Symbols.EPSILON || it in nullable }) {
+                nullable.add(rule.lhs)
                 changed = true
             }
         }
@@ -108,10 +104,10 @@ private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
 
     val expanded = mutableListOf<CnfRule>()
     for (rule in rules) {
-        if (rule.right == listOf(Symbols.EPSILON)) {
+        if (rule.rhs == listOf(Symbols.EPSILON)) {
             continue
         }
-        val nullablePositions = rule.right.indices.filter { rule.right[it] in nullable }
+        val nullablePositions = rule.rhs.indices.filter { rule.rhs[it] in nullable }
         for (mask in 0 until (1 shl nullablePositions.size)) {
             val omit = mutableSetOf<Int>()
             for (bit in nullablePositions.indices) {
@@ -119,9 +115,9 @@ private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
                     omit.add(nullablePositions[bit])
                 }
             }
-            val newRight = rule.right.filterIndexed { index, _ -> index !in omit }
+            val newRight = rule.rhs.filterIndexed { index, _ -> index !in omit }
             if (newRight.isNotEmpty()) {
-                expanded.add(CnfRule(rule.left, newRight))
+                expanded.add(CnfRule(rule.lhs, newRight))
             }
         }
     }
@@ -134,14 +130,12 @@ private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
         val toAdd = mutableListOf<CnfRule>()
         val toRemove = mutableListOf<CnfRule>()
         for (rule in rules) {
-            if (
-                rule.right.size == 1 && rule.right[0].length == 1 && rule.right[0][0].isUpperCase()
-            ) {
+            if (rule.rhs.size == 1 && rule.rhs[0].length == 1 && rule.rhs[0][0].isUpperCase()) {
                 toRemove.add(rule)
-                val target = rule.right[0]
+                val target = rule.rhs[0]
                 for (targetRule in rules) {
-                    if (targetRule.left == target) {
-                        val newRule = CnfRule(rule.left, targetRule.right)
+                    if (targetRule.lhs == target) {
+                        val newRule = CnfRule(rule.lhs, targetRule.rhs)
                         if (newRule !in rules && newRule !in toAdd) {
                             toAdd.add(newRule)
                             changed = true
@@ -160,11 +154,11 @@ private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
     rules =
         rules
             .map { rule ->
-                if (rule.right.size < 2) {
+                if (rule.rhs.size < 2) {
                     return@map rule
                 }
                 val newRight =
-                    rule.right.map { symbol ->
+                    rule.rhs.map { symbol ->
                         if (
                             symbol.length == 1 && (symbol[0].isLowerCase() || symbol[0].isDigit())
                         ) {
@@ -177,7 +171,7 @@ private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
                             symbol
                         }
                     }
-                CnfRule(rule.left, newRight)
+                CnfRule(rule.lhs, newRight)
             }
             .toMutableList()
     rules.addAll(terminalRules)
@@ -185,17 +179,17 @@ private fun convertToCnf(originalRules: List<GrammarRule>): List<CnfRule> {
     // Step 4: Break rules with 3+ symbols into binary chains
     val binaryRules = mutableListOf<CnfRule>()
     for (rule in rules) {
-        if (rule.right.size <= 2) {
+        if (rule.rhs.size <= 2) {
             binaryRules.add(rule)
         } else {
-            var currentLeft = rule.left
-            for (i in 0 until rule.right.size - 2) {
+            var currentLeft = rule.lhs
+            for (i in 0 until rule.rhs.size - 2) {
                 val newNonTerminal = freshNt()
-                binaryRules.add(CnfRule(currentLeft, listOf(rule.right[i], newNonTerminal)))
+                binaryRules.add(CnfRule(currentLeft, listOf(rule.rhs[i], newNonTerminal)))
                 currentLeft = newNonTerminal
             }
             binaryRules.add(
-                CnfRule(currentLeft, listOf(rule.right[rule.right.size - 2], rule.right.last()))
+                CnfRule(currentLeft, listOf(rule.rhs[rule.rhs.size - 2], rule.rhs.last()))
             )
         }
     }

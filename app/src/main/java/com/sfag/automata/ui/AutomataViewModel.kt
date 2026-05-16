@@ -1,5 +1,6 @@
 package com.sfag.automata.ui
 
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -19,6 +20,8 @@ import com.sfag.automata.domain.simulation.SimulationOutcome
 import com.sfag.automata.domain.simulation.precomputeFrames
 import com.sfag.automata.domain.simulation.rebuildTreeForFrame
 import com.sfag.automata.domain.simulation.snapshotConfigs
+import com.sfag.automata.domain.tree.NodeStatus
+import com.sfag.automata.domain.tree.TreeNode
 import com.sfag.main.config.INITIAL_ZOOM
 import com.sfag.main.config.MAX_SIM_PRECOMPUTE_STEPS
 import com.sfag.main.data.Point2D
@@ -33,7 +36,7 @@ private const val JFLAP_TO_DP = 160f / 96f
 @HiltViewModel
 class AutomataViewModel @Inject internal constructor(private val storage: AutomataStorage) :
     ViewModel() {
-    // The single current machine - observed by the Activity to key the composition.
+    // The single current machine - observed by the Activity to key the composition
     var currentMachine by mutableStateOf<Machine?>(null)
         private set
 
@@ -48,17 +51,30 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     var pendingExampleUri by mutableStateOf<String?>(null)
     var pendingExampleName by mutableStateOf<String?>(null)
 
-    // Historical node inspection
-    private var inspectedNodeId by mutableStateOf<Int?>(null)
-
-    // Pre-computed simulation frames. Null until the user starts stepping.
+    // Pre-computed simulation frames. Null until the user starts stepping
     private var frames by mutableStateOf<List<MachineFrame>?>(null)
 
     private var currentFrameIndex by mutableIntStateOf(0)
 
-    // Default branch (tree node ids by depth) Tape/Stack/Tree follow when nothing is inspected.
-    // Accepting branch wins; else longest. Ties broken alphabetically per branching point.
-    private var selectedPath by mutableStateOf<List<Int>>(emptyList())
+    // Highest frame the user has ever stepped to. Tree expands monotonically to this depth
+    // so clicking back to a shallower node doesn't hide already-visible deeper nodes
+    private var furthestFrameIndex by mutableIntStateOf(0)
+
+    // Tree node id the user clicked, anchors selectedPath when frames extend
+    // Null = path uses default heuristic (accepting > deepest, alphabetical tie-break)
+    private var selectionAnchor by mutableStateOf<Int?>(null)
+
+    // Root-to-leaf path of tree node ids indexed by frame depth. Drives Tape/Stack/Tree render
+    // Computed over the full frame list so accepting > longest > alphabetical is decided globally
+    private val selectedPath: List<Int> by derivedStateOf {
+        val list = frames ?: return@derivedStateOf emptyList()
+        val anchor = selectionAnchor
+        if (anchor != null) {
+            computePathThroughNode(list, anchor)
+        } else {
+            computeSelectedPath(list)
+        }
+    }
 
     /** Frame the UI renders. Synthesized from the machine when frames aren't computed yet. */
     val currentFrame: MachineFrame?
@@ -73,17 +89,21 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
                     )
                 }
 
-    /** Tree node id Tape/Stack/Tree render: inspected wins, else selected branch, else first. */
-    val displayNodeId: Int?
+    /**
+     * Tree node id for Tape/Stack/Tree render. Path entry at current frame, else last path entry
+     * (dead branches whose path is shorter than currentFrameIndex), else synthesized initial
+     * config's key (before the first step, when no frames are computed yet).
+     */
+    val selectedNodeId: Int?
         get() =
-            inspectedNodeId
-                ?: selectedPath.getOrNull(currentFrameIndex)
+            selectedPath.getOrNull(currentFrameIndex)
+                ?: selectedPath.lastOrNull()
                 ?: currentFrame?.activeConfigs?.keys?.firstOrNull()
 
-    /** Config for [displayNodeId], looking back to the last frame the node was active in. */
-    val displayConfig: Config?
+    /** Config for [selectedNodeId], looking back to the last frame the node was active in. */
+    val selectedConfig: Config?
         get() {
-            val nodeId = displayNodeId ?: return null
+            val nodeId = selectedNodeId ?: return null
             val list = frames ?: return currentFrame?.activeConfigs?.get(nodeId)
             for (i in currentFrameIndex downTo 0) {
                 list[i].activeConfigs[nodeId]?.let {
@@ -101,46 +121,84 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val saveDispatcher = Dispatchers.IO.limitedParallelism(1)
 
-    fun inspectNode(nodeId: Int) {
-        inspectedNodeId = nodeId
+    fun selectNode(nodeId: Int) {
+        val depth = currentMachine?.tree?.findNode(nodeId)?.depth ?: return
+        if (depth !in 0..furthestFrameIndex) {
+            return
+        }
+        selectionAnchor = nodeId
+        currentFrameIndex = depth
     }
 
-    fun clearInspection() {
-        inspectedNodeId = null
-    }
-
-    /** Pre-computes frames on first access. */
+    /**
+     * Pre-computes frames on first access. Tree shows nodes up to furthestFrameIndex (monotonic).
+     */
     private fun ensureFrames(machine: Machine): List<MachineFrame> {
         val cached = frames
         if (cached != null) {
             return cached
         }
         val computed = machine.precomputeFrames()
-        selectedPath = computeSelectedPath(computed)
         frames = computed
+        machine.rebuildTreeForFrame(computed, furthestFrameIndex.coerceAtMost(computed.lastIndex))
         return computed
     }
 
-    /** Extends frames by another batch when stepping past the end with sim still ACTIVE. */
-    private fun extendFrames(machine: Machine) {
+    /**
+     * Maintains a sliding window of MAX_SIM_PRECOMPUTE_STEPS frames ahead of currentFrameIndex so
+     * playback never runs out of precomputed frames.
+     */
+    private fun maintainLookahead(machine: Machine) {
         val list = frames ?: return
         if (list.last().outcome != SimulationOutcome.ACTIVE) {
             return
         }
-        val extended = machine.precomputeFrames((list.size - 1) + MAX_SIM_PRECOMPUTE_STEPS)
-        selectedPath = computeSelectedPath(extended)
+        val targetSteps = currentFrameIndex + MAX_SIM_PRECOMPUTE_STEPS
+        if (list.size > targetSteps) {
+            return
+        }
+        val extended = machine.precomputeFrames(targetSteps)
         frames = extended
-        machine.rebuildTreeForFrame(extended, currentFrameIndex)
+        machine.rebuildTreeForFrame(extended, furthestFrameIndex.coerceAtMost(extended.lastIndex))
     }
 
     private fun computeSelectedPath(frames: List<MachineFrame>): List<Int> {
-        if (frames.isEmpty()) {
+        val rootId = frames.firstOrNull()?.activeConfigs?.keys?.firstOrNull() ?: return emptyList()
+        val topology = buildTreeTopology(frames, rootId)
+        return pickBestPathFrom(rootId, topology, frames.last().isNodeAccepting)
+    }
+
+    /** Builds a root-to-leaf path that passes through [targetNodeId]. Empty if unknown node. */
+    private fun computePathThroughNode(frames: List<MachineFrame>, targetNodeId: Int): List<Int> {
+        val rootId = frames.firstOrNull()?.activeConfigs?.keys?.firstOrNull() ?: return emptyList()
+        val topology = buildTreeTopology(frames, rootId)
+
+        if (targetNodeId != rootId && targetNodeId !in topology.parent) {
             return emptyList()
         }
-        val rootId = frames[0].activeConfigs.keys.firstOrNull() ?: return emptyList()
 
-        // Build tree topology and per-node depth from frame data.
+        // Down: target -> best subtree leaf (accepting > deepest > alphabetical)
+        val downPath = pickBestPathFrom(targetNodeId, topology, frames.last().isNodeAccepting)
+
+        // Up: target -> root
+        val upPath = ArrayDeque<Int>()
+        var upNodeId: Int? = topology.parent[targetNodeId]
+        while (upNodeId != null) {
+            upPath.addFirst(upNodeId)
+            upNodeId = topology.parent[upNodeId]
+        }
+        return upPath + downPath
+    }
+
+    private data class TreeTopology(
+        val children: Map<Int, List<Pair<Int, String>>>,
+        val parent: Map<Int, Int>,
+        val depthOf: Map<Int, Int>,
+    )
+
+    private fun buildTreeTopology(frames: List<MachineFrame>, rootId: Int): TreeTopology {
         val children = mutableMapOf<Int, List<Pair<Int, String>>>()
+        val parent = mutableMapOf<Int, Int>()
         val depthOf = mutableMapOf(rootId to 0)
         for (frame in frames) {
             for ((parentId, branches) in frame.treeBranches) {
@@ -148,25 +206,43 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
                 val parentDepth = depthOf[parentId] ?: continue
                 for (branch in branches) {
                     depthOf[branch.treeNodeId] = parentDepth + 1
+                    parent[branch.treeNodeId] = parentId
                 }
             }
         }
-        val leafIds = depthOf.keys.filter { children[it].isNullOrEmpty() }
+        return TreeTopology(children, parent, depthOf)
+    }
 
-        // Candidates: accepting leaves if the sim accepted, else deepest leaves.
-        val isAccepting = frames.last().isNodeAccepting
-        val candidates: Set<Int> =
-            if (isAccepting != null) {
-                leafIds.filter(isAccepting).toSet()
+    /**
+     * Walks from [startNodeId] to the best leaf in its subtree, ranked accepting > deepest >
+     * alphabetical (tie-break at each branching point).
+     */
+    private fun pickBestPathFrom(
+        startNodeId: Int,
+        topology: TreeTopology,
+        isAccepting: ((Int) -> Boolean)?,
+    ): List<Int> {
+        val (children, _, depthOf) = topology
+
+        // Subtree leaves of startNodeId via BFS
+        val subtreeLeaves = mutableListOf<Int>()
+        val queue = ArrayDeque<Int>()
+        queue.add(startNodeId)
+        while (queue.isNotEmpty()) {
+            val node = queue.removeFirst()
+            val kids = children[node]
+            if (kids.isNullOrEmpty()) {
+                subtreeLeaves.add(node)
             } else {
-                val maxDepth = leafIds.maxOfOrNull { depthOf[it] ?: 0 } ?: return emptyList()
-                leafIds.filter { depthOf[it] == maxDepth }.toSet()
+                queue.addAll(kids.map { it.first })
             }
-        if (candidates.isEmpty()) {
-            return emptyList()
         }
 
-        // Memoized "subtree contains a candidate" check.
+        val accepting = isAccepting?.let { fn -> subtreeLeaves.filter(fn).toSet() } ?: emptySet()
+        val pool = accepting.ifEmpty { subtreeLeaves.toSet() }
+        val maxDepth = pool.maxOf { depthOf.getValue(it) }
+        val candidates: Set<Int> = pool.filter { depthOf.getValue(it) == maxDepth }.toSet()
+
         val containsCandidate = mutableMapOf<Int, Boolean>()
         fun has(id: Int): Boolean {
             containsCandidate[id]?.let {
@@ -177,49 +253,67 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
             return result
         }
 
-        // Greedy walk from root, picking the alphabetically smallest viable child.
         val path = mutableListOf<Int>()
-        var current = rootId
+        var nodeId = startNodeId
         while (true) {
-            path.add(current)
-            if (current in candidates) {
+            path.add(nodeId)
+            if (nodeId in candidates) {
                 break
             }
-            val viable = children[current]?.filter { has(it.first) } ?: emptyList()
-            val next = viable.minByOrNull { it.second } ?: break
-            current = next.first
+            val (nextNodeId, _) =
+                children[nodeId]?.filter { has(it.first) }?.minByOrNull { it.second } ?: break
+            nodeId = nextNodeId
         }
         return path
     }
 
-    /** Returns the frame after the current one, pre-computing or extending as needed. */
+    /**
+     * Returns the frame that [stepForward] would advance into. Null if simulation cannot extend.
+     */
     fun peekNextFrame(machine: Machine): MachineFrame? {
-        var list = ensureFrames(machine)
-        val nextIndex = currentFrameIndex + 1
-        if (nextIndex >= list.size && list.last().outcome == SimulationOutcome.ACTIVE) {
-            extendFrames(machine)
-            list = frames ?: list
-        }
-        return list.getOrNull(nextIndex)
+        val list = ensureFrames(machine)
+        return list.getOrNull(furthestFrameIndex + 1)
     }
 
-    /** Atomically advances/rewinds playback: updates index, rebuilds tree, re-syncs inspection. */
+    /**
+     * Advances/rewinds playback. Tree grows monotonically with furthestFrameIndex, never shrinks.
+     * When the tree grows, the anchor is dropped if its subtree has no viable leaf while the global
+     * tree still does.
+     */
     fun setFrameIndex(machine: Machine, newIndex: Int) {
         val list = ensureFrames(machine)
         require(newIndex in list.indices) { "frame index $newIndex out of bounds" }
         currentFrameIndex = newIndex
-        machine.rebuildTreeForFrame(list, newIndex)
-        inspectedNodeId?.let { nodeId ->
-            if (machine.tree.findNode(nodeId) == null) {
-                clearInspection()
+        if (newIndex > furthestFrameIndex) {
+            furthestFrameIndex = newIndex
+            machine.rebuildTreeForFrame(list, furthestFrameIndex)
+            val anchorNode = selectionAnchor?.let { machine.tree.findNode(it) }
+            if (
+                anchorNode != null &&
+                    !anchorNode.hasViableLeaf() &&
+                    machine.tree.root?.hasViableLeaf() == true
+            ) {
+                selectionAnchor = null
             }
         }
     }
 
+    /** Extends the simulation by one step beyond the furthest frame ever reached. */
     fun stepForward(machine: Machine) {
         if (peekNextFrame(machine) != null) {
-            setFrameIndex(machine, currentFrameIndex + 1)
+            setFrameIndex(machine, furthestFrameIndex + 1)
+            maintainLookahead(machine)
         }
+    }
+
+    private fun TreeNode.hasViableLeaf(): Boolean {
+        if (status == NodeStatus.ACCEPTED) {
+            return true
+        }
+        if (children.isEmpty()) {
+            return status == NodeStatus.ACTIVE
+        }
+        return children.any { it.hasViableLeaf() }
     }
 
     /** Resets playback. Call when machine structure or input changes. */
@@ -231,8 +325,8 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     private fun clearSimulationState() {
         frames = null
         currentFrameIndex = 0
-        selectedPath = emptyList()
-        clearInspection()
+        furthestFrameIndex = 0
+        selectionAnchor = null
     }
 
     fun markDirty() {

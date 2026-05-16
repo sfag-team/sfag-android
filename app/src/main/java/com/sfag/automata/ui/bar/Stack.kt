@@ -11,8 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.sfag.automata.ui.machine.cellPadding
 import com.sfag.automata.ui.machine.cellSize
+import com.sfag.main.config.Symbols
 
-/** PDA stack bar. Bottom symbol on the right; stack grows to the left. */
+/**
+ * PDA stack bar. Bottom symbol on the right; stack grows to the left. When the real stack is empty,
+ * the initial stack symbol Z is shown in muted (consumed) styling as a sentinel marker.
+ */
 @Composable
 fun Stack(symbols: List<Char>) {
     LazyRow(
@@ -24,7 +28,7 @@ fun Stack(symbols: List<Char>) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (symbols.isEmpty()) {
-            item { Cell(symbol = ' ') }
+            item { Cell(symbol = Symbols.INITIAL_STACK_SYMBOL, isMuted = true) }
         } else {
             items(symbols.reversed()) { Cell(symbol = it) }
         }

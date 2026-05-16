@@ -80,7 +80,7 @@ fun Machine.rebuildTreeForFrame(frames: List<MachineFrame>, targetIndex: Int) {
 /** Indexes the machine's current configs by tree-node id for inclusion in a [MachineFrame]. */
 fun Machine.snapshotConfigs(): Map<Int, Config> =
     when (this) {
-        is FiniteMachine -> currentConfigs.associateBy { it.treeNodeId }
-        is PushdownMachine -> currentConfigs.associateBy { it.treeNodeId }
-        is TuringMachine -> currentConfigs.associateBy { it.treeNodeId }
+        is FiniteMachine -> activeConfigs.associateBy { it.treeNodeId }
+        is PushdownMachine -> activeConfigs.associateBy { it.treeNodeId }
+        is TuringMachine -> activeConfigs.associateBy { it.treeNodeId }
     }

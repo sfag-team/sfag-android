@@ -136,11 +136,11 @@ private fun <T> bfsCheck(
     maxConfigs: Int,
 ): Boolean? {
     val visited = mutableSetOf<T>()
-    var current = mutableListOf(initial)
+    var currentLevel = mutableListOf(initial)
 
-    while (current.isNotEmpty()) {
-        val next = mutableListOf<T>()
-        for (config in current) {
+    while (currentLevel.isNotEmpty()) {
+        val nextLevel = mutableListOf<T>()
+        for (config in currentLevel) {
             if (visited.size >= maxConfigs) {
                 return null
             }
@@ -150,9 +150,9 @@ private fun <T> bfsCheck(
             if (isAccepted(config)) {
                 return true
             }
-            next.addAll(expand(config))
+            nextLevel.addAll(expand(config))
         }
-        current = next
+        currentLevel = nextLevel
     }
 
     return false

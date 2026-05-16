@@ -593,10 +593,10 @@ private fun StateTable(steps: List<DerivationStep>, modifier: Modifier = Modifie
                     )
 
                 val right =
-                    if (derivation.appliedRule.right == Symbols.EPSILON) {
+                    if (derivation.appliedRule.rhs == Symbols.EPSILON) {
                         ""
                     } else {
-                        derivation.appliedRule.right.replace(Symbols.EPSILON, "")
+                        derivation.appliedRule.rhs.replace(Symbols.EPSILON, "")
                     }
 
                 val annotatedString = buildAnnotatedString {
@@ -610,7 +610,7 @@ private fun StateTable(steps: List<DerivationStep>, modifier: Modifier = Modifie
                         append(
                             derivation.previous
                                 .replace(Symbols.EPSILON, "")
-                                .drop(diffIndex + derivation.appliedRule.left.length)
+                                .drop(diffIndex + derivation.appliedRule.lhs.length)
                         )
                     }
                 }

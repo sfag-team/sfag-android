@@ -46,7 +46,7 @@ import com.sfag.main.ui.theme.extendedColorScheme
 @Composable
 fun Machine.TreeView(
     recomposeKey: Int,
-    highlightedNodeId: Int? = null,
+    selectedNodeId: Int? = null,
     onSelectNode: ((Int) -> Unit)?,
 ) {
     val canvasHeight = if (isDeterministic() == true) 100.dp else 300.dp
@@ -80,8 +80,6 @@ fun Machine.TreeView(
                 color = colors.onSurface.toArgb()
             }
         }
-
-    val badgeNodeId = highlightedNodeId
 
     val positions = remember(recomposeKey) { calculateLayout(tree) }
 
@@ -148,7 +146,7 @@ fun Machine.TreeView(
         }
 
         // Center on selected node (PDA stack selection) or active nodes centroid
-        val targetPx = badgeNodeId?.let { positionsPx[it] }
+        val targetPx = selectedNodeId?.let { positionsPx[it] }
         if (targetPx != null) {
             offsetX = canvasWidthPx / 2f - targetPx.x * scale
             offsetY = viewHeightPx / 2f - targetPx.y * scale
@@ -304,12 +302,12 @@ fun Machine.TreeView(
                             alpha = alpha,
                         )
 
-                        // Draw "S" badge outside the top-right of the selected node
-                        if (badgeNodeId != null && node.id == badgeNodeId) {
-                            val badgeX = world.x + NODE_RADIUS * 0.95f
-                            val badgeY = world.y - NODE_RADIUS * 0.95f
+                        // Draw "*" badge near the top-right edge of the selected node
+                        if (selectedNodeId != null && node.id == selectedNodeId) {
+                            val badgeX = world.x + NODE_RADIUS * 0.75f
+                            val badgeY = world.y - NODE_RADIUS * 0.75f
                             drawContext.canvas.nativeCanvas.drawText(
-                                "S",
+                                "*",
                                 badgeX,
                                 badgeY,
                                 badgePaint,

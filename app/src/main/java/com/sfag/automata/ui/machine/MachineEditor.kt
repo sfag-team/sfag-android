@@ -42,9 +42,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.sfag.R
 import com.sfag.automata.domain.common.determinismLabel
 import com.sfag.automata.domain.machine.Config
+import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.State
+import com.sfag.automata.domain.machine.TuringMachine
 import com.sfag.automata.ui.AutomataViewModel
 import com.sfag.automata.ui.bar.Stack
 import com.sfag.automata.ui.bar.Tape
@@ -83,11 +85,11 @@ fun Machine.MachineEditor(
     val density = LocalDensity.current
     val currentFrame = viewModel.currentFrame
     val simulationOutcome = currentFrame?.takeIf { it.isTerminal }?.outcome
-    val displayConfig = viewModel.displayConfig
+    val selectedConfig = viewModel.selectedConfig
     val activeStateIndices = currentFrame?.activeStateIndices ?: emptySet()
 
     // Tool state
-    var activeTool by remember { mutableStateOf(MachineEditMode.SELECT) }
+    var currentTool by remember { mutableStateOf(MachineEditMode.SELECT) }
 
     // Transition paths state for hit testing from the outer pointerInput
     val transitionPathsState = remember { mutableStateOf<List<TransitionPath?>>(emptyList()) }
@@ -98,49 +100,50 @@ fun Machine.MachineEditor(
         // TOP BAR
         Crossfade(targetState = isEditing, label = "top-bar") { isEditingMode ->
             if (isEditingMode) {
-                key(activeTool) {
-                    Toolbar(activeTool = activeTool) { newTool -> activeTool = newTool }
+                key(currentTool) {
+                    Toolbar(currentTool = currentTool) { newTool -> currentTool = newTool }
                 }
             } else {
                 key(recomposeKey) {
-                    val primaryColor = MaterialTheme.colorScheme.primary
-                    val headColor =
-                        if (simulationOutcome != null) primaryColor.copy(alpha = 0.38f)
-                        else primaryColor
-                    when (displayConfig) {
-                        is Config.Tm ->
-                            Tape(
-                                symbols = displayConfig.tape,
-                                headIndex = displayConfig.headPosition,
-                                listState = tapeListState,
-                                headColor = headColor,
-                                onEdit = onEdit,
-                                infiniteRight = true,
-                                infiniteLeft = true,
-                                blankChar = Symbols.BLANK_CHAR,
-                            )
+                    val symbols =
+                        when (selectedConfig) {
+                            is Config.Tm -> selectedConfig.tape
+                            is Config.Fa,
+                            is Config.Pda,
+                            null -> fullInput.toList()
+                        }
+                    val headIndex =
+                        when (selectedConfig) {
+                            is Config.Fa -> selectedConfig.inputConsumed
+                            is Config.Pda -> selectedConfig.inputConsumed
+                            is Config.Tm -> selectedConfig.headPosition
+                            null -> 0
+                        }
+                    val muteHead = simulationOutcome != null
 
-                        is Config.Fa,
-                        is Config.Pda,
-                        null -> {
-                            val symbols = fullInput.toList()
-                            val consumed =
-                                when (displayConfig) {
-                                    is Config.Fa -> displayConfig.inputConsumed
-                                    is Config.Pda -> displayConfig.inputConsumed
-                                    null,
-                                    is Config.Tm -> 0
-                                }
+                    when (this@MachineEditor) {
+                        is FiniteMachine,
+                        is PushdownMachine ->
                             Tape(
                                 symbols = symbols,
-                                headIndex = consumed.coerceIn(0, symbols.size),
+                                headIndex = headIndex,
                                 listState = tapeListState,
-                                headColor = headColor,
-                                isConsumedShown = true,
                                 onEdit = onEdit,
-                                infiniteRight = false,
+                                muteHead = muteHead,
+                                muteConsumed = true,
                             )
-                        }
+
+                        is TuringMachine ->
+                            Tape(
+                                symbols = symbols,
+                                headIndex = headIndex,
+                                listState = tapeListState,
+                                onEdit = onEdit,
+                                blankChar = Symbols.BLANK_CHAR,
+                                muteHead = muteHead,
+                                infiniteRight = true,
+                                infiniteLeft = true,
+                            )
                     }
                 }
             }
@@ -231,11 +234,11 @@ fun Machine.MachineEditor(
                             }
                         }
                         // Tool gestures (inner = gets events first in Main pass)
-                        .pointerInput(activeTool, isEditing) {
+                        .pointerInput(currentTool, isEditing) {
                             if (!isEditing) {
                                 return@pointerInput
                             }
-                            when (activeTool) {
+                            when (currentTool) {
                                 MachineEditMode.ADD_STATE,
                                 MachineEditMode.ADD_TRANSITION,
                                 MachineEditMode.SELECT,
@@ -271,7 +274,7 @@ fun Machine.MachineEditor(
                                         }
                                         if (tapped) {
                                             val gestureOffset = down.position
-                                            when (activeTool) {
+                                            when (currentTool) {
                                                 MachineEditMode.ADD_STATE -> {
                                                     val tapOffset =
                                                         Offset(
@@ -341,14 +344,14 @@ fun Machine.MachineEditor(
                                                         }
 
                                                     if (hitState != null) {
-                                                        if (activeTool == MachineEditMode.SELECT) {
+                                                        if (currentTool == MachineEditMode.SELECT) {
                                                             dialogRequest.value =
                                                                 DialogRequest.ForState(
                                                                     Offset.Zero,
                                                                     hitState,
                                                                 )
                                                         } else if (
-                                                            activeTool == MachineEditMode.REMOVE
+                                                            currentTool == MachineEditMode.REMOVE
                                                         ) {
                                                             removeState(hitState)
                                                             viewModel.statePositions.remove(
@@ -377,7 +380,8 @@ fun Machine.MachineEditor(
                                                         ) {
                                                             val transition = transitions[index]
                                                             if (
-                                                                activeTool == MachineEditMode.SELECT
+                                                                currentTool ==
+                                                                    MachineEditMode.SELECT
                                                             ) {
                                                                 dialogRequest.value =
                                                                     DialogRequest.ForTransition(
@@ -390,7 +394,8 @@ fun Machine.MachineEditor(
                                                                         transition.read,
                                                                     )
                                                             } else if (
-                                                                activeTool == MachineEditMode.REMOVE
+                                                                currentTool ==
+                                                                    MachineEditMode.REMOVE
                                                             ) {
                                                                 transitions
                                                                     .filter {
@@ -473,7 +478,7 @@ fun Machine.MachineEditor(
                     val positions = viewModel.statePositions
 
                     if (isEditing) {
-                        key(activeTool) {
+                        key(currentTool) {
                             key(recomposeKey) {
                                 val transitionPaths =
                                     computeTransitionPaths(positions, density.density)
@@ -594,7 +599,7 @@ fun Machine.MachineEditor(
             ) {
                 Box(modifier = Modifier.fillMaxWidth().height(cellSize + cellPadding * 2)) {
                     key(recomposeKey) {
-                        val pdaConfig = displayConfig as? Config.Pda
+                        val pdaConfig = selectedConfig as? Config.Pda
                         Stack(symbols = pdaConfig?.stack ?: listOf(Symbols.INITIAL_STACK_SYMBOL))
                     }
                 }

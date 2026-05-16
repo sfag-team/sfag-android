@@ -79,13 +79,13 @@ sealed class Machine(
      * can copy the id into the new config.
      */
     protected fun <C : Config> buildBranches(
-        currentConfigs: List<C>,
+        activeConfigs: List<C>,
         stepResults: List<StepResult<C>>,
     ): Pair<Map<Int, List<Branch>>, List<Pair<Branch, C>>> {
         val resultsByParent = stepResults.groupBy { it.src.treeNodeId }
         val treeBranches = linkedMapOf<Int, MutableList<Branch>>()
         val pendingConfigs = mutableListOf<Pair<Branch, C>>()
-        for (config in currentConfigs) {
+        for (config in activeConfigs) {
             val results = resultsByParent[config.treeNodeId] ?: continue
             val branches = mutableListOf<Branch>()
             for (result in results) {

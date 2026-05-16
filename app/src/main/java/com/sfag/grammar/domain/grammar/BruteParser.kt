@@ -3,7 +3,10 @@ package com.sfag.grammar.domain.grammar
 import com.sfag.main.config.MAX_BFS_GRAMMAR_STEPS
 import com.sfag.main.config.Symbols
 
-private data class ParseState(val previousState: String, val appliedRule: GrammarRule)
+// Sentinel for "unreachable / infeasible" minimum length. Half of MAX_VALUE so sums never overflow
+private const val INF_LENGTH = Int.MAX_VALUE / 2
+
+private data class ParseState(val previous: String, val appliedRule: GrammarRule)
 
 data class DerivationStep(val previous: String, val derived: String, val appliedRule: GrammarRule)
 
@@ -36,89 +39,87 @@ fun parse(
         }
     }
 
-    val states = ArrayDeque<String>()
-    val stateHistory = mutableMapOf<String, ParseState>()
+    val queue = ArrayDeque<String>()
+    val history = mutableMapOf<String, ParseState>()
 
     rules
-        .filter { it.left == "S" }
+        .filter { it.lhs == "S" }
         .forEach { rule ->
-            val initialState = rule.right.replace(Symbols.EPSILON, "")
-            if (!stateHistory.containsKey(initialState)) {
-                states.add(initialState)
-                stateHistory[initialState] = ParseState("S", rule)
+            val initial = rule.rhs.replace(Symbols.EPSILON, "")
+            if (!history.containsKey(initial)) {
+                queue.add(initial)
+                history[initial] = ParseState("S", rule)
             }
         }
 
     val minLengths = computeMinLengths(rules)
     var steps = 0
 
-    while (states.isNotEmpty() && steps <= MAX_BFS_GRAMMAR_STEPS) {
-        val currentState = states.removeFirst()
+    while (queue.isNotEmpty() && steps <= MAX_BFS_GRAMMAR_STEPS) {
+        val current = queue.removeFirst()
 
         // Check if the current sentential form already matches the input
-        if (currentState == input) {
-            return ParseResult.Success(reconstructDerivation(currentState, stateHistory))
+        if (current == input) {
+            return ParseResult.Success(reconstructDerivation(current, history))
         }
 
         steps++
         for (rule in rules) {
-            var newState = currentState.replaceFirst(rule.left, rule.right)
-            if (newState == currentState && !currentState.contains(rule.left)) {
+            var derived = current.replaceFirst(rule.lhs, rule.rhs)
+            if (derived == current && !current.contains(rule.lhs)) {
                 continue
             }
-            newState = newState.replace(Symbols.EPSILON, "")
+            derived = derived.replace(Symbols.EPSILON, "")
 
-            if (newState == input) {
-                if (newState != currentState) {
-                    stateHistory[newState] = ParseState(currentState, rule)
+            if (derived == input) {
+                if (derived != current) {
+                    history[derived] = ParseState(current, rule)
                 }
-                return ParseResult.Success(reconstructDerivation(newState, stateHistory))
+                return ParseResult.Success(reconstructDerivation(derived, history))
             }
 
-            if (!rules.any { newState.contains(it.left) }) {
+            if (!rules.any { derived.contains(it.lhs) }) {
                 continue
             }
 
-            if (!stateHistory.containsKey(newState)) {
-                if (minimumLength(newState, minLengths) > input.length) {
+            if (!history.containsKey(derived)) {
+                if (minLength(derived, minLengths) > input.length) {
                     continue
                 }
-                states.add(newState)
-                stateHistory[newState] = ParseState(currentState, rule)
+                queue.add(derived)
+                history[derived] = ParseState(current, rule)
             }
         }
     }
-    return if (states.isEmpty()) ParseResult.Rejected else ParseResult.Inconclusive
+    return if (queue.isEmpty()) ParseResult.Rejected else ParseResult.Inconclusive
 }
 
 private fun reconstructDerivation(
-    finalState: String,
-    stateHistory: Map<String, ParseState>,
+    target: String,
+    history: Map<String, ParseState>,
 ): List<DerivationStep> {
     val derivationSteps = mutableListOf<DerivationStep>()
     val visited = mutableSetOf<String>()
-    var currentState = finalState
+    var current = target
 
-    while (currentState != "S") {
-        if (!visited.add(currentState)) {
+    while (current != "S") {
+        if (!visited.add(current)) {
             break
         }
-        val step = stateHistory[currentState] ?: break
-        derivationSteps.add(
-            DerivationStep(step.previousState, derived = currentState, step.appliedRule)
-        )
-        currentState = step.previousState
+        val step = history[current] ?: break
+        derivationSteps.add(DerivationStep(step.previous, derived = current, step.appliedRule))
+        current = step.previous
     }
     return derivationSteps.reversed()
 }
 
-fun findReplacementIndex(rule: GrammarRule, previous: String, current: String): Int {
-    val left = rule.left
-    val right = rule.right.replace(Symbols.EPSILON, "")
+fun findReplacementIndex(rule: GrammarRule, previous: String, derived: String): Int {
+    val left = rule.lhs
+    val right = rule.rhs.replace(Symbols.EPSILON, "")
     for (i in previous.indices) {
         if (i + left.length <= previous.length && previous.substring(i, i + left.length) == left) {
             val candidate = previous.take(i) + right + previous.substring(i + left.length)
-            if (candidate == current) {
+            if (candidate == derived) {
                 return i
             }
         }
@@ -128,34 +129,34 @@ fun findReplacementIndex(rule: GrammarRule, previous: String, current: String): 
 
 /** Precompute the minimum terminal length each nonterminal can derive via fixed-point iteration. */
 private fun computeMinLengths(rules: List<GrammarRule>): Map<String, Int> {
-    val nonTerminals = rules.map { it.left }.toSet()
-    val minLengths = nonTerminals.associateWith { Int.MAX_VALUE / 2 }.toMutableMap()
+    val nonTerminals = rules.map { it.lhs }.toSet()
+    val minLengths = nonTerminals.associateWith { INF_LENGTH }.toMutableMap()
 
     var changed = true
     while (changed) {
         changed = false
         for (rule in rules) {
-            val rhs = rule.right
-            val rhsMin =
+            val rhs = rule.rhs
+            val rhsLength =
                 if (rhs == Symbols.EPSILON) {
                     0
                 } else {
-                    var sum = 0
+                    var length = 0
                     for (c in rhs) {
-                        sum +=
+                        length +=
                             if (c.isUpperCase()) {
-                                minLengths[c.toString()] ?: (Int.MAX_VALUE / 2)
+                                minLengths[c.toString()] ?: INF_LENGTH
                             } else {
                                 1
                             }
-                        if (sum >= Int.MAX_VALUE / 2) {
+                        if (length >= INF_LENGTH) {
                             break
                         }
                     }
-                    sum
+                    length
                 }
-            if (rhsMin < (minLengths[rule.left] ?: (Int.MAX_VALUE / 2))) {
-                minLengths[rule.left] = rhsMin
+            if (rhsLength < (minLengths[rule.lhs] ?: INF_LENGTH)) {
+                minLengths[rule.lhs] = rhsLength
                 changed = true
             }
         }
@@ -167,21 +168,21 @@ private fun computeMinLengths(rules: List<GrammarRule>): Map<String, Int> {
  * Compute the minimum possible terminal length of a sentential form. Each terminal counts as 1,
  * each nonterminal counts as its precomputed minimum.
  */
-private fun minimumLength(derivation: String, minLengths: Map<String, Int>): Int {
-    var sum = 0
-    for (c in derivation) {
+private fun minLength(form: String, minLengths: Map<String, Int>): Int {
+    var length = 0
+    for (c in form) {
         if (c.toString() == Symbols.EPSILON) {
             continue
         }
-        sum +=
+        length +=
             if (c.isUpperCase()) {
                 minLengths[c.toString()] ?: 1
             } else {
                 1
             }
-        if (sum >= Int.MAX_VALUE / 2) {
-            return sum
+        if (length >= INF_LENGTH) {
+            return length
         }
     }
-    return sum
+    return length
 }

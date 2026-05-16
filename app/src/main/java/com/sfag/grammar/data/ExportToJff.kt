@@ -10,8 +10,8 @@ fun List<GrammarRule>.exportToJff(): String =
     JffUtils.jffDocument("grammar") {
         this@exportToJff.forEach { rule ->
             appendLine("    <production>")
-            appendLine("        <left>${escapeXml(rule.left)}</left>")
-            val rightValue = if (rule.right == Symbols.EPSILON) "" else rule.right
+            appendLine("        <left>${escapeXml(rule.lhs)}</left>")
+            val rightValue = if (rule.rhs == Symbols.EPSILON) "" else rule.rhs
             appendLine("        ${xmlTag("right", rightValue)}")
             appendLine("    </production>")
         }

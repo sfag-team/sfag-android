@@ -111,8 +111,8 @@ fun GrammarEditor(
                         isGrammarFinished,
                         onEdit = {
                             editingRule = rule
-                            editLeft = TextFieldValue(rule.left)
-                            editRight = TextFieldValue(rule.right)
+                            editLeft = TextFieldValue(rule.lhs)
+                            editRight = TextFieldValue(rule.rhs)
                         },
                     )
                 }

@@ -1,7 +1,6 @@
 package com.sfag.automata.ui.bar
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,12 +22,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sfag.R
 import com.sfag.automata.ui.machine.cellPadding
@@ -55,11 +51,11 @@ fun Tape(
     headIndex: Int,
     listState: LazyListState,
     onEdit: () -> Unit,
-    infiniteRight: Boolean,
-    headColor: Color = MaterialTheme.colorScheme.primary,
-    isConsumedShown: Boolean = false,
-    infiniteLeft: Boolean = false,
     blankChar: Char = ' ',
+    muteHead: Boolean = false,
+    muteConsumed: Boolean = false,
+    infiniteRight: Boolean = false,
+    infiniteLeft: Boolean = false,
 ) {
     val density = LocalDensity.current
 
@@ -113,57 +109,16 @@ fun Tape(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 itemsIndexed(displaySymbols) { index, symbol ->
-                    Cell(
-                        symbol = symbol,
-                        isHead = index == adjustedHead,
-                        isConsumed = isConsumedShown && index < adjustedHead,
-                        headColor = headColor,
-                    )
+                    val isHighlighted = index == adjustedHead
+                    val isMuted =
+                        when {
+                            isHighlighted -> muteHead
+                            index < adjustedHead -> muteConsumed
+                            else -> false
+                        }
+                    Cell(symbol = symbol, isMuted = isMuted, isHighlighted = isHighlighted)
                 }
             }
         }
-    }
-}
-
-@Composable
-internal fun Cell(
-    symbol: Char,
-    isHead: Boolean = false,
-    isConsumed: Boolean = false,
-    headColor: Color = MaterialTheme.colorScheme.primary,
-    size: Dp = cellSize,
-) {
-    val bgColor =
-        when {
-            isHead -> MaterialTheme.colorScheme.surfaceContainerLowest
-            isConsumed -> MaterialTheme.colorScheme.surfaceContainerHigh
-            else -> MaterialTheme.colorScheme.surfaceContainerLowest
-        }
-    val textColor =
-        when {
-            isHead -> headColor
-            isConsumed -> MaterialTheme.colorScheme.onSurfaceVariant
-            else -> MaterialTheme.colorScheme.onSurface
-        }
-
-    Box(
-        modifier =
-            Modifier.size(size)
-                .clip(MaterialTheme.shapes.small)
-                .then(
-                    if (isHead) {
-                        Modifier.border(2.dp, headColor, MaterialTheme.shapes.small)
-                    } else {
-                        Modifier
-                    }
-                )
-                .background(bgColor),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = symbol.toString(),
-            style = MaterialTheme.typography.headlineSmall,
-            color = textColor,
-        )
     }
 }

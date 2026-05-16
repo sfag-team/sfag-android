@@ -27,7 +27,7 @@ class TuringMachine(
         get() = tmTransitions
 
     // Track multiple current configs for NTM simulation
-    val currentConfigs: MutableList<Config.Tm> = mutableListOf()
+    val activeConfigs: MutableList<Config.Tm> = mutableListOf()
 
     private fun initialTape(): List<Char> =
         if (fullInput.isEmpty()) listOf(blankSymbol) else fullInput.toList()
@@ -57,21 +57,21 @@ class TuringMachine(
     }
 
     override fun resetSimulation() {
-        currentConfigs.clear()
+        activeConfigs.clear()
         initialState?.index?.let {
-            currentConfigs.add(Config.Tm(it, initialTape(), 0, treeNodeId = tree.root!!.id))
+            activeConfigs.add(Config.Tm(it, initialTape(), 0, treeNodeId = tree.root!!.id))
         }
     }
 
     override fun advanceSimulation(): Simulation {
         // TM halts on reaching a final state (JFLAP 7.1 semantics). For NTM, any active
         // config in a final state accepts overall.
-        if (currentConfigs.any { getStateByIndex(it.stateIndex).final }) {
+        if (activeConfigs.any { getStateByIndex(it.stateIndex).final }) {
             return terminateSimulation()
         }
 
         val stepResults = mutableListOf<StepResult<Config.Tm>>()
-        for (config in currentConfigs) {
+        for (config in activeConfigs) {
             val symbol = config.tape.getOrElse(config.headPosition) { blankSymbol }
             for (transition in tmTransitions) {
                 if (
@@ -89,22 +89,22 @@ class TuringMachine(
             return terminateSimulation()
         }
 
-        val (treeBranches, pendingConfigs) = buildBranches(currentConfigs, stepResults)
+        val (treeBranches, pendingConfigs) = buildBranches(activeConfigs, stepResults)
 
         return Simulation.Step(
             transitionRefs = buildTransitionRefs(stepResults),
             treeBranches = treeBranches,
             onAllComplete = {
-                currentConfigs.clear()
+                activeConfigs.clear()
                 for ((branch, config) in pendingConfigs) {
-                    currentConfigs.add(config.copy(treeNodeId = branch.treeNodeId))
+                    activeConfigs.add(config.copy(treeNodeId = branch.treeNodeId))
                 }
             },
         )
     }
 
     private fun terminateSimulation(): Simulation.Ended =
-        terminate(currentConfigs.filter { getStateByIndex(it.stateIndex).final })
+        terminate(activeConfigs.filter { getStateByIndex(it.stateIndex).final })
 
     private fun applyTmStep(
         tape: List<Char>,

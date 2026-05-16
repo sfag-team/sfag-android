@@ -47,7 +47,7 @@ class GrammarViewModel @Inject internal constructor(private val storage: Grammar
 
     fun addRule(left: String, right: String) {
         val newRule = GrammarRule(left, right)
-        if (rules.any { it.left == left && it.right == right }) {
+        if (rules.any { it.lhs == left && it.rhs == right }) {
             return
         }
         rules = rules + newRule
@@ -77,8 +77,8 @@ class GrammarViewModel @Inject internal constructor(private val storage: Grammar
         val individualRules = mutableListOf<GrammarRule>()
 
         rules.forEach { rule ->
-            rule.right.split('|').forEach { singleRight ->
-                individualRules.add(GrammarRule(rule.left, singleRight))
+            rule.rhs.split('|').forEach { singleRight ->
+                individualRules.add(GrammarRule(rule.lhs, singleRight))
             }
         }
 
@@ -95,7 +95,7 @@ class GrammarViewModel @Inject internal constructor(private val storage: Grammar
     fun loadGrammar(): Boolean {
         val loaded = storage.load() ?: return false
         rules = emptyList()
-        loaded.forEach { addRule(it.left, it.right) }
+        loaded.forEach { addRule(it.lhs, it.rhs) }
         isGrammarFinished = true
         return true
     }
@@ -107,7 +107,7 @@ class GrammarViewModel @Inject internal constructor(private val storage: Grammar
     fun loadFromJffStream(inputStream: InputStream) {
         val parsed = Jff.parse(inputStream)
         rules = emptyList()
-        parsed.forEach { addRule(it.left, it.right) }
+        parsed.forEach { addRule(it.lhs, it.rhs) }
         isGrammarFinished = true
     }
 
@@ -116,14 +116,14 @@ class GrammarViewModel @Inject internal constructor(private val storage: Grammar
         val nonTerminalsSet = mutableSetOf<Char>()
 
         rules.forEach { rule ->
-            for (symbol in rule.left) {
+            for (symbol in rule.lhs) {
                 if (!symbol.isDigit() && symbol.isUpperCase()) {
                     nonTerminalsSet.add(symbol)
                 } else {
                     terminalsSet.add(symbol)
                 }
             }
-            for (symbol in rule.right) {
+            for (symbol in rule.rhs) {
                 if (symbol == '|' || "$symbol" == Symbols.EPSILON) {
                     continue
                 } else if (!symbol.isDigit() && symbol.isUpperCase()) {

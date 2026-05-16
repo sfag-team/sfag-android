@@ -12,15 +12,15 @@ class FiniteMachine(
     override val typeLabel = "FA"
 
     // Track multiple current configs for NFA simulation
-    val currentConfigs: MutableList<Config.Fa> = mutableListOf()
+    val activeConfigs: MutableList<Config.Fa> = mutableListOf()
 
     override fun removeTransition(transition: Transition) {
         transitions.remove(transition)
     }
 
     override fun resetSimulation() {
-        currentConfigs.clear()
-        initialState?.index?.let { currentConfigs.add(Config.Fa(it, treeNodeId = tree.root!!.id)) }
+        activeConfigs.clear()
+        initialState?.index?.let { activeConfigs.add(Config.Fa(it, treeNodeId = tree.root!!.id)) }
     }
 
     fun addNewTransition(fromState: State, toState: State, read: String) {
@@ -37,7 +37,7 @@ class FiniteMachine(
 
     override fun advanceSimulation(): Simulation {
         val stepResults = mutableListOf<StepResult<Config.Fa>>()
-        for (config in currentConfigs) {
+        for (config in activeConfigs) {
             val state = getStateByIndex(config.stateIndex)
             for (transition in getMatchingTransitions(state, config.inputConsumed)) {
                 val newConfig =
@@ -49,22 +49,22 @@ class FiniteMachine(
             return terminateSimulation()
         }
 
-        // No-progress loop: same (state, consumed) set, ignoring treeNodeId.
+        // No-progress loop: same (state, consumed) set, ignoring treeNodeId
         val newKeys = stepResults.map { it.dest.stateIndex to it.dest.inputConsumed }.toSet()
-        val currentKeys = currentConfigs.map { it.stateIndex to it.inputConsumed }.toSet()
+        val currentKeys = activeConfigs.map { it.stateIndex to it.inputConsumed }.toSet()
         if (newKeys == currentKeys) {
             return terminateSimulation()
         }
 
-        val (treeBranches, pendingConfigs) = buildBranches(currentConfigs, stepResults)
+        val (treeBranches, pendingConfigs) = buildBranches(activeConfigs, stepResults)
 
         return Simulation.Step(
             transitionRefs = buildTransitionRefs(stepResults),
             treeBranches = treeBranches,
             onAllComplete = {
-                currentConfigs.clear()
+                activeConfigs.clear()
                 for ((branch, config) in pendingConfigs) {
-                    currentConfigs.add(config.copy(treeNodeId = branch.treeNodeId))
+                    activeConfigs.add(config.copy(treeNodeId = branch.treeNodeId))
                 }
             },
         )
@@ -72,7 +72,7 @@ class FiniteMachine(
 
     private fun terminateSimulation(): Simulation.Ended =
         terminate(
-            currentConfigs.filter {
+            activeConfigs.filter {
                 getStateByIndex(it.stateIndex).final && it.inputConsumed >= fullInput.length
             }
         )

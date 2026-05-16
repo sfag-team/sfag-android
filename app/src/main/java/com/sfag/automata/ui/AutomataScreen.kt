@@ -561,9 +561,9 @@ private fun BottomScreenPart(
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 machine.TreeView(
                     recomposeKey = recomposeKey.intValue,
-                    highlightedNodeId = viewModel.displayNodeId,
+                    selectedNodeId = viewModel.selectedNodeId,
                     onSelectNode = { nodeId ->
-                        viewModel.inspectNode(nodeId)
+                        viewModel.selectNode(nodeId)
                         recomposeKey.intValue++
                     },
                 )

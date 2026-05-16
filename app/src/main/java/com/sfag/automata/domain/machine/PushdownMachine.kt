@@ -23,7 +23,7 @@ class PushdownMachine(
         get() = pdaTransitions
 
     // Track multiple current configs for NPDA simulation
-    val currentConfigs: MutableList<Config.Pda> = mutableListOf()
+    val activeConfigs: MutableList<Config.Pda> = mutableListOf()
 
     var acceptanceCriteria = AcceptanceCriteria.BY_FINAL_STATE
     private var staleStepCount = 0
@@ -33,10 +33,10 @@ class PushdownMachine(
     }
 
     override fun resetSimulation() {
-        currentConfigs.clear()
+        activeConfigs.clear()
         staleStepCount = 0
         initialState?.index?.let {
-            currentConfigs.add(
+            activeConfigs.add(
                 Config.Pda(it, listOf(Symbols.INITIAL_STACK_SYMBOL), treeNodeId = tree.root!!.id)
             )
         }
@@ -66,12 +66,12 @@ class PushdownMachine(
 
     override fun advanceSimulation(): Simulation {
         // Config limit - prevent runaway branching
-        if (currentConfigs.size > MAX_SIM_PDA_CONFIGS) {
+        if (activeConfigs.size > MAX_SIM_PDA_CONFIGS) {
             return terminateSimulation()
         }
 
         val stepResults = mutableListOf<StepResult<Config.Pda>>()
-        for (config in currentConfigs) {
+        for (config in activeConfigs) {
             val state = getStateByIndex(config.stateIndex)
             for (transition in getMatchingTransitions(state, config.stack, config.inputConsumed)) {
                 val newStack =
@@ -89,22 +89,22 @@ class PushdownMachine(
             return terminateSimulation()
         }
 
-        // No-progress loop: same (state, stack, consumed) set, ignoring treeNodeId.
+        // No-progress loop: same (state, stack, consumed) set, ignoring treeNodeId
         val newKeys =
             stepResults.mapTo(mutableSetOf()) {
                 Triple(it.dest.stateIndex, it.dest.stack, it.dest.inputConsumed)
             }
         val currentKeys =
-            currentConfigs.mapTo(mutableSetOf()) {
+            activeConfigs.mapTo(mutableSetOf()) {
                 Triple(it.stateIndex, it.stack, it.inputConsumed)
             }
         if (newKeys == currentKeys) {
             return terminateSimulation()
         }
 
-        // Stale step detection - the slowest path didn't advance the input floor.
+        // Stale step detection - the slowest path didn't advance the input floor
         val newFloor = stepResults.minOf { it.dest.inputConsumed }
-        val curFloor = currentConfigs.minOf { it.inputConsumed }
+        val curFloor = activeConfigs.minOf { it.inputConsumed }
         if (newFloor == curFloor) {
             staleStepCount++
             if (staleStepCount > MAX_SIM_PDA_STALE_STEPS) {
@@ -114,15 +114,15 @@ class PushdownMachine(
             staleStepCount = 0
         }
 
-        val (treeBranches, pendingConfigs) = buildBranches(currentConfigs, stepResults)
+        val (treeBranches, pendingConfigs) = buildBranches(activeConfigs, stepResults)
 
         return Simulation.Step(
             transitionRefs = buildTransitionRefs(stepResults),
             treeBranches = treeBranches,
             onAllComplete = {
-                currentConfigs.clear()
+                activeConfigs.clear()
                 for ((branch, config) in pendingConfigs) {
-                    currentConfigs.add(config.copy(treeNodeId = branch.treeNodeId))
+                    activeConfigs.add(config.copy(treeNodeId = branch.treeNodeId))
                 }
             },
         )
@@ -130,7 +130,7 @@ class PushdownMachine(
 
     private fun terminateSimulation(): Simulation.Ended =
         terminate(
-            currentConfigs.filter {
+            activeConfigs.filter {
                 it.inputConsumed >= fullInput.length &&
                     when (acceptanceCriteria) {
                         AcceptanceCriteria.BY_FINAL_STATE -> getStateByIndex(it.stateIndex).final

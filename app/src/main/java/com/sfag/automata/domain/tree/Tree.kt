@@ -10,14 +10,14 @@ class Tree {
     var root: TreeNode? = null
         private set
 
-    private var nextId = 0
+    private var nextNodeId = 0
     private val activeNodes = mutableListOf<TreeNode>()
     private var currentGeneration = 0
 
     fun initialize(stateName: String) {
-        nextId = 0
+        nextNodeId = 0
         currentGeneration = 0
-        val node = TreeNode(id = nextId++, stateName = stateName, depth = 0)
+        val node = TreeNode(id = nextNodeId++, stateName = stateName, depth = 0)
         root = node
         activeNodes.clear()
         activeNodes.add(node)
@@ -27,7 +27,7 @@ class Tree {
      * Allocates the next tree-node id and returns a [Branch] tagged with it. The matching node is
      * materialized when the branch is later passed to [expandActive].
      */
-    fun allocateBranch(stateName: String): Branch = Branch(stateName, nextId++)
+    fun allocateBranch(stateName: String): Branch = Branch(stateName, nextNodeId++)
 
     /**
      * Materializes pre-allocated [Branch]es as children of their parent active nodes. Active nodes
@@ -55,10 +55,10 @@ class Tree {
                     )
                 node.children.add(childNode)
                 newActive.add(childNode)
-                // Keep nextId past every materialized id so subsequent allocateBranch calls can
+                // Keep nextNodeId past every materialized id so subsequent allocateBranch calls can
                 // never collide, even on the rebuild path that doesn't go through allocateBranch.
-                if (branch.treeNodeId >= nextId) {
-                    nextId = branch.treeNodeId + 1
+                if (branch.treeNodeId >= nextNodeId) {
+                    nextNodeId = branch.treeNodeId + 1
                 }
             }
         }
@@ -133,7 +133,7 @@ class Tree {
 
     fun clear() {
         root = null
-        nextId = 0
+        nextNodeId = 0
         currentGeneration = 0
         activeNodes.clear()
     }

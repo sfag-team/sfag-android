@@ -43,7 +43,7 @@ fun GrammarRuleView(
         val noOpInteraction = remember { MutableInteractionSource() }
         Box(modifier = Modifier.weight(1f)) {
             OutlinedTextField(
-                value = grammarRule.left,
+                value = grammarRule.lhs,
                 onValueChange = {},
                 readOnly = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -61,7 +61,7 @@ fun GrammarRuleView(
         Text(Symbols.PRODUCTION, style = MaterialTheme.typography.headlineMedium)
         Box(modifier = Modifier.weight(1f)) {
             OutlinedTextField(
-                value = grammarRule.right,
+                value = grammarRule.rhs,
                 onValueChange = {},
                 readOnly = true,
                 modifier = Modifier.fillMaxWidth(),
