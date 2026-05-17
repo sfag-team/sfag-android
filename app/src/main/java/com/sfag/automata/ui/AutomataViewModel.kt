@@ -37,7 +37,7 @@ private const val JFLAP_TO_DP = 160f / 96f
 class AutomataViewModel @Inject internal constructor(private val storage: AutomataStorage) :
     ViewModel() {
     // The single current machine - observed by the Activity to key the composition
-    var currentMachine by mutableStateOf<Machine?>(null)
+    var machine by mutableStateOf<Machine?>(null)
         private set
 
     // Layout state - persists across simulation/edit mode switches
@@ -80,7 +80,7 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     val currentFrame: MachineFrame?
         get() =
             frames?.getOrNull(currentFrameIndex)
-                ?: currentMachine?.let { machine ->
+                ?: machine?.let { machine ->
                     MachineFrame(
                         transitionRefs = emptyList(),
                         treeBranches = emptyMap(),
@@ -122,7 +122,7 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     private val saveDispatcher = Dispatchers.IO.limitedParallelism(1)
 
     fun selectNode(nodeId: Int) {
-        val depth = currentMachine?.tree?.findNode(nodeId)?.depth ?: return
+        val depth = machine?.tree?.findNode(nodeId)?.depth ?: return
         if (depth !in 0..furthestFrameIndex) {
             return
         }
@@ -341,10 +341,10 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
      * Sets the active machine and resets view to default scale + center. JFLAP coordinates (96 DPI)
      * are scaled to dp (160 DPI) via JFLAP_TO_DP.
      */
-    fun setCurrentMachine(machine: Machine, positions: Map<Int, Point2D> = emptyMap()) {
+    fun setMachine(newMachine: Machine, positions: Map<Int, Point2D> = emptyMap()) {
         clearSimulationState()
-        currentMachine = machine
-        machine.resetToInitialState()
+        machine = newMachine
+        newMachine.resetToInitialState()
         loadPositions(positions)
         scaleCanvas = INITIAL_ZOOM
         machineAutoCenter = true
@@ -370,7 +370,7 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     fun loadMachine(): Boolean {
         val stored = storage.load() ?: return false
         clearSimulationState()
-        currentMachine = stored.machine
+        machine = stored.machine
         stored.machine.resetToInitialState()
         loadPositions(stored.positions)
         offsetXCanvas = stored.offsetX

@@ -125,7 +125,7 @@ fun AutomataScreen(
     val acceptedMsg = stringResource(R.string.accepted_in_states)
     val rejectedMsg = stringResource(R.string.rejected_in_states)
 
-    val machine = viewModel.currentMachine
+    val machine = viewModel.machine
     if (machine == null) {
         LaunchedEffect(Unit) { navBack() }
         return
@@ -133,7 +133,7 @@ fun AutomataScreen(
 
     key(machine) {
         val recomposeKey = remember { mutableIntStateOf(0) }
-        val currentMode = remember { mutableStateOf(Mode.SIMULATOR) }
+        val mode = remember { mutableStateOf(Mode.SIMULATOR) }
         var showUnsavedDialog by remember { mutableStateOf(viewModel.pendingExampleUri != null) }
         var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
         val animationOverlay = remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
@@ -173,7 +173,7 @@ fun AutomataScreen(
                         val machineName = JffUtils.getJffStem(context, it)
                         context.contentResolver.openInputStream(it)?.use { stream ->
                             val jff = Jff.parse(stream)
-                            viewModel.setCurrentMachine(jff.toMachine(machineName), jff.positions)
+                            viewModel.setMachine(jff.toMachine(machineName), jff.positions)
                         }
                     } catch (e: Exception) {
                         Log.e("AutomataScreen", "Failed to import file", e)
@@ -183,7 +183,7 @@ fun AutomataScreen(
             }
 
         BackHandler {
-            when (currentMode.value) {
+            when (mode.value) {
                 Mode.SIMULATOR -> {
                     if (viewModel.hasUnsavedChanges) {
                         pendingAction = { navBack() }
@@ -203,13 +203,13 @@ fun AutomataScreen(
                 Mode.INPUT_EDITOR -> {
                     viewModel.invalidateSimulation(machine)
                     viewModel.autoSave(machine)
-                    currentMode.value = Mode.SIMULATOR
+                    mode.value = Mode.SIMULATOR
                 }
 
                 Mode.MACHINE_EDITOR -> {
                     viewModel.invalidateSimulation(machine)
                     viewModel.autoSave(machine)
-                    currentMode.value = Mode.SIMULATOR
+                    mode.value = Mode.SIMULATOR
                     recomposeKey.intValue++
                 }
             }
@@ -231,7 +231,7 @@ fun AutomataScreen(
         }
 
         Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLowest)) {
-            if (currentMode.value != Mode.INPUT_EDITOR) {
+            if (mode.value != Mode.INPUT_EDITOR) {
                 LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
                     item { Spacer(Modifier.height(16.dp)) }
                     item {
@@ -306,14 +306,14 @@ fun AutomataScreen(
                                         .background(MaterialTheme.colorScheme.surfaceContainer)
                             ) {
                                 machine.MachineEditor(
-                                    isEditing = currentMode.value == Mode.MACHINE_EDITOR,
+                                    isEditing = mode.value == Mode.MACHINE_EDITOR,
                                     recomposeKey = recomposeKey.intValue,
                                     animationOverlay = animationOverlay.value,
                                     dialogRequest = dialogRequest,
                                     onEdit = {
-                                        if (currentMode.value != Mode.SIMULATION_STEP) {
+                                        if (mode.value != Mode.SIMULATION_STEP) {
                                             viewModel.invalidateSimulation(machine)
-                                            currentMode.value = Mode.INPUT_EDITOR
+                                            mode.value = Mode.INPUT_EDITOR
                                         }
                                     },
                                     onRecompose = { recomposeKey.intValue++ },
@@ -326,35 +326,35 @@ fun AutomataScreen(
                             ) {
                                 DefaultIconButton(
                                     onClick = {
-                                        if (currentMode.value == Mode.SIMULATION_STEP) {
+                                        if (mode.value == Mode.SIMULATION_STEP) {
                                             return@DefaultIconButton
                                         }
-                                        if (currentMode.value == Mode.MACHINE_EDITOR) {
+                                        if (mode.value == Mode.MACHINE_EDITOR) {
                                             viewModel.invalidateSimulation(machine)
-                                            currentMode.value = Mode.SIMULATOR
+                                            mode.value = Mode.SIMULATOR
                                             recomposeKey.intValue++
                                         } else {
-                                            currentMode.value = Mode.MACHINE_EDITOR
+                                            mode.value = Mode.MACHINE_EDITOR
                                         }
                                     },
                                     icon = Icons.Outlined.Edit,
                                     modifier = Modifier.weight(1f),
-                                    isActive = currentMode.value == Mode.MACHINE_EDITOR,
+                                    isActive = mode.value == Mode.MACHINE_EDITOR,
                                 )
                                 DefaultIconButton(
                                     onClick = {
-                                        if (currentMode.value == Mode.MACHINE_EDITOR) {
+                                        if (mode.value == Mode.MACHINE_EDITOR) {
                                             viewModel.machineAutoCenter = true
                                             recomposeKey.intValue++
                                         } else {
                                             animationOverlay.value = null
                                             viewModel.invalidateSimulation(machine)
-                                            currentMode.value = Mode.SIMULATOR
+                                            mode.value = Mode.SIMULATOR
                                             recomposeKey.intValue++
                                         }
                                     },
                                     icon =
-                                        if (currentMode.value == Mode.MACHINE_EDITOR) {
+                                        if (mode.value == Mode.MACHINE_EDITOR) {
                                             Icons.Outlined.CropFree
                                         } else {
                                             Icons.Outlined.Replay
@@ -363,15 +363,15 @@ fun AutomataScreen(
                                 )
                                 DefaultIconButton(
                                     onClick = {
-                                        if (currentMode.value == Mode.SIMULATION_STEP) {
+                                        if (mode.value == Mode.SIMULATION_STEP) {
                                             return@DefaultIconButton
                                         }
                                         if (machine.states.none { it.initial }) {
                                             snackbarMsg = noInitialStateMsg
                                             return@DefaultIconButton
                                         }
-                                        if (currentMode.value != Mode.SIMULATOR) {
-                                            currentMode.value = Mode.SIMULATOR
+                                        if (mode.value != Mode.SIMULATOR) {
+                                            mode.value = Mode.SIMULATOR
                                         }
                                         val nextFrame = viewModel.peekNextFrame(machine)
                                         if (nextFrame == null) {
@@ -392,7 +392,7 @@ fun AutomataScreen(
                                             return@DefaultIconButton
                                         }
 
-                                        currentMode.value = Mode.SIMULATION_STEP
+                                        mode.value = Mode.SIMULATION_STEP
                                         recomposeKey.intValue++
                                         val capturedPositions = viewModel.statePositions.toMap()
                                         animationOverlay.value = {
@@ -409,7 +409,7 @@ fun AutomataScreen(
                                                 offsetYCanvas = viewModel.offsetYCanvas,
                                                 onAnimationsEnd = {
                                                     animationOverlay.value = null
-                                                    currentMode.value = Mode.SIMULATOR
+                                                    mode.value = Mode.SIMULATOR
                                                     viewModel.stepForward(machine)
                                                     recomposeKey.intValue++
                                                     if (nextFrame.isTerminal) {
@@ -431,7 +431,7 @@ fun AutomataScreen(
                             }
 
                             BottomScreenPart(
-                                currentMode,
+                                mode,
                                 machine,
                                 viewModel,
                                 recomposeKey = recomposeKey,
@@ -445,7 +445,7 @@ fun AutomataScreen(
 
             // Full-screen input editor overlay - slides up over all other controls
             AnimatedVisibility(
-                visible = currentMode.value == Mode.INPUT_EDITOR,
+                visible = mode.value == Mode.INPUT_EDITOR,
                 enter = slideInVertically(initialOffsetY = { it }),
                 exit = slideOutVertically(targetOffsetY = { it }),
             ) {
@@ -453,12 +453,12 @@ fun AutomataScreen(
                     onConfirm = {
                         viewModel.invalidateSimulation(machine)
                         viewModel.autoSave(machine)
-                        currentMode.value = Mode.SIMULATOR
+                        mode.value = Mode.SIMULATOR
                     },
                     onDismiss = {
                         viewModel.invalidateSimulation(machine)
                         viewModel.autoSave(machine)
-                        currentMode.value = Mode.SIMULATOR
+                        mode.value = Mode.SIMULATOR
                     },
                 )
             }
@@ -467,7 +467,7 @@ fun AutomataScreen(
                 is ActiveDialog.NewMachine ->
                     NewMachineWindow { newMachine ->
                         activeDialog = null
-                        newMachine?.let { viewModel.setCurrentMachine(it) }
+                        newMachine?.let { viewModel.setMachine(it) }
                     }
 
                 null -> {}
@@ -482,7 +482,7 @@ fun AutomataScreen(
                         viewModel.pendingExampleUri = null
                         try {
                             val jff = context.assets.open(exampleUri).use { Jff.parse(it) }
-                            viewModel.setCurrentMachine(jff.toMachine(exampleName), jff.positions)
+                            viewModel.setMachine(jff.toMachine(exampleName), jff.positions)
                         } catch (e: Exception) {
                             Log.e("AutomataScreen", "Failed to load example: $exampleUri", e)
                         }
@@ -520,20 +520,20 @@ fun AutomataScreen(
 /** Bottom part - displays derivation tree or editing bottom UI based on mode */
 @Composable
 private fun BottomScreenPart(
-    currentMode: MutableState<Mode>,
+    mode: MutableState<Mode>,
     machine: Machine,
     viewModel: AutomataViewModel,
     recomposeKey: MutableIntState,
     dialogRequest: MutableState<DialogRequest?>,
 ) {
-    val isEditingMachine = currentMode.value == Mode.MACHINE_EDITOR
+    val isEditingMachine = mode.value == Mode.MACHINE_EDITOR
     Crossfade(targetState = isEditingMachine, label = "bottom-panel") { isEditing ->
         if (isEditing) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 machine.StateList(
                     recomposeKey = recomposeKey,
                     onClickState = { state ->
-                        dialogRequest.value = DialogRequest.ForState(Offset.Zero, state)
+                        dialogRequest.value = DialogRequest.ForState.Edit(state)
                     },
                     onRemoveState = { state ->
                         viewModel.statePositions.remove(state.index)
@@ -545,10 +545,7 @@ private fun BottomScreenPart(
                 machine.TransitionList(
                     recomposeKey = recomposeKey,
                     onClickTransition = { transition ->
-                        val fromState = machine.getStateByIndex(transition.fromState)
-                        val toState = machine.getStateByIndex(transition.toState)
-                        dialogRequest.value =
-                            DialogRequest.ForTransition(fromState, toState, transition.read)
+                        dialogRequest.value = DialogRequest.ForTransition.Edit(transition)
                     },
                     onRemoveTransition = { transition ->
                         machine.removeTransition(transition)

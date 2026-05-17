@@ -275,7 +275,7 @@ class MainActivity : AppCompatActivity() {
                                                                 "Unknown machine type: $machineType"
                                                             )
                                                     }
-                                                viewModel.setCurrentMachine(machine)
+                                                viewModel.setMachine(machine)
                                                 true
                                             } else if (importUri != null) {
                                                 try {
@@ -286,7 +286,7 @@ class MainActivity : AppCompatActivity() {
                                                         .openInputStream(contentUri)
                                                         ?.use { stream ->
                                                             val jff = Jff.parse(stream)
-                                                            viewModel.setCurrentMachine(
+                                                            viewModel.setMachine(
                                                                 jff.toMachine(machineName),
                                                                 jff.positions,
                                                             )
@@ -325,7 +325,7 @@ class MainActivity : AppCompatActivity() {
                                                     context.assets.open(examplePath).use {
                                                         Jff.parse(it)
                                                     }
-                                                viewModel.setCurrentMachine(
+                                                viewModel.setMachine(
                                                     jff.toMachine(machineName),
                                                     jff.positions,
                                                 )
@@ -343,9 +343,7 @@ class MainActivity : AppCompatActivity() {
                                     DisposableEffect(backStackEntry) {
                                         val observer = LifecycleEventObserver { _, event ->
                                             if (event == Lifecycle.Event.ON_STOP) {
-                                                viewModel.currentMachine?.let {
-                                                    viewModel.autoSave(it)
-                                                }
+                                                viewModel.machine?.let { viewModel.autoSave(it) }
                                             }
                                         }
                                         backStackEntry.lifecycle.addObserver(observer)
@@ -358,7 +356,7 @@ class MainActivity : AppCompatActivity() {
                                         return@composable
                                     }
 
-                                    if (viewModel.currentMachine != null) {
+                                    if (viewModel.machine != null) {
                                         AutomataScreen(
                                             modifier = Modifier.fillMaxSize(),
                                             snackbarHostState = snackbarHostState,

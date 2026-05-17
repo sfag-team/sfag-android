@@ -110,6 +110,29 @@ sealed class Machine(
         }
 
     /**
+     * Builds a non-terminal [Simulation.Step] for the given step results, allocating tree branches
+     * and producing an `onAllComplete` that swaps the subclass's [activeList] to the new configs
+     * with their freshly-allocated tree node ids.
+     */
+    protected fun <C : Config> buildStep(
+        stepResults: List<StepResult<C>>,
+        activeList: MutableList<C>,
+    ): Simulation.Step {
+        val (treeBranches, pendingConfigs) = buildBranches(activeList, stepResults)
+        return Simulation.Step(
+            transitionRefs = buildTransitionRefs(stepResults),
+            treeBranches = treeBranches,
+            onAllComplete = {
+                activeList.clear()
+                for ((branch, config) in pendingConfigs) {
+                    @Suppress("UNCHECKED_CAST")
+                    activeList.add(config.withTreeNodeId(branch.treeNodeId) as C)
+                }
+            },
+        )
+    }
+
+    /**
      * Builds a terminal [Simulation.Ended] from the configs that satisfied the machine's accept
      * criterion. Empty `acceptingConfigs` means rejection.
      */

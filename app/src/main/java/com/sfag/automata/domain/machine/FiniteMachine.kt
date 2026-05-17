@@ -24,14 +24,9 @@ class FiniteMachine(
     }
 
     fun addNewTransition(fromState: State, toState: State, read: String) {
-        val alreadyExists =
-            transitions.any { transition ->
-                transition.fromState == fromState.index &&
-                    transition.toState == toState.index &&
-                    transition.read == read
-            }
-        if (!alreadyExists) {
-            transitions.add(FaTransition(fromState.index, toState.index, read))
+        val transition = FaTransition(fromState.index, toState.index, read)
+        if (transition !in transitions) {
+            transitions.add(transition)
         }
     }
 
@@ -56,18 +51,7 @@ class FiniteMachine(
             return terminateSimulation()
         }
 
-        val (treeBranches, pendingConfigs) = buildBranches(activeConfigs, stepResults)
-
-        return Simulation.Step(
-            transitionRefs = buildTransitionRefs(stepResults),
-            treeBranches = treeBranches,
-            onAllComplete = {
-                activeConfigs.clear()
-                for ((branch, config) in pendingConfigs) {
-                    activeConfigs.add(config.copy(treeNodeId = branch.treeNodeId))
-                }
-            },
-        )
+        return buildStep(stepResults, activeConfigs)
     }
 
     private fun terminateSimulation(): Simulation.Ended =

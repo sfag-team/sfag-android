@@ -3,9 +3,9 @@ package com.sfag.automata.domain.machine
 import com.sfag.main.config.Symbols
 
 sealed class Transition {
-    abstract var fromState: Int
-    abstract var toState: Int
-    abstract var read: String
+    abstract val fromState: Int
+    abstract val toState: Int
+    abstract val read: String
 
     abstract fun displayLabel(): String
 
@@ -13,19 +13,19 @@ sealed class Transition {
 }
 
 data class FaTransition(
-    override var fromState: Int,
-    override var toState: Int,
-    override var read: String,
+    override val fromState: Int,
+    override val toState: Int,
+    override val read: String,
 ) : Transition() {
     override fun displayLabel(): String = displayEpsilon(read)
 }
 
 data class PdaTransition(
-    override var fromState: Int,
-    override var toState: Int,
-    override var read: String,
-    var pop: String,
-    var push: String,
+    override val fromState: Int,
+    override val toState: Int,
+    override val read: String,
+    val pop: String,
+    val push: String,
 ) : Transition() {
     override fun displayLabel(): String {
         val readLabel = displayEpsilon(read)
@@ -54,11 +54,11 @@ enum class TapeDirection(val symbol: String) {
 }
 
 data class TmTransition(
-    override var fromState: Int,
-    override var toState: Int,
-    override var read: String,
-    var write: Char,
-    var direction: TapeDirection,
+    override val fromState: Int,
+    override val toState: Int,
+    override val read: String,
+    val write: Char,
+    val direction: TapeDirection,
 ) : Transition() {
     override fun displayLabel(): String {
         val readLabel = read.ifEmpty { Symbols.BLANK }

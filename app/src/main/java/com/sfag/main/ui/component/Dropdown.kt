@@ -21,7 +21,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,21 +37,13 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun <T> DropdownSelector(
     items: List<T>,
-    defaultSelectedIndex: Int,
+    selectedIndex: Int,
     onSelectItem: (T) -> Unit,
     modifier: Modifier = Modifier,
     label: String = "",
     textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var selectedText by remember { mutableStateOf("") }
-
-    LaunchedEffect(Unit) {
-        if (items.isNotEmpty() && defaultSelectedIndex in items.indices) {
-            selectedText = items[defaultSelectedIndex].toString()
-            onSelectItem(items[defaultSelectedIndex])
-        }
-    }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -60,7 +51,7 @@ fun <T> DropdownSelector(
         modifier = modifier,
     ) {
         TextField(
-            value = selectedText,
+            value = items.getOrNull(selectedIndex)?.toString() ?: "",
             onValueChange = {},
             readOnly = true,
             singleLine = true,
@@ -85,7 +76,6 @@ fun <T> DropdownSelector(
                 DropdownMenuItem(
                     text = { Text(item.toString(), style = MaterialTheme.typography.bodyLarge) },
                     onClick = {
-                        selectedText = item.toString()
                         expanded = false
                         onSelectItem(item)
                     },

@@ -49,18 +49,9 @@ class PushdownMachine(
         pop: String,
         push: String,
     ) {
-        val alreadyExists =
-            pdaTransitions.any {
-                it.read == read &&
-                    it.fromState == fromState.index &&
-                    it.toState == toState.index &&
-                    it.pop == pop &&
-                    it.push == push
-            }
-        if (!alreadyExists) {
-            pdaTransitions.add(
-                PdaTransition(fromState.index, toState.index, read = read, pop = pop, push = push)
-            )
+        val transition = PdaTransition(fromState.index, toState.index, read, pop, push)
+        if (transition !in pdaTransitions) {
+            pdaTransitions.add(transition)
         }
     }
 
@@ -114,18 +105,7 @@ class PushdownMachine(
             staleStepCount = 0
         }
 
-        val (treeBranches, pendingConfigs) = buildBranches(activeConfigs, stepResults)
-
-        return Simulation.Step(
-            transitionRefs = buildTransitionRefs(stepResults),
-            treeBranches = treeBranches,
-            onAllComplete = {
-                activeConfigs.clear()
-                for ((branch, config) in pendingConfigs) {
-                    activeConfigs.add(config.copy(treeNodeId = branch.treeNodeId))
-                }
-            },
-        )
+        return buildStep(stepResults, activeConfigs)
     }
 
     private fun terminateSimulation(): Simulation.Ended =

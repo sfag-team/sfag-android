@@ -46,6 +46,7 @@ import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.State
+import com.sfag.automata.domain.machine.Transition
 import com.sfag.automata.domain.machine.TuringMachine
 import com.sfag.automata.ui.AutomataViewModel
 import com.sfag.automata.ui.bar.Stack
@@ -65,10 +66,17 @@ internal val cellPadding = 4.dp
 
 /** Dialog request shared between MachineEditor and the bottom panel lists. */
 sealed interface DialogRequest {
-    data class ForState(val tapOffset: Offset, val state: State?) : DialogRequest
+    sealed interface ForState : DialogRequest {
+        data class New(val tapOffset: Offset) : ForState
 
-    data class ForTransition(val fromState: State, val toState: State, val readSymbol: String?) :
-        DialogRequest
+        data class Edit(val state: State) : ForState
+    }
+
+    sealed interface ForTransition : DialogRequest {
+        data class New(val from: State, val to: State) : ForTransition
+
+        data class Edit(val transition: Transition) : ForTransition
+    }
 }
 
 /** Unified view for both simulation and editing modes. */
@@ -89,7 +97,7 @@ fun Machine.MachineEditor(
     val activeStateIndices = currentFrame?.activeStateIndices ?: emptySet()
 
     // Tool state
-    var currentTool by remember { mutableStateOf(MachineEditMode.SELECT) }
+    var editTool by remember { mutableStateOf(MachineEditMode.SELECT) }
 
     // Transition paths state for hit testing from the outer pointerInput
     val transitionPathsState = remember { mutableStateOf<List<TransitionPath?>>(emptyList()) }
@@ -100,8 +108,8 @@ fun Machine.MachineEditor(
         // TOP BAR
         Crossfade(targetState = isEditing, label = "top-bar") { isEditingMode ->
             if (isEditingMode) {
-                key(currentTool) {
-                    Toolbar(currentTool = currentTool) { newTool -> currentTool = newTool }
+                key(editTool) {
+                    Toolbar(currentTool = editTool) { newEditTool -> editTool = newEditTool }
                 }
             } else {
                 key(recomposeKey) {
@@ -234,11 +242,11 @@ fun Machine.MachineEditor(
                             }
                         }
                         // Tool gestures (inner = gets events first in Main pass)
-                        .pointerInput(currentTool, isEditing) {
+                        .pointerInput(editTool, isEditing) {
                             if (!isEditing) {
                                 return@pointerInput
                             }
-                            when (currentTool) {
+                            when (editTool) {
                                 MachineEditMode.ADD_STATE,
                                 MachineEditMode.ADD_TRANSITION,
                                 MachineEditMode.SELECT,
@@ -274,7 +282,7 @@ fun Machine.MachineEditor(
                                         }
                                         if (tapped) {
                                             val gestureOffset = down.position
-                                            when (currentTool) {
+                                            when (editTool) {
                                                 MachineEditMode.ADD_STATE -> {
                                                     val tapOffset =
                                                         Offset(
@@ -286,7 +294,7 @@ fun Machine.MachineEditor(
                                                                 offsetY / density.density,
                                                         )
                                                     dialogRequest.value =
-                                                        DialogRequest.ForState(tapOffset, null)
+                                                        DialogRequest.ForState.New(tapOffset)
                                                 }
 
                                                 MachineEditMode.ADD_TRANSITION -> {
@@ -308,12 +316,11 @@ fun Machine.MachineEditor(
                                                             dx * dx + dy * dy
                                                         }
                                                     closestStateEntry?.let { (stateIndex, _) ->
-                                                        val state = getStateByIndex(stateIndex)
+                                                        val node = getStateByIndex(stateIndex)
                                                         dialogRequest.value =
-                                                            DialogRequest.ForTransition(
-                                                                state,
-                                                                state,
-                                                                null,
+                                                            DialogRequest.ForTransition.New(
+                                                                node,
+                                                                node,
                                                             )
                                                     }
                                                 }
@@ -326,7 +333,7 @@ fun Machine.MachineEditor(
                                                     val positions = viewModel.statePositions
 
                                                     // Check nodes first (circular hitbox)
-                                                    val hitState =
+                                                    val hitNode =
                                                         states.firstOrNull { state ->
                                                             val position =
                                                                 positions[state.index]
@@ -343,19 +350,16 @@ fun Machine.MachineEditor(
                                                                 NODE_RADIUS * NODE_RADIUS
                                                         }
 
-                                                    if (hitState != null) {
-                                                        if (currentTool == MachineEditMode.SELECT) {
+                                                    if (hitNode != null) {
+                                                        if (editTool == MachineEditMode.SELECT) {
                                                             dialogRequest.value =
-                                                                DialogRequest.ForState(
-                                                                    Offset.Zero,
-                                                                    hitState,
-                                                                )
+                                                                DialogRequest.ForState.Edit(hitNode)
                                                         } else if (
-                                                            currentTool == MachineEditMode.REMOVE
+                                                            editTool == MachineEditMode.REMOVE
                                                         ) {
-                                                            removeState(hitState)
+                                                            removeState(hitNode)
                                                             viewModel.statePositions.remove(
-                                                                hitState.index
+                                                                hitNode.index
                                                             )
                                                             viewModel.markDirty()
                                                             onRecompose()
@@ -380,22 +384,13 @@ fun Machine.MachineEditor(
                                                         ) {
                                                             val transition = transitions[index]
                                                             if (
-                                                                currentTool ==
-                                                                    MachineEditMode.SELECT
+                                                                editTool == MachineEditMode.SELECT
                                                             ) {
                                                                 dialogRequest.value =
-                                                                    DialogRequest.ForTransition(
-                                                                        getStateByIndex(
-                                                                            transition.fromState
-                                                                        ),
-                                                                        getStateByIndex(
-                                                                            transition.toState
-                                                                        ),
-                                                                        transition.read,
-                                                                    )
+                                                                    DialogRequest.ForTransition
+                                                                        .Edit(transition)
                                                             } else if (
-                                                                currentTool ==
-                                                                    MachineEditMode.REMOVE
+                                                                editTool == MachineEditMode.REMOVE
                                                             ) {
                                                                 transitions
                                                                     .filter {
@@ -478,7 +473,7 @@ fun Machine.MachineEditor(
                     val positions = viewModel.statePositions
 
                     if (isEditing) {
-                        key(currentTool) {
+                        key(editTool) {
                             key(recomposeKey) {
                                 val transitionPaths =
                                     computeTransitionPaths(positions, density.density)
@@ -554,8 +549,7 @@ fun Machine.MachineEditor(
                 when (val request = dialogRequest.value) {
                     is DialogRequest.ForState ->
                         StateDialog(
-                            selectedState = request.state,
-                            tapOffset = request.tapOffset,
+                            request = request,
                             onAddPosition = { stateIndex, offset ->
                                 viewModel.addStatePosition(stateIndex, offset)
                             },
@@ -572,9 +566,7 @@ fun Machine.MachineEditor(
 
                     is DialogRequest.ForTransition ->
                         TransitionDialog(
-                            request.fromState,
-                            request.toState,
-                            request.readSymbol,
+                            request = request,
                             onDismiss = {
                                 dialogRequest.value = null
                                 onRecompose()

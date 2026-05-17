@@ -43,16 +43,9 @@ class TuringMachine(
         write: Char,
         direction: TapeDirection,
     ) {
-        val alreadyExists =
-            tmTransitions.any {
-                it.fromState == fromState.index &&
-                    it.toState == toState.index &&
-                    it.read == read &&
-                    it.write == write &&
-                    it.direction == direction
-            }
-        if (!alreadyExists) {
-            tmTransitions.add(TmTransition(fromState.index, toState.index, read, write, direction))
+        val transition = TmTransition(fromState.index, toState.index, read, write, direction)
+        if (transition !in tmTransitions) {
+            tmTransitions.add(transition)
         }
     }
 
@@ -89,18 +82,7 @@ class TuringMachine(
             return terminateSimulation()
         }
 
-        val (treeBranches, pendingConfigs) = buildBranches(activeConfigs, stepResults)
-
-        return Simulation.Step(
-            transitionRefs = buildTransitionRefs(stepResults),
-            treeBranches = treeBranches,
-            onAllComplete = {
-                activeConfigs.clear()
-                for ((branch, config) in pendingConfigs) {
-                    activeConfigs.add(config.copy(treeNodeId = branch.treeNodeId))
-                }
-            },
-        )
+        return buildStep(stepResults, activeConfigs)
     }
 
     private fun terminateSimulation(): Simulation.Ended =

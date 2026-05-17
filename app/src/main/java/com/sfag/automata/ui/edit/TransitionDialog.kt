@@ -15,13 +15,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.sfag.R
+import com.sfag.automata.domain.machine.FaTransition
 import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
+import com.sfag.automata.domain.machine.PdaTransition
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.State
 import com.sfag.automata.domain.machine.TapeDirection
+import com.sfag.automata.domain.machine.TmTransition
 import com.sfag.automata.domain.machine.Transition
 import com.sfag.automata.domain.machine.TuringMachine
+import com.sfag.automata.ui.machine.DialogRequest
 import com.sfag.main.data.JffUtils
 import com.sfag.main.ui.component.CancelButton
 import com.sfag.main.ui.component.ConfirmButton
@@ -32,39 +36,43 @@ import com.sfag.main.ui.component.DropdownSelector
 /** Dialog for creating or editing a transition. */
 @Composable
 internal fun Machine.TransitionDialog(
-    from: State,
-    to: State,
-    readSymbol: String?,
+    request: DialogRequest.ForTransition,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    // PDA-specific state
-    val pdaTransition =
-        if (this@TransitionDialog is PushdownMachine && readSymbol != null) {
-            this@TransitionDialog.pdaTransitions.firstOrNull {
-                it.fromState == from.index && it.toState == to.index && it.read == readSymbol
-            }
-        } else {
-            null
+    val transition: Transition? =
+        when (request) {
+            is DialogRequest.ForTransition.Edit -> request.transition
+            is DialogRequest.ForTransition.New -> null
         }
+    val pda = transition as? PdaTransition
+    val tm = transition as? TmTransition
 
-    // TM-specific state
-    val tmTransition =
-        if (this@TransitionDialog is TuringMachine && readSymbol != null) {
-            this@TransitionDialog.tmTransitions.firstOrNull {
-                it.fromState == from.index && it.toState == to.index && it.read == readSymbol
-            }
-        } else {
-            null
+    var from: State by
+        remember(request) {
+            mutableStateOf(
+                when (request) {
+                    is DialogRequest.ForTransition.New -> request.from
+                    is DialogRequest.ForTransition.Edit ->
+                        getStateByIndex(request.transition.fromState)
+                }
+            )
         }
-
-    var fromState: State by remember { mutableStateOf(from) }
-    var toState: State by remember { mutableStateOf(to) }
-    var newRead by remember { mutableStateOf(readSymbol ?: "") }
-    var popSymbol by remember { mutableStateOf(pdaTransition?.pop ?: "") }
-    var pushSymbol by remember { mutableStateOf(pdaTransition?.push ?: "") }
-    var writeSymbol by remember { mutableStateOf(tmTransition?.write?.toString() ?: "") }
-    var tapeDirection by remember { mutableStateOf(tmTransition?.direction ?: TapeDirection.RIGHT) }
+    var to: State by
+        remember(request) {
+            mutableStateOf(
+                when (request) {
+                    is DialogRequest.ForTransition.New -> request.to
+                    is DialogRequest.ForTransition.Edit ->
+                        getStateByIndex(request.transition.toState)
+                }
+            )
+        }
+    var read by remember { mutableStateOf(transition?.read ?: "") }
+    var popSymbol by remember { mutableStateOf(pda?.pop ?: "") }
+    var pushSymbol by remember { mutableStateOf(pda?.push ?: "") }
+    var writeSymbol by remember { mutableStateOf(tm?.write?.toString() ?: "") }
+    var tapeDirection by remember { mutableStateOf(tm?.direction ?: TapeDirection.RIGHT) }
 
     DefaultDialog(
         onDismissRequest = onDismiss,
@@ -74,65 +82,45 @@ internal fun Machine.TransitionDialog(
                 onClick = {
                     when (val machine = this@TransitionDialog) {
                         is FiniteMachine -> {
-                            val normalizedRead = JffUtils.normalizeEpsilon(newRead.trim())
-                            if (readSymbol == null) {
-                                machine.addNewTransition(fromState, toState, normalizedRead)
-                            } else {
-                                machine.transitions
-                                    .firstOrNull(matchTransition(from, to, readSymbol))
-                                    ?.let {
-                                        it.fromState = fromState.index
-                                        it.toState = toState.index
-                                        it.read = normalizedRead
-                                    }
-                            }
+                            val transition = transition as? FaTransition
+                            val normalizedRead = JffUtils.normalizeEpsilon(read.trim())
+                            val newTransition = FaTransition(from.index, to.index, normalizedRead)
+                            replaceOrAddTransition(
+                                list = machine.transitions,
+                                transition = transition,
+                                newTransition = newTransition,
+                            )
                         }
                         is PushdownMachine -> {
-                            val normalizedRead = JffUtils.normalizeEpsilon(newRead.trim())
+                            val transition = transition as? PdaTransition
+                            val normalizedRead = JffUtils.normalizeEpsilon(read.trim())
                             val normalizedPop = JffUtils.normalizeEpsilon(popSymbol.trim())
                             val normalizedPush = JffUtils.normalizeEpsilon(pushSymbol.trim())
-                            if (readSymbol == null) {
-                                machine.addNewTransition(
-                                    fromState,
-                                    toState,
+                            val newTransition =
+                                PdaTransition(
+                                    from.index,
+                                    to.index,
                                     normalizedRead,
                                     normalizedPop,
                                     normalizedPush,
                                 )
-                            } else {
-                                machine.pdaTransitions
-                                    .firstOrNull(matchTransition(from, to, readSymbol))
-                                    ?.let {
-                                        it.fromState = fromState.index
-                                        it.toState = toState.index
-                                        it.read = normalizedRead
-                                        it.pop = normalizedPop
-                                        it.push = normalizedPush
-                                    }
-                            }
+                            replaceOrAddTransition(
+                                list = machine.pdaTransitions,
+                                transition = transition,
+                                newTransition = newTransition,
+                            )
                         }
                         is TuringMachine -> {
-                            val tmRead = JffUtils.normalizeBlank(newRead.take(1))
+                            val transition = transition as? TmTransition
+                            val tmRead = JffUtils.normalizeBlank(read.take(1))
                             val tmWrite = JffUtils.normalizeBlank(writeSymbol.take(1)).first()
-                            if (readSymbol == null) {
-                                machine.addNewTransition(
-                                    fromState,
-                                    toState,
-                                    tmRead,
-                                    tmWrite,
-                                    tapeDirection,
-                                )
-                            } else {
-                                machine.tmTransitions
-                                    .firstOrNull(matchTransition(from, to, readSymbol))
-                                    ?.let {
-                                        it.fromState = fromState.index
-                                        it.toState = toState.index
-                                        it.direction = tapeDirection
-                                        it.read = tmRead
-                                        it.write = tmWrite
-                                    }
-                            }
+                            val newTransition =
+                                TmTransition(from.index, to.index, tmRead, tmWrite, tapeDirection)
+                            replaceOrAddTransition(
+                                list = machine.tmTransitions,
+                                transition = transition,
+                                newTransition = newTransition,
+                            )
                         }
                     }
                     onConfirm()
@@ -152,8 +140,8 @@ internal fun Machine.TransitionDialog(
             )
             DropdownSelector(
                 items = states,
-                defaultSelectedIndex = states.indexOf(from),
-                onSelectItem = { if (it != fromState) fromState = it },
+                selectedIndex = states.indexOf(from),
+                onSelectItem = { from = it },
                 modifier = Modifier.weight(1f),
             )
             Text(
@@ -162,16 +150,16 @@ internal fun Machine.TransitionDialog(
             )
             DropdownSelector(
                 items = states,
-                defaultSelectedIndex = states.indexOf(to),
-                onSelectItem = { if (it != toState) toState = it },
+                selectedIndex = states.indexOf(to),
+                onSelectItem = { to = it },
                 modifier = Modifier.weight(1f),
             )
         }
 
         // Transition read field
         DefaultTextField(
-            value = newRead,
-            onValueChange = { newRead = it },
+            value = read,
+            onValueChange = { read = it },
             modifier = Modifier.fillMaxWidth(),
             label = stringResource(R.string.transition_read),
         )
@@ -202,7 +190,7 @@ internal fun Machine.TransitionDialog(
             )
             DropdownSelector(
                 items = TapeDirection.entries,
-                defaultSelectedIndex = TapeDirection.entries.indexOf(tapeDirection),
+                selectedIndex = TapeDirection.entries.indexOf(tapeDirection),
                 onSelectItem = { tapeDirection = it },
                 modifier = Modifier.fillMaxWidth(),
                 label = stringResource(R.string.transition_direction),
@@ -211,11 +199,30 @@ internal fun Machine.TransitionDialog(
     }
 }
 
-/** Predicate identifying the transition being edited by its (from, to, read) tuple. */
-private fun <T : Transition> matchTransition(
-    from: State,
-    to: State,
-    readSymbol: String,
-): (T) -> Boolean = {
-    it.fromState == from.index && it.toState == to.index && it.read == readSymbol
+/**
+ * Replaces [transition] in [list] with [newTransition], or appends [newTransition] when
+ * [transition] is null. If [newTransition] equals another existing element (data class equality),
+ * [transition] is removed instead so the list stays free of duplicates.
+ */
+private fun <T : Transition> replaceOrAddTransition(
+    list: MutableList<T>,
+    transition: T?,
+    newTransition: T,
+) {
+    if (transition == null) {
+        if (newTransition !in list) {
+            list.add(newTransition)
+        }
+        return
+    }
+    val index = list.indexOfFirst { it === transition }
+    if (index < 0) {
+        return
+    }
+    val collidesWithOther = list.withIndex().any { (i, t) -> i != index && t == newTransition }
+    if (collidesWithOther) {
+        list.removeAt(index)
+    } else {
+        list[index] = newTransition
+    }
 }

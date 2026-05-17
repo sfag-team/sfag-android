@@ -122,7 +122,7 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
                     )
                     DropdownSelector(
                         items = criteriaLabels,
-                        defaultSelectedIndex = criteriaOptions.indexOf(acceptanceCriteria),
+                        selectedIndex = criteriaOptions.indexOf(acceptanceCriteria),
                         onSelectItem = { selectedLabel ->
                             acceptanceCriteria =
                                 criteriaOptions[criteriaLabels.indexOf(selectedLabel)]

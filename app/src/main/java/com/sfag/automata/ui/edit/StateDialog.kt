@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.sfag.R
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.State
+import com.sfag.automata.ui.machine.DialogRequest
 import com.sfag.main.ui.component.CancelButton
 import com.sfag.main.ui.component.ConfirmButton
 import com.sfag.main.ui.component.DefaultDialog
@@ -37,15 +38,20 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun Machine.StateDialog(
-    selectedState: State?,
-    tapOffset: Offset,
+    request: DialogRequest.ForState,
     onAddPosition: (stateIndex: Int, offset: Offset) -> Unit,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    var stateName by remember { mutableStateOf(selectedState?.name ?: "") }
-    var isInitial by remember { mutableStateOf(selectedState?.initial ?: false) }
-    var isFinal by remember { mutableStateOf(selectedState?.final ?: false) }
+    val state: State? =
+        when (request) {
+            is DialogRequest.ForState.Edit -> request.state
+            is DialogRequest.ForState.New -> null
+        }
+
+    var stateName by remember { mutableStateOf(state?.name ?: "") }
+    var isInitial by remember { mutableStateOf(state?.initial ?: false) }
+    var isFinal by remember { mutableStateOf(state?.final ?: false) }
 
     var tooltipMsg by remember { mutableIntStateOf(R.string.duplicate_state_name) }
     val tooltipState = rememberTooltipState()
@@ -59,25 +65,35 @@ internal fun Machine.StateDialog(
                 onClick = {
                     val trimmedName = stateName.trim()
                     val isDuplicate =
-                        states.any { it.name == trimmedName && it.index != selectedState?.index }
+                        states.any { it.name == trimmedName && it.index != state?.index }
                     if (isDuplicate) {
                         scope.launch { tooltipState.show() }
                     } else {
-                        if (selectedState == null) {
-                            val newIndex = findNewStateIndex()
-                            addNewState(
-                                State(
-                                    name = trimmedName,
-                                    index = newIndex,
-                                    final = isFinal,
-                                    initial = isInitial,
+                        when (request) {
+                            is DialogRequest.ForState.New -> {
+                                val newIndex = findNewStateIndex()
+                                addNewState(
+                                    State(
+                                        index = newIndex,
+                                        name = trimmedName,
+                                        initial = isInitial,
+                                        final = isFinal,
+                                    )
                                 )
-                            )
-                            onAddPosition(newIndex, tapOffset)
-                        } else {
-                            selectedState.name = trimmedName
-                            selectedState.initial = isInitial
-                            selectedState.final = isFinal
+                                onAddPosition(newIndex, request.tapOffset)
+                            }
+
+                            is DialogRequest.ForState.Edit -> {
+                                val index = states.indexOf(request.state)
+                                if (index >= 0) {
+                                    states[index] =
+                                        request.state.copy(
+                                            name = trimmedName,
+                                            initial = isInitial,
+                                            final = isFinal,
+                                        )
+                                }
+                            }
                         }
                         onConfirm()
                     }
@@ -102,7 +118,7 @@ internal fun Machine.StateDialog(
                     text = stringResource(R.string.initial_state),
                     isActive = isInitial,
                 ) {
-                    if (selectedState?.initial == true || !states.any { it.initial }) {
+                    if (state?.initial == true || !states.any { it.initial }) {
                         isInitial = !isInitial
                     } else {
                         tooltipMsg = R.string.initial_state_exists
