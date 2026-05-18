@@ -138,7 +138,7 @@ internal fun Jff.toMachine(
             FiniteMachine(
                 name = name,
                 states = states.toMutableList(),
-                transitions = transitions.filterIsInstance<FaTransition>().toMutableList(),
+                faTransitions = transitions.filterIsInstance<FaTransition>().toMutableList(),
                 savedInputs = savedInputs,
             )
 

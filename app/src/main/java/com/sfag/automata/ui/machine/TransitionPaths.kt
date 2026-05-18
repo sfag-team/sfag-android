@@ -89,7 +89,7 @@ fun Machine.computeTransitionPaths(
                     }
                     .distinct()
             // Sum vertical direction to each connected state (-dy/distance):
-            // positive = more above, negative = more below. Loop goes away from heavier side.
+            // positive = more above, negative = more below. Loop goes away from heavier side
             var verticalBalance = 0f
             for (stateIndex in connectedStates) {
                 val position = positions[stateIndex] ?: continue
@@ -172,7 +172,7 @@ fun Machine.computeTransitionPaths(
     }
 
     // Pass 2.5: recompute control points for regular transitions from the final
-    // (potentially spread) connection points, so curves remain smooth after spreading.
+    // (potentially spread) connection points, so curves remain smooth after spreading
     for (geometry in regularGeometries) {
         geometry.recomputeControlPoint()
     }

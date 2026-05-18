@@ -1,6 +1,8 @@
 package com.sfag.automata.domain.machine
 
-import com.sfag.automata.domain.simulation.Simulation
+import com.sfag.automata.domain.simulation.SimAdvance
+import com.sfag.automata.domain.simulation.SimConfig
+import com.sfag.automata.domain.simulation.StepResult
 import com.sfag.main.config.MAX_SIM_PDA_CONFIGS
 import com.sfag.main.config.MAX_SIM_PDA_STALE_STEPS
 import com.sfag.main.config.Symbols
@@ -23,7 +25,7 @@ class PushdownMachine(
         get() = pdaTransitions
 
     // Track multiple current configs for NPDA simulation
-    val activeConfigs: MutableList<Config.Pda> = mutableListOf()
+    val activeConfigs: MutableList<SimConfig.Pda> = mutableListOf()
 
     var acceptanceCriteria = AcceptanceCriteria.BY_FINAL_STATE
     private var staleStepCount = 0
@@ -37,7 +39,7 @@ class PushdownMachine(
         staleStepCount = 0
         initialState?.index?.let {
             activeConfigs.add(
-                Config.Pda(it, listOf(Symbols.INITIAL_STACK_SYMBOL), treeNodeId = tree.root!!.id)
+                SimConfig.Pda(it, listOf(Symbols.INITIAL_STACK_SYMBOL), treeNodeId = tree.root!!.id)
             )
         }
     }
@@ -55,20 +57,20 @@ class PushdownMachine(
         }
     }
 
-    override fun advanceSimulation(): Simulation {
-        // Config limit - prevent runaway branching
+    override fun advanceSimulation(): SimAdvance {
+        // SimConfig limit - prevent runaway branching
         if (activeConfigs.size > MAX_SIM_PDA_CONFIGS) {
             return terminateSimulation()
         }
 
-        val stepResults = mutableListOf<StepResult<Config.Pda>>()
+        val stepResults = mutableListOf<StepResult<SimConfig.Pda>>()
         for (config in activeConfigs) {
             val state = getStateByIndex(config.stateIndex)
             for (transition in getMatchingTransitions(state, config.stack, config.inputConsumed)) {
                 val newStack =
                     applyStackOp(config.stack, transition.pop, transition.push) ?: continue
                 val newConfig =
-                    Config.Pda(
+                    SimConfig.Pda(
                         transition.toState,
                         newStack,
                         config.inputConsumed + transition.read.length,
@@ -108,7 +110,7 @@ class PushdownMachine(
         return buildStep(stepResults, activeConfigs)
     }
 
-    private fun terminateSimulation(): Simulation.Ended =
+    private fun terminateSimulation(): SimAdvance.Ended =
         terminate(
             activeConfigs.filter {
                 it.inputConsumed >= fullInput.length &&

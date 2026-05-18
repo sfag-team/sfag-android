@@ -90,7 +90,7 @@ fun <T> DropdownSelector(
 fun RowScope.ItemSpecificationIcon(
     icon: Int,
     text: String,
-    isActive: Boolean,
+    selected: Boolean,
     onClick: () -> Unit,
 ) {
     Column(
@@ -104,7 +104,7 @@ fun RowScope.ItemSpecificationIcon(
                     .height(88.dp)
                     .clip(MaterialTheme.shapes.small)
                     .background(
-                        if (isActive) {
+                        if (selected) {
                             MaterialTheme.colorScheme.secondaryContainer
                         } else {
                             MaterialTheme.colorScheme.surfaceContainerHigh
@@ -118,7 +118,7 @@ fun RowScope.ItemSpecificationIcon(
                 contentDescription = text,
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 tint =
-                    if (isActive) {
+                    if (selected) {
                         MaterialTheme.colorScheme.onSecondaryContainer
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant

@@ -28,7 +28,7 @@ fun Stack(symbols: List<Char>) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (symbols.isEmpty()) {
-            item { Cell(symbol = Symbols.INITIAL_STACK_SYMBOL, isMuted = true) }
+            item { Cell(symbol = Symbols.INITIAL_STACK_SYMBOL, muted = true) }
         } else {
             items(symbols.reversed()) { Cell(symbol = it) }
         }

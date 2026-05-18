@@ -1,6 +1,8 @@
 package com.sfag.automata.domain.machine
 
-import com.sfag.automata.domain.simulation.Simulation
+import com.sfag.automata.domain.simulation.SimAdvance
+import com.sfag.automata.domain.simulation.SimConfig
+import com.sfag.automata.domain.simulation.StepResult
 import com.sfag.main.config.Symbols
 
 /**
@@ -27,7 +29,7 @@ class TuringMachine(
         get() = tmTransitions
 
     // Track multiple current configs for NTM simulation
-    val activeConfigs: MutableList<Config.Tm> = mutableListOf()
+    val activeConfigs: MutableList<SimConfig.Tm> = mutableListOf()
 
     private fun initialTape(): List<Char> =
         if (fullInput.isEmpty()) listOf(blankSymbol) else fullInput.toList()
@@ -52,18 +54,18 @@ class TuringMachine(
     override fun resetSimulation() {
         activeConfigs.clear()
         initialState?.index?.let {
-            activeConfigs.add(Config.Tm(it, initialTape(), 0, treeNodeId = tree.root!!.id))
+            activeConfigs.add(SimConfig.Tm(it, initialTape(), 0, treeNodeId = tree.root!!.id))
         }
     }
 
-    override fun advanceSimulation(): Simulation {
+    override fun advanceSimulation(): SimAdvance {
         // TM halts on reaching a final state (JFLAP 7.1 semantics). For NTM, any active
-        // config in a final state accepts overall.
+        // config in a final state accepts overall
         if (activeConfigs.any { getStateByIndex(it.stateIndex).final }) {
             return terminateSimulation()
         }
 
-        val stepResults = mutableListOf<StepResult<Config.Tm>>()
+        val stepResults = mutableListOf<StepResult<SimConfig.Tm>>()
         for (config in activeConfigs) {
             val symbol = config.tape.getOrElse(config.headPosition) { blankSymbol }
             for (transition in tmTransitions) {
@@ -74,7 +76,7 @@ class TuringMachine(
                     continue
                 }
                 val (newTape, newHead) = applyTmStep(config.tape, config.headPosition, transition)
-                val newConfig = Config.Tm(transition.toState, newTape, newHead)
+                val newConfig = SimConfig.Tm(transition.toState, newTape, newHead)
                 stepResults.add(StepResult(src = config, dest = newConfig, transition = transition))
             }
         }
@@ -85,7 +87,7 @@ class TuringMachine(
         return buildStep(stepResults, activeConfigs)
     }
 
-    private fun terminateSimulation(): Simulation.Ended =
+    private fun terminateSimulation(): SimAdvance.Ended =
         terminate(activeConfigs.filter { getStateByIndex(it.stateIndex).final })
 
     private fun applyTmStep(

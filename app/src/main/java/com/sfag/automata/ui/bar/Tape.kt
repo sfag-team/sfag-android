@@ -116,7 +116,7 @@ fun Tape(
                             index < adjustedHead -> muteConsumed
                             else -> false
                         }
-                    Cell(symbol = symbol, isMuted = isMuted, isHighlighted = isHighlighted)
+                    Cell(symbol = symbol, muted = isMuted, highlighted = isHighlighted)
                 }
             }
         }

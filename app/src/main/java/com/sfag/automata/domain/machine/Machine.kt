@@ -1,7 +1,9 @@
 package com.sfag.automata.domain.machine
 
-import com.sfag.automata.domain.simulation.Simulation
-import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.automata.domain.simulation.SimAdvance
+import com.sfag.automata.domain.simulation.SimConfig
+import com.sfag.automata.domain.simulation.SimStatus
+import com.sfag.automata.domain.simulation.StepResult
 import com.sfag.automata.domain.simulation.TransitionRef
 import com.sfag.automata.domain.tree.Branch
 import com.sfag.automata.domain.tree.Tree
@@ -26,7 +28,7 @@ sealed class Machine(
     val initialState: State?
         get() = states.firstOrNull { it.initial }
 
-    internal abstract fun advanceSimulation(): Simulation
+    internal abstract fun advanceSimulation(): SimAdvance
 
     abstract fun removeTransition(transition: Transition)
 
@@ -78,7 +80,7 @@ sealed class Machine(
      * for the frame, and pairs each branch with its new config so the per-machine `onAllComplete`
      * can copy the id into the new config.
      */
-    protected fun <C : Config> buildBranches(
+    protected fun <C : SimConfig> buildBranches(
         activeConfigs: List<C>,
         stepResults: List<StepResult<C>>,
     ): Pair<Map<Int, List<Branch>>, List<Pair<Branch, C>>> {
@@ -98,7 +100,7 @@ sealed class Machine(
         return treeBranches to pendingConfigs
     }
 
-    protected fun <C : Config> buildTransitionRefs(
+    protected fun <C : SimConfig> buildTransitionRefs(
         stepResults: List<StepResult<C>>
     ): List<TransitionRef> =
         stepResults.map { result ->
@@ -110,16 +112,16 @@ sealed class Machine(
         }
 
     /**
-     * Builds a non-terminal [Simulation.Step] for the given step results, allocating tree branches
+     * Builds a non-terminal [SimAdvance.Step] for the given step results, allocating tree branches
      * and producing an `onAllComplete` that swaps the subclass's [activeList] to the new configs
      * with their freshly-allocated tree node ids.
      */
-    protected fun <C : Config> buildStep(
+    protected fun <C : SimConfig> buildStep(
         stepResults: List<StepResult<C>>,
         activeList: MutableList<C>,
-    ): Simulation.Step {
+    ): SimAdvance.Step {
         val (treeBranches, pendingConfigs) = buildBranches(activeList, stepResults)
-        return Simulation.Step(
+        return SimAdvance.Step(
             transitionRefs = buildTransitionRefs(stepResults),
             treeBranches = treeBranches,
             onAllComplete = {
@@ -133,16 +135,16 @@ sealed class Machine(
     }
 
     /**
-     * Builds a terminal [Simulation.Ended] from the configs that satisfied the machine's accept
+     * Builds a terminal [SimAdvance.Ended] from the configs that satisfied the machine's accept
      * criterion. Empty `acceptingConfigs` means rejection.
      */
-    protected fun terminate(acceptingConfigs: Collection<Config>): Simulation.Ended {
+    protected fun terminate(acceptingConfigs: Collection<SimConfig>): SimAdvance.Ended {
         if (acceptingConfigs.isEmpty()) {
-            return Simulation.Ended(SimulationOutcome.REJECTED)
+            return SimAdvance.Ended(SimStatus.REJECTED)
         }
         val acceptedIds = acceptingConfigs.mapTo(mutableSetOf()) { it.treeNodeId }
-        return Simulation.Ended(
-            outcome = SimulationOutcome.ACCEPTED,
+        return SimAdvance.Ended(
+            status = SimStatus.ACCEPTED,
             isNodeAccepting = { it in acceptedIds },
         )
     }

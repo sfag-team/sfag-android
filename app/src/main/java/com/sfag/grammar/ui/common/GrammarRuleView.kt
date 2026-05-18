@@ -32,7 +32,7 @@ import com.sfag.main.config.Symbols
 fun GrammarRuleView(
     grammarRule: GrammarRule,
     grammarViewModel: GrammarViewModel,
-    isGrammarFinished: Boolean,
+    grammarFinished: Boolean,
     onEdit: () -> Unit,
 ) {
     Row(
@@ -54,7 +54,7 @@ fun GrammarRuleView(
                         .clickable(
                             interactionSource = noOpInteraction,
                             indication = null,
-                            onClick = { if (!isGrammarFinished) onEdit() },
+                            onClick = { if (!grammarFinished) onEdit() },
                         )
             )
         }
@@ -72,11 +72,11 @@ fun GrammarRuleView(
                         .clickable(
                             interactionSource = noOpInteraction,
                             indication = null,
-                            onClick = { if (!isGrammarFinished) onEdit() },
+                            onClick = { if (!grammarFinished) onEdit() },
                         )
             )
         }
-        if (!isGrammarFinished) {
+        if (!grammarFinished) {
             CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                 IconButton(onClick = { onEdit() }, modifier = Modifier.size(40.dp)) {
                     Icon(

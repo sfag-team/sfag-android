@@ -1,7 +1,7 @@
 package com.sfag.automata.domain.simulation
 
-/** Overall outcome of a simulation. */
-enum class SimulationOutcome {
+/** Current status of a running or finished simulation. */
+enum class SimStatus {
     /** Simulation is still running - more steps possible. */
     ACTIVE,
 

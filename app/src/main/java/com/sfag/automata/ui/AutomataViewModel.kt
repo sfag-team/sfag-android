@@ -13,22 +13,24 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sfag.automata.data.AutomataStorage
 import com.sfag.automata.data.exportToJff
-import com.sfag.automata.domain.machine.Config
 import com.sfag.automata.domain.machine.Machine
-import com.sfag.automata.domain.simulation.MachineFrame
-import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.automata.domain.machine.toBlueprint
+import com.sfag.automata.domain.simulation.SimConfig
+import com.sfag.automata.domain.simulation.SimFrame
 import com.sfag.automata.domain.simulation.precomputeFrames
 import com.sfag.automata.domain.simulation.rebuildTreeForFrame
-import com.sfag.automata.domain.simulation.snapshotConfigs
+import com.sfag.automata.domain.simulation.snapshotFrame
 import com.sfag.automata.domain.tree.NodeStatus
 import com.sfag.automata.domain.tree.TreeNode
 import com.sfag.main.config.INITIAL_ZOOM
-import com.sfag.main.config.MAX_SIM_PRECOMPUTE_STEPS
+import com.sfag.main.config.MAX_SIM_PRECOMPUTE_FRAMES
 import com.sfag.main.data.Point2D
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 // JFLAP coordinate conversion (96 DPI desktop to 160 DPI Android dp) - protocol constant
 private const val JFLAP_TO_DP = 160f / 96f
@@ -52,7 +54,7 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     var pendingExampleName by mutableStateOf<String?>(null)
 
     // Pre-computed simulation frames. Null until the user starts stepping
-    private var frames by mutableStateOf<List<MachineFrame>?>(null)
+    private var frames by mutableStateOf<List<SimFrame>?>(null)
 
     private var currentFrameIndex by mutableIntStateOf(0)
 
@@ -76,18 +78,9 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
         }
     }
 
-    /** Frame the UI renders. Synthesized from the machine when frames aren't computed yet. */
-    val currentFrame: MachineFrame?
-        get() =
-            frames?.getOrNull(currentFrameIndex)
-                ?: machine?.let { machine ->
-                    MachineFrame(
-                        transitionRefs = emptyList(),
-                        treeBranches = emptyMap(),
-                        activeConfigs = machine.snapshotConfigs(),
-                        outcome = SimulationOutcome.ACTIVE,
-                    )
-                }
+    /** SimFrame the UI renders. Synthesized from the machine when frames aren't computed yet. */
+    val currentFrame: SimFrame?
+        get() = frames?.getOrNull(currentFrameIndex) ?: machine?.snapshotFrame()
 
     /**
      * Tree node id for Tape/Stack/Tree render. Path entry at current frame, else last path entry
@@ -100,17 +93,14 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
                 ?: selectedPath.lastOrNull()
                 ?: currentFrame?.activeConfigs?.keys?.firstOrNull()
 
-    /** Config for [selectedNodeId], looking back to the last frame the node was active in. */
-    val selectedConfig: Config?
+    /** SimConfig for [selectedNodeId], looking back to the last frame the node was active in. */
+    val selectedConfig: SimConfig?
         get() {
             val nodeId = selectedNodeId ?: return null
             val list = frames ?: return currentFrame?.activeConfigs?.get(nodeId)
-            for (i in currentFrameIndex downTo 0) {
-                list[i].activeConfigs[nodeId]?.let {
-                    return it
-                }
+            return (currentFrameIndex downTo 0).firstNotNullOfOrNull {
+                list[it].activeConfigs[nodeId]
             }
-            return null
         }
 
     // Track unsaved changes
@@ -120,6 +110,9 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     // Single-threaded dispatcher serializes saves in submission order (latest state wins)
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val saveDispatcher = Dispatchers.IO.limitedParallelism(1)
+
+    // In-flight background lookahead extension. Canceled when simulation is invalidated
+    private var lookaheadJob: Job? = null
 
     fun selectNode(nodeId: Int) {
         val depth = machine?.tree?.findNode(nodeId)?.depth ?: return
@@ -131,45 +124,52 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     }
 
     /**
-     * Pre-computes frames on first access. Tree shows nodes up to furthestFrameIndex (monotonic).
+     * Pre-computes frames on first access. Runs on a background thread against an immutable machine
+     * blueprint so the UI stays responsive. Tree shows nodes up to furthestFrameIndex (monotonic).
      */
-    private fun ensureFrames(machine: Machine): List<MachineFrame> {
+    private suspend fun ensureFrames(machine: Machine): List<SimFrame> {
         val cached = frames
         if (cached != null) {
             return cached
         }
-        val computed = machine.precomputeFrames()
+        val blueprint = machine.toBlueprint()
+        val input = machine.fullInput
+        val computed = withContext(Dispatchers.Default) { blueprint.precomputeFrames(input) }
         frames = computed
         machine.rebuildTreeForFrame(computed, furthestFrameIndex.coerceAtMost(computed.lastIndex))
         return computed
     }
 
     /**
-     * Maintains a sliding window of MAX_SIM_PRECOMPUTE_STEPS frames ahead of currentFrameIndex so
-     * playback never runs out of precomputed frames.
+     * Maintains a sliding window of MAX_SIM_PRECOMPUTE_FRAMES frames ahead of currentFrameIndex so
+     * playback never runs out of precomputed frames. The actual precompute runs on a background
+     * thread against an immutable machine blueprint so the UI stays responsive.
      */
-    private fun maintainLookahead(machine: Machine) {
+    private suspend fun maintainLookahead(machine: Machine) {
         val list = frames ?: return
-        if (list.last().outcome != SimulationOutcome.ACTIVE) {
+        if (list.last().isTerminal) {
             return
         }
-        val targetSteps = currentFrameIndex + MAX_SIM_PRECOMPUTE_STEPS
-        if (list.size > targetSteps) {
+        val targetFrames = currentFrameIndex + MAX_SIM_PRECOMPUTE_FRAMES
+        if (list.size >= targetFrames) {
             return
         }
-        val extended = machine.precomputeFrames(targetSteps)
+        val blueprint = machine.toBlueprint()
+        val input = machine.fullInput
+        val extended =
+            withContext(Dispatchers.Default) { blueprint.precomputeFrames(input, targetFrames) }
         frames = extended
         machine.rebuildTreeForFrame(extended, furthestFrameIndex.coerceAtMost(extended.lastIndex))
     }
 
-    private fun computeSelectedPath(frames: List<MachineFrame>): List<Int> {
+    private fun computeSelectedPath(frames: List<SimFrame>): List<Int> {
         val rootId = frames.firstOrNull()?.activeConfigs?.keys?.firstOrNull() ?: return emptyList()
         val topology = buildTreeTopology(frames, rootId)
         return pickBestPathFrom(rootId, topology, frames.last().isNodeAccepting)
     }
 
     /** Builds a root-to-leaf path that passes through [targetNodeId]. Empty if unknown node. */
-    private fun computePathThroughNode(frames: List<MachineFrame>, targetNodeId: Int): List<Int> {
+    private fun computePathThroughNode(frames: List<SimFrame>, targetNodeId: Int): List<Int> {
         val rootId = frames.firstOrNull()?.activeConfigs?.keys?.firstOrNull() ?: return emptyList()
         val topology = buildTreeTopology(frames, rootId)
 
@@ -196,7 +196,7 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
         val depthOf: Map<Int, Int>,
     )
 
-    private fun buildTreeTopology(frames: List<MachineFrame>, rootId: Int): TreeTopology {
+    private fun buildTreeTopology(frames: List<SimFrame>, rootId: Int): TreeTopology {
         val children = mutableMapOf<Int, List<Pair<Int, String>>>()
         val parent = mutableMapOf<Int, Int>()
         val depthOf = mutableMapOf(rootId to 0)
@@ -270,7 +270,7 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     /**
      * Returns the frame that [stepForward] would advance into. Null if simulation cannot extend.
      */
-    fun peekNextFrame(machine: Machine): MachineFrame? {
+    suspend fun peekNextFrame(machine: Machine): SimFrame? {
         val list = ensureFrames(machine)
         return list.getOrNull(furthestFrameIndex + 1)
     }
@@ -280,7 +280,7 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
      * When the tree grows, the anchor is dropped if its subtree has no viable leaf while the global
      * tree still does.
      */
-    fun setFrameIndex(machine: Machine, newIndex: Int) {
+    suspend fun setFrameIndex(machine: Machine, newIndex: Int) {
         val list = ensureFrames(machine)
         require(newIndex in list.indices) { "frame index $newIndex out of bounds" }
         currentFrameIndex = newIndex
@@ -298,11 +298,16 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
         }
     }
 
-    /** Extends the simulation by one step beyond the furthest frame ever reached. */
-    fun stepForward(machine: Machine) {
+    /**
+     * Extends the simulation by one step beyond the furthest frame ever reached. The next-batch
+     * precompute is launched on a background thread; UI updates do not wait for it.
+     */
+    suspend fun stepForward(machine: Machine) {
         if (peekNextFrame(machine) != null) {
             setFrameIndex(machine, furthestFrameIndex + 1)
-            maintainLookahead(machine)
+            if (lookaheadJob?.isActive != true) {
+                lookaheadJob = viewModelScope.launch { maintainLookahead(machine) }
+            }
         }
     }
 
@@ -317,12 +322,14 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     }
 
     /** Resets playback. Call when machine structure or input changes. */
-    fun invalidateSimulation(machine: Machine) {
-        clearSimulationState()
+    fun invalidateSim(machine: Machine) {
+        clearSimState()
         machine.resetToInitialState()
     }
 
-    private fun clearSimulationState() {
+    private fun clearSimState() {
+        lookaheadJob?.cancel()
+        lookaheadJob = null
         frames = null
         currentFrameIndex = 0
         furthestFrameIndex = 0
@@ -342,7 +349,7 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
      * are scaled to dp (160 DPI) via JFLAP_TO_DP.
      */
     fun setMachine(newMachine: Machine, positions: Map<Int, Point2D> = emptyMap()) {
-        clearSimulationState()
+        clearSimState()
         machine = newMachine
         newMachine.resetToInitialState()
         loadPositions(positions)
@@ -369,7 +376,7 @@ class AutomataViewModel @Inject internal constructor(private val storage: Automa
     /** Loads the auto-saved machine. Returns true on success. */
     fun loadMachine(): Boolean {
         val stored = storage.load() ?: return false
-        clearSimulationState()
+        clearSimState()
         machine = stored.machine
         stored.machine.resetToInitialState()
         loadPositions(stored.positions)

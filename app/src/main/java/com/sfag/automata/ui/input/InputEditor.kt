@@ -67,7 +67,7 @@ fun Machine.InputEditor(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     val newFullInput = remember { mutableStateOf(fullInput) }
 
     // Maps spaces to BLANK_CHAR for TM tape; identity for FA/PDA. Applied when persisting
-    // (saved inputs, setInput) and live validation, never to the visible text field value.
+    // (saved inputs, setInput) and live validation, never to the visible text field value
     val normalize: (String) -> String = remember {
         { text ->
             if (this@InputEditor is TuringMachine) {

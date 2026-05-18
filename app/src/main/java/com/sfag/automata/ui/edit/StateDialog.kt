@@ -116,7 +116,7 @@ internal fun Machine.StateDialog(
                 ItemSpecificationIcon(
                     icon = R.drawable.initial_state,
                     text = stringResource(R.string.initial_state),
-                    isActive = isInitial,
+                    selected = isInitial,
                 ) {
                     if (state?.initial == true || !states.any { it.initial }) {
                         isInitial = !isInitial
@@ -129,7 +129,7 @@ internal fun Machine.StateDialog(
                 ItemSpecificationIcon(
                     icon = R.drawable.final_state,
                     text = stringResource(R.string.final_state),
-                    isActive = isFinal,
+                    selected = isFinal,
                 ) {
                     isFinal = !isFinal
                 }

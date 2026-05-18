@@ -36,6 +36,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,8 +60,8 @@ import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.MachineType
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.TuringMachine
-import com.sfag.automata.domain.simulation.MachineFrame
-import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.automata.domain.simulation.SimFrame
+import com.sfag.automata.domain.simulation.SimStatus
 import com.sfag.automata.ui.common.FormalDefinitionView
 import com.sfag.automata.ui.edit.StateList
 import com.sfag.automata.ui.edit.TransitionList
@@ -81,6 +82,7 @@ import com.sfag.main.ui.component.DefaultDialog
 import com.sfag.main.ui.component.DefaultIconButton
 import com.sfag.main.ui.component.DefaultTextField
 import com.sfag.main.ui.component.ItemSpecificationIcon
+import kotlinx.coroutines.launch
 
 private enum class Mode {
     SIMULATOR,
@@ -89,21 +91,19 @@ private enum class Mode {
     MACHINE_EDITOR,
 }
 
-private fun formatTerminalMessage(
-    machine: Machine,
-    frame: MachineFrame,
+private fun Machine.formatTerminalMessage(
+    frame: SimFrame,
     acceptedMsg: String,
     rejectedMsg: String,
 ): String? {
-    val activeStates = frame.activeStateIndices.mapNotNull { machine.getStateByIndexOrNull(it) }
-    return when (frame.outcome) {
-        SimulationOutcome.ACCEPTED ->
+    val activeStates = frame.activeStateIndices.mapNotNull { getStateByIndexOrNull(it) }
+    return when (frame.status) {
+        SimStatus.ACCEPTED ->
             acceptedMsg.format(activeStates.filter { it.final }.joinToString(", ") { it.name })
 
-        SimulationOutcome.REJECTED ->
-            rejectedMsg.format(activeStates.joinToString(", ") { it.name })
+        SimStatus.REJECTED -> rejectedMsg.format(activeStates.joinToString(", ") { it.name })
 
-        SimulationOutcome.ACTIVE -> null
+        SimStatus.ACTIVE -> null
     }
 }
 
@@ -134,6 +134,7 @@ fun AutomataScreen(
     key(machine) {
         val recomposeKey = remember { mutableIntStateOf(0) }
         val mode = remember { mutableStateOf(Mode.SIMULATOR) }
+        val coroutineScope = rememberCoroutineScope()
         var showUnsavedDialog by remember { mutableStateOf(viewModel.pendingExampleUri != null) }
         var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
         val animationOverlay = remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
@@ -201,13 +202,13 @@ fun AutomataScreen(
                 }
 
                 Mode.INPUT_EDITOR -> {
-                    viewModel.invalidateSimulation(machine)
+                    viewModel.invalidateSim(machine)
                     viewModel.autoSave(machine)
                     mode.value = Mode.SIMULATOR
                 }
 
                 Mode.MACHINE_EDITOR -> {
-                    viewModel.invalidateSimulation(machine)
+                    viewModel.invalidateSim(machine)
                     viewModel.autoSave(machine)
                     mode.value = Mode.SIMULATOR
                     recomposeKey.intValue++
@@ -306,13 +307,13 @@ fun AutomataScreen(
                                         .background(MaterialTheme.colorScheme.surfaceContainer)
                             ) {
                                 machine.MachineEditor(
-                                    isEditing = mode.value == Mode.MACHINE_EDITOR,
+                                    editing = mode.value == Mode.MACHINE_EDITOR,
                                     recomposeKey = recomposeKey.intValue,
                                     animationOverlay = animationOverlay.value,
                                     dialogRequest = dialogRequest,
                                     onEdit = {
                                         if (mode.value != Mode.SIMULATION_STEP) {
-                                            viewModel.invalidateSimulation(machine)
+                                            viewModel.invalidateSim(machine)
                                             mode.value = Mode.INPUT_EDITOR
                                         }
                                     },
@@ -330,7 +331,7 @@ fun AutomataScreen(
                                             return@DefaultIconButton
                                         }
                                         if (mode.value == Mode.MACHINE_EDITOR) {
-                                            viewModel.invalidateSimulation(machine)
+                                            viewModel.invalidateSim(machine)
                                             mode.value = Mode.SIMULATOR
                                             recomposeKey.intValue++
                                         } else {
@@ -339,7 +340,7 @@ fun AutomataScreen(
                                     },
                                     icon = Icons.Outlined.Edit,
                                     modifier = Modifier.weight(1f),
-                                    isActive = mode.value == Mode.MACHINE_EDITOR,
+                                    selected = mode.value == Mode.MACHINE_EDITOR,
                                 )
                                 DefaultIconButton(
                                     onClick = {
@@ -348,7 +349,7 @@ fun AutomataScreen(
                                             recomposeKey.intValue++
                                         } else {
                                             animationOverlay.value = null
-                                            viewModel.invalidateSimulation(machine)
+                                            viewModel.invalidateSim(machine)
                                             mode.value = Mode.SIMULATOR
                                             recomposeKey.intValue++
                                         }
@@ -363,70 +364,74 @@ fun AutomataScreen(
                                 )
                                 DefaultIconButton(
                                     onClick = {
-                                        if (mode.value == Mode.SIMULATION_STEP) {
-                                            return@DefaultIconButton
-                                        }
                                         if (machine.states.none { it.initial }) {
                                             snackbarMsg = noInitialStateMsg
                                             return@DefaultIconButton
                                         }
-                                        if (mode.value != Mode.SIMULATOR) {
-                                            mode.value = Mode.SIMULATOR
-                                        }
-                                        val nextFrame = viewModel.peekNextFrame(machine)
-                                        if (nextFrame == null) {
-                                            // No further step available - if we're sitting on a
-                                            // terminal frame (incl. simulation that ended on
-                                            // frame 0 with no transitions), surface the result.
-                                            viewModel.currentFrame
-                                                ?.takeIf { it.isTerminal }
-                                                ?.let { terminal ->
-                                                    snackbarMsg =
-                                                        formatTerminalMessage(
-                                                            machine = machine,
-                                                            frame = terminal,
-                                                            acceptedMsg = acceptedMsg,
-                                                            rejectedMsg = rejectedMsg,
-                                                        )
-                                                }
-                                            return@DefaultIconButton
-                                        }
-
+                                        // Lock synchronously so a rapid tap landing in the same
+                                        // frame as this one is blocked by `enabled` on recompose
                                         mode.value = Mode.SIMULATION_STEP
-                                        recomposeKey.intValue++
-                                        val capturedPositions = viewModel.statePositions.toMap()
-                                        animationOverlay.value = {
-                                            val animDensity = LocalDensity.current
-                                            val transitionPaths =
-                                                machine.computeTransitionPaths(
-                                                    capturedPositions,
-                                                    animDensity.density,
-                                                )
-                                            TransitionAnimation(
-                                                transitionRefs = nextFrame.transitionRefs,
-                                                transitionPaths = transitionPaths,
-                                                offsetXCanvas = viewModel.offsetXCanvas,
-                                                offsetYCanvas = viewModel.offsetYCanvas,
-                                                onAnimationsEnd = {
-                                                    animationOverlay.value = null
-                                                    mode.value = Mode.SIMULATOR
-                                                    viewModel.stepForward(machine)
-                                                    recomposeKey.intValue++
-                                                    if (nextFrame.isTerminal) {
+                                        coroutineScope.launch {
+                                            val nextFrame = viewModel.peekNextFrame(machine)
+                                            if (nextFrame == null) {
+                                                mode.value = Mode.SIMULATOR
+                                                // No further step available - if we are sitting
+                                                // on a terminal frame (incl. simulation that
+                                                // ended on frame 0 with no transitions), surface
+                                                // the result
+                                                viewModel.currentFrame
+                                                    ?.takeIf { it.isTerminal }
+                                                    ?.let { terminal ->
                                                         snackbarMsg =
-                                                            formatTerminalMessage(
-                                                                machine = machine,
-                                                                frame = nextFrame,
+                                                            machine.formatTerminalMessage(
+                                                                frame = terminal,
                                                                 acceptedMsg = acceptedMsg,
                                                                 rejectedMsg = rejectedMsg,
                                                             )
                                                     }
-                                                },
-                                            )
+                                                return@launch
+                                            }
+
+                                            recomposeKey.intValue++
+                                            val capturedPositions = viewModel.statePositions.toMap()
+                                            animationOverlay.value = {
+                                                val animDensity = LocalDensity.current
+                                                val transitionPaths =
+                                                    machine.computeTransitionPaths(
+                                                        capturedPositions,
+                                                        animDensity.density,
+                                                    )
+                                                TransitionAnimation(
+                                                    transitionRefs = nextFrame.transitionRefs,
+                                                    transitionPaths = transitionPaths,
+                                                    offsetXCanvas = viewModel.offsetXCanvas,
+                                                    offsetYCanvas = viewModel.offsetYCanvas,
+                                                    onAnimationsEnd = {
+                                                        animationOverlay.value = null
+                                                        coroutineScope.launch {
+                                                            // Hold mode=STEP until the state has
+                                                            // truly advanced - only then unblock
+                                                            // the button for the next tap
+                                                            viewModel.stepForward(machine)
+                                                            mode.value = Mode.SIMULATOR
+                                                            recomposeKey.intValue++
+                                                            if (nextFrame.isTerminal) {
+                                                                snackbarMsg =
+                                                                    machine.formatTerminalMessage(
+                                                                        frame = nextFrame,
+                                                                        acceptedMsg = acceptedMsg,
+                                                                        rejectedMsg = rejectedMsg,
+                                                                    )
+                                                            }
+                                                        }
+                                                    },
+                                                )
+                                            }
                                         }
                                     },
                                     icon = Icons.Outlined.SkipNext,
                                     modifier = Modifier.weight(1f),
+                                    enabled = mode.value != Mode.SIMULATION_STEP,
                                 )
                             }
 
@@ -451,12 +456,12 @@ fun AutomataScreen(
             ) {
                 machine.InputEditor(
                     onConfirm = {
-                        viewModel.invalidateSimulation(machine)
+                        viewModel.invalidateSim(machine)
                         viewModel.autoSave(machine)
                         mode.value = Mode.SIMULATOR
                     },
                     onDismiss = {
-                        viewModel.invalidateSimulation(machine)
+                        viewModel.invalidateSim(machine)
                         viewModel.autoSave(machine)
                         mode.value = Mode.SIMULATOR
                     },
@@ -608,21 +613,21 @@ private fun NewMachineWindow(onImport: (Machine?) -> Unit) {
             ItemSpecificationIcon(
                 icon = R.drawable.finite_automata,
                 text = stringResource(R.string.finite_automaton),
-                isActive = machineType == MachineType.FINITE,
+                selected = machineType == MachineType.FINITE,
             ) {
                 machineType = MachineType.FINITE
             }
             ItemSpecificationIcon(
                 icon = R.drawable.pushdown_automata,
                 text = stringResource(R.string.pushdown_automaton),
-                isActive = machineType == MachineType.PUSHDOWN,
+                selected = machineType == MachineType.PUSHDOWN,
             ) {
                 machineType = MachineType.PUSHDOWN
             }
             ItemSpecificationIcon(
                 icon = R.drawable.turing_machine,
                 text = stringResource(R.string.turing_machine),
-                isActive = machineType == MachineType.TURING,
+                selected = machineType == MachineType.TURING,
             ) {
                 machineType = MachineType.TURING
             }

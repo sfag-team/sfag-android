@@ -1,54 +1,47 @@
 package com.sfag.automata.domain.simulation
 
-import com.sfag.automata.domain.machine.Config
 import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
+import com.sfag.automata.domain.machine.MachineBlueprint
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.TuringMachine
-import com.sfag.automata.domain.tree.markSimulationEnd
-import com.sfag.main.config.MAX_SIM_PRECOMPUTE_STEPS
+import com.sfag.automata.domain.tree.Branch
+import com.sfag.automata.domain.tree.markSimEnd
+import com.sfag.main.config.MAX_SIM_PRECOMPUTE_FRAMES
 
-/** Pre-computes the simulation as frames, up to `maxSteps` step frames after frame 0. */
-fun Machine.precomputeFrames(maxSteps: Int = MAX_SIM_PRECOMPUTE_STEPS): List<MachineFrame> {
+/**
+ * Pure pre-compute from an immutable [MachineBlueprint] - safe to call from background threads.
+ * Builds a throwaway worker machine internally so the source blueprint is never touched.
+ */
+fun MachineBlueprint.precomputeFrames(
+    input: String,
+    maxFrames: Int = MAX_SIM_PRECOMPUTE_FRAMES,
+): List<SimFrame> {
+    val worker = toMachine()
+    worker.setInput(input)
+    return worker.precomputeFrames(maxFrames)
+}
+
+/** Pre-computes the simulation up to [maxFrames] snapshots (including the initial frame). */
+fun Machine.precomputeFrames(maxFrames: Int = MAX_SIM_PRECOMPUTE_FRAMES): List<SimFrame> {
     resetToInitialState()
 
-    val frames = mutableListOf<MachineFrame>()
+    val frames = mutableListOf(snapshotFrame())
 
-    frames.add(
-        MachineFrame(
-            transitionRefs = emptyList(),
-            treeBranches = emptyMap(),
-            activeConfigs = snapshotConfigs(),
-            outcome = SimulationOutcome.ACTIVE,
-        )
-    )
-
-    var stepsTaken = 0
-    while (stepsTaken < maxSteps) {
-        val sim = advanceSimulation()
-        when (sim) {
-            is Simulation.Ended -> {
-                val lastIndex = frames.lastIndex
-                frames[lastIndex] =
-                    frames[lastIndex].copy(
-                        outcome = sim.outcome,
-                        isNodeAccepting = sim.isNodeAccepting,
-                    )
+    while (frames.size < maxFrames) {
+        when (val advance = advanceSimulation()) {
+            is SimAdvance.Ended -> {
+                frames[frames.lastIndex] =
+                    frames
+                        .last()
+                        .copy(status = advance.status, isNodeAccepting = advance.isNodeAccepting)
                 break
             }
 
-            is Simulation.Step -> {
-                tree.expandActive(sim.treeBranches)
-                sim.onAllComplete()
-                frames.add(
-                    MachineFrame(
-                        transitionRefs = sim.transitionRefs,
-                        treeBranches = sim.treeBranches,
-                        activeConfigs = snapshotConfigs(),
-                        outcome = SimulationOutcome.ACTIVE,
-                    )
-                )
-                stepsTaken++
+            is SimAdvance.Step -> {
+                tree.expandActive(advance.treeBranches)
+                advance.onAllComplete()
+                frames.add(snapshotFrame(advance.transitionRefs, advance.treeBranches))
             }
         }
     }
@@ -57,8 +50,27 @@ fun Machine.precomputeFrames(maxSteps: Int = MAX_SIM_PRECOMPUTE_STEPS): List<Mac
     return frames
 }
 
+/** Snapshots the machine's current configs (keyed by tree node id) as a [SimFrame]. */
+fun Machine.snapshotFrame(
+    transitionRefs: List<TransitionRef> = emptyList(),
+    treeBranches: Map<Int, List<Branch>> = emptyMap(),
+): SimFrame {
+    val configs: List<SimConfig> =
+        when (this) {
+            is FiniteMachine -> activeConfigs
+            is PushdownMachine -> activeConfigs
+            is TuringMachine -> activeConfigs
+        }
+    return SimFrame(
+        transitionRefs = transitionRefs,
+        treeBranches = treeBranches,
+        activeConfigs = configs.associateBy { it.treeNodeId },
+        status = SimStatus.ACTIVE,
+    )
+}
+
 /** Rebuilds the tree to reflect simulation state at `targetIndex`. Replays from scratch. */
-fun Machine.rebuildTreeForFrame(frames: List<MachineFrame>, targetIndex: Int) {
+fun Machine.rebuildTreeForFrame(frames: List<SimFrame>, targetIndex: Int) {
     require(targetIndex in frames.indices) { "targetIndex $targetIndex out of bounds" }
 
     tree.clear()
@@ -73,14 +85,6 @@ fun Machine.rebuildTreeForFrame(frames: List<MachineFrame>, targetIndex: Int) {
 
     val terminalFrame = frames[targetIndex]
     if (terminalFrame.isTerminal) {
-        tree.markSimulationEnd(terminalFrame.isNodeAccepting)
+        tree.markSimEnd(terminalFrame.isNodeAccepting)
     }
 }
-
-/** Indexes the machine's current configs by tree-node id for inclusion in a [MachineFrame]. */
-fun Machine.snapshotConfigs(): Map<Int, Config> =
-    when (this) {
-        is FiniteMachine -> activeConfigs.associateBy { it.treeNodeId }
-        is PushdownMachine -> activeConfigs.associateBy { it.treeNodeId }
-        is TuringMachine -> activeConfigs.associateBy { it.treeNodeId }
-    }

@@ -28,8 +28,8 @@ fun DefaultButton(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
-    height: Dp = 48.dp,
     enabled: Boolean = true,
+    height: Dp = 48.dp,
 ) {
     val enabledColors =
         ButtonDefaults.buttonColors(
@@ -64,16 +64,18 @@ fun DefaultIconButton(
     onClick: () -> Unit,
     icon: Int,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    selected: Boolean = false,
     contentDescription: String = "",
     height: Dp = 56.dp,
     iconSize: Dp = 32.dp,
-    isActive: Boolean = false,
 ) {
     DefaultIconButtonBox(
         onClick = onClick,
         modifier = modifier,
+        enabled = enabled,
+        selected = selected,
         height = height,
-        isActive = isActive,
     ) { tint ->
         Icon(
             painter = painterResource(id = icon),
@@ -90,16 +92,18 @@ fun DefaultIconButton(
     onClick: () -> Unit,
     icon: ImageVector,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    selected: Boolean = false,
     contentDescription: String = "",
     height: Dp = 56.dp,
     iconSize: Dp = 32.dp,
-    isActive: Boolean = false,
 ) {
     DefaultIconButtonBox(
         onClick = onClick,
         modifier = modifier,
+        enabled = enabled,
+        selected = selected,
         height = height,
-        isActive = isActive,
     ) { tint ->
         Icon(
             imageVector = icon,
@@ -114,8 +118,9 @@ fun DefaultIconButton(
 private fun DefaultIconButtonBox(
     onClick: () -> Unit,
     modifier: Modifier,
+    enabled: Boolean,
+    selected: Boolean,
     height: Dp,
-    isActive: Boolean,
     content: @Composable (tint: Color) -> Unit,
 ) {
     Box(
@@ -124,17 +129,17 @@ private fun DefaultIconButtonBox(
                 .height(height)
                 .clip(MaterialTheme.shapes.medium)
                 .background(
-                    if (isActive) {
+                    if (selected) {
                         MaterialTheme.colorScheme.primary
                     } else {
                         MaterialTheme.colorScheme.secondaryContainer
                     }
                 )
-                .clickable(onClick = onClick),
+                .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         val tint =
-            if (isActive) MaterialTheme.colorScheme.onPrimary
+            if (selected) MaterialTheme.colorScheme.onPrimary
             else MaterialTheme.colorScheme.onSecondaryContainer
         content(tint)
     }

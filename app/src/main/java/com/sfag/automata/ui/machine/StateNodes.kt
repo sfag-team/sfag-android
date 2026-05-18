@@ -17,7 +17,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import com.sfag.automata.domain.machine.Machine
-import com.sfag.automata.domain.simulation.SimulationOutcome
+import com.sfag.automata.domain.simulation.SimStatus
 import com.sfag.automata.ui.common.NODE_OUTLINE
 import com.sfag.automata.ui.common.NODE_RADIUS
 import com.sfag.automata.ui.common.drawNode
@@ -33,9 +33,9 @@ internal fun Machine.StateNodes(
     positions: Map<Int, Offset>,
     offsetX: Float,
     offsetY: Float,
-    isEditing: Boolean = false,
+    editing: Boolean = false,
     activeStateIndices: Set<Int> = emptySet(),
-    simulationOutcome: SimulationOutcome? = null,
+    simStatus: SimStatus? = null,
     borderColor: Color = MaterialTheme.colorScheme.onSurface,
     currentStateFillColor: Color = MaterialTheme.colorScheme.primaryContainer,
     currentStateTextColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -71,12 +71,12 @@ internal fun Machine.StateNodes(
                     (position.y + NODE_RADIUS / 2f) * pxPerDp,
                 )
 
-            val showCurrent = state.index in activeStateIndices && !isEditing
+            val showCurrent = state.index in activeStateIndices && !editing
             val fillColor: Color
             val textArgb: Int
-            if (showCurrent && simulationOutcome != null) {
-                when (simulationOutcome) {
-                    SimulationOutcome.ACCEPTED ->
+            if (showCurrent && simStatus != null) {
+                when (simStatus) {
+                    SimStatus.ACCEPTED ->
                         if (state.final) {
                             fillColor = acceptedFill
                             textArgb = acceptedText.toArgb()
@@ -85,12 +85,12 @@ internal fun Machine.StateNodes(
                             textArgb = rejectedText.toArgb()
                         }
 
-                    SimulationOutcome.REJECTED -> {
+                    SimStatus.REJECTED -> {
                         fillColor = rejectedFill
                         textArgb = rejectedText.toArgb()
                     }
 
-                    SimulationOutcome.ACTIVE -> {
+                    SimStatus.ACTIVE -> {
                         fillColor = currentStateFillColor
                         textArgb = currentStateTextColor.toArgb()
                     }

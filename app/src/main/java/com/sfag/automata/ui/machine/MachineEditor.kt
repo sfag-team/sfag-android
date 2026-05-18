@@ -41,13 +41,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.sfag.R
 import com.sfag.automata.domain.common.determinismLabel
-import com.sfag.automata.domain.machine.Config
 import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.State
 import com.sfag.automata.domain.machine.Transition
 import com.sfag.automata.domain.machine.TuringMachine
+import com.sfag.automata.domain.simulation.SimConfig
 import com.sfag.automata.ui.AutomataViewModel
 import com.sfag.automata.ui.bar.Stack
 import com.sfag.automata.ui.bar.Tape
@@ -82,7 +82,7 @@ sealed interface DialogRequest {
 /** Unified view for both simulation and editing modes. */
 @Composable
 fun Machine.MachineEditor(
-    isEditing: Boolean,
+    editing: Boolean,
     recomposeKey: Int,
     animationOverlay: (@Composable () -> Unit)?,
     dialogRequest: MutableState<DialogRequest?>,
@@ -92,7 +92,7 @@ fun Machine.MachineEditor(
     val viewModel: AutomataViewModel = hiltViewModel()
     val density = LocalDensity.current
     val currentFrame = viewModel.currentFrame
-    val simulationOutcome = currentFrame?.takeIf { it.isTerminal }?.outcome
+    val simStatus = currentFrame?.takeIf { it.isTerminal }?.status
     val selectedConfig = viewModel.selectedConfig
     val activeStateIndices = currentFrame?.activeStateIndices ?: emptySet()
 
@@ -106,8 +106,8 @@ fun Machine.MachineEditor(
 
     Column(modifier = Modifier.fillMaxSize()) {
         // TOP BAR
-        Crossfade(targetState = isEditing, label = "top-bar") { isEditingMode ->
-            if (isEditingMode) {
+        Crossfade(targetState = editing, label = "top-bar") { editingMode ->
+            if (editingMode) {
                 key(editTool) {
                     Toolbar(currentTool = editTool) { newEditTool -> editTool = newEditTool }
                 }
@@ -115,19 +115,19 @@ fun Machine.MachineEditor(
                 key(recomposeKey) {
                     val symbols =
                         when (selectedConfig) {
-                            is Config.Tm -> selectedConfig.tape
-                            is Config.Fa,
-                            is Config.Pda,
+                            is SimConfig.Tm -> selectedConfig.tape
+                            is SimConfig.Fa,
+                            is SimConfig.Pda,
                             null -> fullInput.toList()
                         }
                     val headIndex =
                         when (selectedConfig) {
-                            is Config.Fa -> selectedConfig.inputConsumed
-                            is Config.Pda -> selectedConfig.inputConsumed
-                            is Config.Tm -> selectedConfig.headPosition
+                            is SimConfig.Fa -> selectedConfig.inputConsumed
+                            is SimConfig.Pda -> selectedConfig.inputConsumed
+                            is SimConfig.Tm -> selectedConfig.headPosition
                             null -> 0
                         }
-                    val muteHead = simulationOutcome != null
+                    val muteHead = simStatus != null
 
                     when (this@MachineEditor) {
                         is FiniteMachine,
@@ -242,8 +242,8 @@ fun Machine.MachineEditor(
                             }
                         }
                         // Tool gestures (inner = gets events first in Main pass)
-                        .pointerInput(editTool, isEditing) {
-                            if (!isEditing) {
+                        .pointerInput(editTool, editing) {
+                            if (!editing) {
                                 return@pointerInput
                             }
                             when (editTool) {
@@ -472,7 +472,7 @@ fun Machine.MachineEditor(
                 ) {
                     val positions = viewModel.statePositions
 
-                    if (isEditing) {
+                    if (editing) {
                         key(editTool) {
                             key(recomposeKey) {
                                 val transitionPaths =
@@ -488,7 +488,7 @@ fun Machine.MachineEditor(
                                     positions = positions,
                                     offsetX = offsetX,
                                     offsetY = offsetY,
-                                    isEditing = true,
+                                    editing = true,
                                     activeStateIndices = activeStateIndices,
                                 )
                             }
@@ -510,7 +510,7 @@ fun Machine.MachineEditor(
                                 offsetX = offsetX,
                                 offsetY = offsetY,
                                 activeStateIndices = activeStateIndices,
-                                simulationOutcome = simulationOutcome,
+                                simStatus = simStatus,
                             )
                         }
                     }
@@ -536,7 +536,7 @@ fun Machine.MachineEditor(
                 Text(
                     text =
                         stringResource(
-                            if (isEditing) R.string.tap_to_add_states else R.string.no_states
+                            if (editing) R.string.tap_to_add_states else R.string.no_states
                         ),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -545,7 +545,7 @@ fun Machine.MachineEditor(
             }
 
             // Edit dialogs
-            if (isEditing) {
+            if (editing) {
                 when (val request = dialogRequest.value) {
                     is DialogRequest.ForState ->
                         StateDialog(
@@ -586,12 +586,12 @@ fun Machine.MachineEditor(
         // BOTTOM BAR (PDA stack - slides away in edit mode, canvas height stays stable)
         if (this@MachineEditor is PushdownMachine) {
             AnimatedVisibility(
-                visible = !isEditing,
+                visible = !editing,
                 exit = shrinkVertically(shrinkTowards = Alignment.Top),
             ) {
                 Box(modifier = Modifier.fillMaxWidth().height(cellSize + cellPadding * 2)) {
                     key(recomposeKey) {
-                        val pdaConfig = selectedConfig as? Config.Pda
+                        val pdaConfig = selectedConfig as? SimConfig.Pda
                         Stack(symbols = pdaConfig?.stack ?: listOf(Symbols.INITIAL_STACK_SYMBOL))
                     }
                 }

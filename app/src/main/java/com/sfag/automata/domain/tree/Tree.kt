@@ -56,7 +56,7 @@ class Tree {
                 node.children.add(childNode)
                 newActive.add(childNode)
                 // Keep nextNodeId past every materialized id so subsequent allocateBranch calls can
-                // never collide, even on the rebuild path that doesn't go through allocateBranch.
+                // never collide, even on the rebuild path that doesn't go through allocateBranch
                 if (branch.treeNodeId >= nextNodeId) {
                     nextNodeId = branch.treeNodeId + 1
                 }
@@ -74,7 +74,7 @@ class Tree {
             }
             // Walk ALL children (no short-circuit) so sibling subtrees that also reach an
             // accepted leaf get their leaves and ancestors marked, instead of being left
-            // ACTIVE for markRemainingAsRejected to flip to REJECTED.
+            // ACTIVE for markRemainingAsRejected to flip to REJECTED
             var isAccepting = false
             for (child in node.children) {
                 if (walk(child)) {
@@ -143,7 +143,7 @@ class Tree {
  * Marks accepting and rejected paths in the tree based on a node-id predicate. Called by the UI
  * layer when simulation ends.
  */
-fun Tree.markSimulationEnd(isNodeAccepting: ((Int) -> Boolean)?) {
+fun Tree.markSimEnd(isNodeAccepting: ((Int) -> Boolean)?) {
     if (isNodeAccepting != null) {
         val acceptedIds = getActiveNodes().map { it.id }.filter(isNodeAccepting).toSet()
         markAcceptedPaths(acceptedIds)

@@ -86,7 +86,7 @@ internal fun Machine.TransitionDialog(
                             val normalizedRead = JffUtils.normalizeEpsilon(read.trim())
                             val newTransition = FaTransition(from.index, to.index, normalizedRead)
                             replaceOrAddTransition(
-                                list = machine.transitions,
+                                list = machine.faTransitions,
                                 transition = transition,
                                 newTransition = newTransition,
                             )

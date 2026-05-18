@@ -1,6 +1,6 @@
 package com.sfag.grammar.domain.grammar
 
-import com.sfag.main.config.MAX_BFS_GRAMMAR_STEPS
+import com.sfag.main.config.MAX_BFS_GRAMMAR_CONFIGS
 import com.sfag.main.config.Symbols
 
 // Sentinel for "unreachable / infeasible" minimum length. Half of MAX_VALUE so sums never overflow
@@ -55,7 +55,7 @@ fun parse(
     val minLengths = computeMinLengths(rules)
     var steps = 0
 
-    while (queue.isNotEmpty() && steps <= MAX_BFS_GRAMMAR_STEPS) {
+    while (queue.isNotEmpty() && steps <= MAX_BFS_GRAMMAR_CONFIGS) {
         val current = queue.removeFirst()
 
         // Check if the current sentential form already matches the input

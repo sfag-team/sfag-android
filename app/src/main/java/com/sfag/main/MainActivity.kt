@@ -474,21 +474,21 @@ private fun NewMachineDialog(
             ItemSpecificationIcon(
                 icon = R.drawable.finite_automata,
                 text = stringResource(R.string.finite_automaton),
-                isActive = machineType == MachineType.FINITE,
+                selected = machineType == MachineType.FINITE,
             ) {
                 machineType = MachineType.FINITE
             }
             ItemSpecificationIcon(
                 icon = R.drawable.pushdown_automata,
                 text = stringResource(R.string.pushdown_automaton),
-                isActive = machineType == MachineType.PUSHDOWN,
+                selected = machineType == MachineType.PUSHDOWN,
             ) {
                 machineType = MachineType.PUSHDOWN
             }
             ItemSpecificationIcon(
                 icon = R.drawable.turing_machine,
                 text = stringResource(R.string.turing_machine),
-                isActive = machineType == MachineType.TURING,
+                selected = machineType == MachineType.TURING,
             ) {
                 machineType = MachineType.TURING
             }
