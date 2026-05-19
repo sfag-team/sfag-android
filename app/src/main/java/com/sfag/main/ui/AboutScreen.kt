@@ -129,7 +129,7 @@ fun AboutScreen(navBack: () -> Unit) {
             )
             Column(horizontalAlignment = Alignment.End) {
                 Text("FEI STU Bratislava", style = MaterialTheme.typography.labelMedium)
-                Text("AutoGram v2.5 ©2026", style = MaterialTheme.typography.labelSmall)
+                Text("AutoGram v2.6 ©2026", style = MaterialTheme.typography.labelSmall)
             }
         }
 

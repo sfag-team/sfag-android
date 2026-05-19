@@ -23,7 +23,6 @@ class TuringMachine(
     val blankSymbol: Char = Symbols.BLANK_CHAR,
 ) : Machine(name, states, savedInputs = savedInputs) {
     override val jffTag = "turing"
-    override val typeLabel = "TM"
 
     override val transitions: List<Transition>
         get() = tmTransitions

@@ -8,15 +8,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.sfag.R
 import com.sfag.automata.domain.common.FormalDefinition
 import com.sfag.main.config.Symbols
 
 /** Renders the formal mathematical definition of an automaton. */
 @Composable
 fun FormalDefinitionView(definition: FormalDefinition) {
+    val typeLabel =
+        stringResource(
+            when (definition) {
+                is FormalDefinition.Finite -> R.string.fa_label
+                is FormalDefinition.Pushdown -> R.string.pda_label
+                is FormalDefinition.Turing -> R.string.tm_label
+            }
+        )
     Column(modifier = Modifier.padding(16.dp)) {
-        Text(definition.tupleHeader(), style = MaterialTheme.typography.titleLarge)
+        Text(definition.tupleHeader(typeLabel), style = MaterialTheme.typography.titleLarge)
         Spacer(modifier = Modifier.height(8.dp))
         definition.componentLines().forEach { line ->
             Text(line, style = MaterialTheme.typography.bodyLarge)
@@ -28,7 +38,7 @@ fun FormalDefinitionView(definition: FormalDefinition) {
     }
 }
 
-private fun FormalDefinition.tupleHeader(): String {
+private fun FormalDefinition.tupleHeader(typeLabel: String): String {
     val tuple = buildList {
         add("Q")
         add(Symbols.SIGMA)
@@ -47,7 +57,7 @@ private fun FormalDefinition.tupleHeader(): String {
         }
         add("F")
     }
-    return "M = (${tuple.joinToString(", ")})"
+    return "$typeLabel = (${tuple.joinToString(", ")})"
 }
 
 private fun FormalDefinition.componentLines(): List<String> = buildList {

@@ -6,14 +6,6 @@ import com.sfag.automata.domain.machine.PushdownMachine
 import com.sfag.automata.domain.machine.Transition
 import com.sfag.automata.domain.machine.TuringMachine
 
-fun Machine.determinismLabel(): String? {
-    return when (isDeterministic()) {
-        true -> "D$typeLabel"
-        false -> "N$typeLabel"
-        null -> null
-    }
-}
-
 fun Machine.isDeterministic(): Boolean? {
     if (states.isEmpty() && transitions.isEmpty()) {
         return null

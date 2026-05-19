@@ -19,7 +19,6 @@ class PushdownMachine(
     val pdaTransitions: MutableList<PdaTransition> = mutableListOf(),
 ) : Machine(name, states, savedInputs = savedInputs) {
     override val jffTag = "pda"
-    override val typeLabel = "PDA"
 
     override val transitions: List<Transition>
         get() = pdaTransitions

@@ -16,8 +16,6 @@ sealed class Machine(
     /** JFF file format tag (e.g. "fa", "pda", "turing"). */
     abstract val jffTag: String
 
-    /** Short type label for UI display (e.g. "FA", "PDA", "TM"). */
-    abstract val typeLabel: String
     abstract val transitions: List<Transition>
 
     var fullInput: String = ""

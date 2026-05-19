@@ -40,7 +40,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.sfag.R
-import com.sfag.automata.domain.common.determinismLabel
 import com.sfag.automata.domain.machine.FiniteMachine
 import com.sfag.automata.domain.machine.Machine
 import com.sfag.automata.domain.machine.PushdownMachine
@@ -53,6 +52,7 @@ import com.sfag.automata.ui.bar.Stack
 import com.sfag.automata.ui.bar.Tape
 import com.sfag.automata.ui.bar.Toolbar
 import com.sfag.automata.ui.common.NODE_RADIUS
+import com.sfag.automata.ui.common.machineLabel
 import com.sfag.automata.ui.edit.StateDialog
 import com.sfag.automata.ui.edit.TransitionDialog
 import com.sfag.main.config.MAX_ZOOM
@@ -525,7 +525,7 @@ fun Machine.MachineEditor(
             )
 
             Text(
-                text = determinismLabel() ?: "",
+                text = machineLabel(),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp),

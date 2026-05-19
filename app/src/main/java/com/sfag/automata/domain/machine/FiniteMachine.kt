@@ -11,7 +11,6 @@ class FiniteMachine(
     val faTransitions: MutableList<FaTransition> = mutableListOf(),
 ) : Machine(name, states, savedInputs = savedInputs) {
     override val jffTag = "fa"
-    override val typeLabel = "FA"
 
     override val transitions: List<Transition>
         get() = faTransitions

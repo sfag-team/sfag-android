@@ -16,10 +16,10 @@
     <string name="file_import_error">Failed to open file</string>
 
     <!-- Home Screen -->
-    <string name="automata_simulator">Automata simulator</string>
-    <string name="grammar_simulator">Grammar simulator</string>
-    <string name="example_page">Examples</string>
     <string name="about_page">About</string>
+    <string name="automata_simulator">Automata simulator</string>
+    <string name="example_page">Examples</string>
+    <string name="grammar_simulator">Grammar simulator</string>
 
     <!-- Automata Screen -->
     <string name="accept_by">Accept by the</string>
@@ -27,7 +27,9 @@
     <string name="add_input">Add input</string>
     <string name="add_state">Add states</string>
     <string name="add_transition">Add transitions</string>
+    <string name="determinism_prefix">D</string>
     <string name="duplicate_state_name">A state with this name already exists</string>
+    <string name="fa_label">FA</string>
     <string name="final_state">Final</string>
     <string name="finite_automaton">Finite</string>
     <string name="from_state">from</string>
@@ -42,8 +44,10 @@
     <string name="no_initial_state">No initial state defined</string>
     <string name="no_saved_inputs">No saved inputs yet</string>
     <string name="no_states">No machine states</string>
+    <string name="nondeterminism_prefix">N</string>
     <string name="pda_accept_by_empty_stack">empty stack</string>
     <string name="pda_accept_by_final_state">final state</string>
+    <string name="pda_label">PDA</string>
     <string name="pushdown_automaton">Pushdown</string>
     <string name="rejected_in_states">Rejected in state(s): %1$s</string>
     <string name="remove_item">Remove</string>
@@ -52,6 +56,7 @@
     <string name="stack_push">push</string>
     <string name="state_name">state name</string>
     <string name="tap_to_add_states">Tap (a)+ to add states</string>
+    <string name="tm_label">TM</string>
     <string name="to_state">to</string>
     <string name="transition_direction">direction</string>
     <string name="transition_read">read</string>
@@ -110,23 +115,29 @@
 
     <!-- Automata examples -->
     <string name="automata_example">Automata examples</string>
-    <string name="dfa_3kplus1_a_label">3k+1 a</string>
-    <string name="dfa_3kplus1_desc">Deterministic finite automaton</string>
     <string name="dfa_an_label">aⁿ</string>
     <string name="dfa_an_desc">Deterministic finite automaton</string>
+    <string name="dfa_3kplus1_a_label">3k+1 a</string>
+    <string name="dfa_3kplus1_desc">Deterministic finite automaton</string>
     <string name="dfa_ends_01_or_10_label">Ends 01 or 10</string>
     <string name="dfa_ends_01_or_10_desc">Deterministic finite automaton</string>
+    <string name="nfa_ends_01_or_10_label">Ends 01 or 10</string>
+    <string name="nfa_ends_01_or_10_desc">Non-deterministic finite automaton</string>
     <string name="dpda_an_bn_label">aⁿbⁿ</string>
     <string name="dpda_an_bn_desc">Deterministic pushdown automaton</string>
     <string name="dpda_wcwR_label">wcwᴿ | w ∈ {a,b}*</string>
     <string name="dpda_wcwR_desc">Deterministic pushdown automaton</string>
-    <string name="nfa_ends_01_or_10_label">Ends 01 or 10</string>
-    <string name="nfa_ends_01_or_10_desc">Non-deterministic finite automaton</string>
     <string name="npda_wwR_label">wwᴿ | w ∈ {a,b}*</string>
     <string name="npda_wwR_desc">Non-deterministic pushdown automaton</string>
 
-    <!--  Grammar examples -->
+    <!-- Grammar examples -->
     <string name="grammar_example">Grammar examples</string>
+    <string name="reg_an_label">aⁿ</string>
+    <string name="reg_an_desc">Regular grammar</string>
+    <string name="reg_3kplus1_a_label">3k+1 a</string>
+    <string name="reg_3kplus1_a_desc">Regular grammar</string>
+    <string name="reg_ends_01_or_10_label">Ends 01 or 10</string>
+    <string name="reg_ends_01_or_10_desc">Regular grammar</string>
     <string name="cf_an_bn_label">aⁿbⁿ</string>
     <string name="cf_an_bn_desc">Context-free grammar</string>
     <string name="cf_an_bn_norm_label">Normalized aⁿbⁿ</string>
@@ -135,12 +146,6 @@
     <string name="cf_wwR_desc">Context-free grammar</string>
     <string name="cs_an_bn_cn_label">aⁿbⁿcⁿ</string>
     <string name="cs_an_bn_cn_desc">Context-sensitive grammar</string>
-    <string name="reg_3kplus1_a_label">3k+1 a</string>
-    <string name="reg_3kplus1_a_desc">Regular grammar</string>
-    <string name="reg_an_label">aⁿ</string>
-    <string name="reg_an_desc">Regular grammar</string>
-    <string name="reg_ends_01_or_10_label">Ends 01 or 10</string>
-    <string name="reg_ends_01_or_10_desc">Regular grammar</string>
 
     <!-- About Screen -->
     <string name="about_automata_features">The simulator allows for finite/pushdown automata and Turing machines:</string>

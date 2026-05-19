@@ -16,10 +16,10 @@
     <string name="file_import_error">Chyba pri načítavaní súboru</string>
 
     <!-- Home Screen -->
-    <string name="automata_simulator">Simulátor automatov</string>
-    <string name="grammar_simulator">Simulátor gramatík</string>
-    <string name="example_page">Príklady</string>
     <string name="about_page">O aplikácii</string>
+    <string name="automata_simulator">Simulátor automatov</string>
+    <string name="example_page">Príklady</string>
+    <string name="grammar_simulator">Simulátor gramatík</string>
 
     <!-- Automata Screen -->
     <string name="accept_by">Akceptovať</string>
@@ -27,7 +27,9 @@
     <string name="add_input">Pridať vstup</string>
     <string name="add_state">Pridať stavy</string>
     <string name="add_transition">Pridať prechody</string>
+    <string name="determinism_prefix">D</string>
     <string name="duplicate_state_name">Stav s týmto názvom už existuje</string>
+    <string name="fa_label">KA</string>
     <string name="final_state">Koncový</string>
     <string name="finite_automaton">Konečný</string>
     <string name="from_state">z</string>
@@ -42,8 +44,10 @@
     <string name="no_initial_state">Nie je definovaný počiatočný stav</string>
     <string name="no_saved_inputs">Žiadne uložené vstupy</string>
     <string name="no_states">Žiadne stavy automatu</string>
+    <string name="nondeterminism_prefix">N</string>
     <string name="pda_accept_by_empty_stack">prázdnym zásobníkom</string>
     <string name="pda_accept_by_final_state">koncovým stavom</string>
+    <string name="pda_label">ZA</string>
     <string name="pushdown_automaton">Zásobníkový</string>
     <string name="rejected_in_states">Odmietnuté v stave/och: %1$s</string>
     <string name="remove_item">Odstrániť</string>
@@ -52,6 +56,7 @@
     <string name="stack_push">push</string>
     <string name="state_name">názov stavu</string>
     <string name="tap_to_add_states">Klepnutím na (a)+ pridáte stavy</string>
+    <string name="tm_label">TS</string>
     <string name="to_state">do</string>
     <string name="transition_direction">smer</string>
     <string name="transition_read">číta</string>
@@ -110,23 +115,29 @@
 
     <!-- Automata examples -->
     <string name="automata_example">Príklady automatov</string>
-    <string name="dfa_3kplus1_a_label">počet a je 3k+1</string>
-    <string name="dfa_3kplus1_desc">Deterministický konečný automat</string>
     <string name="dfa_an_label">aⁿ</string>
     <string name="dfa_an_desc">Deterministický konečný automat</string>
+    <string name="dfa_3kplus1_a_label">počet a je 3k+1</string>
+    <string name="dfa_3kplus1_desc">Deterministický konečný automat</string>
     <string name="dfa_ends_01_or_10_label">Končí na 01 alebo 10</string>
     <string name="dfa_ends_01_or_10_desc">Deterministický konečný automat</string>
+    <string name="nfa_ends_01_or_10_label">Končí na 01 alebo 10</string>
+    <string name="nfa_ends_01_or_10_desc">Nedeterministický konečný automat</string>
     <string name="dpda_an_bn_label">aⁿbⁿ</string>
     <string name="dpda_an_bn_desc">Deterministický zásobníkový automat</string>
     <string name="dpda_wcwR_label">wcwᴿ | w ∈ {a,b}*</string>
     <string name="dpda_wcwR_desc">Deterministický zásobníkový automat</string>
-    <string name="nfa_ends_01_or_10_label">Končí na 01 alebo 10</string>
-    <string name="nfa_ends_01_or_10_desc">Nedeterministický konečný automat</string>
     <string name="npda_wwR_label">wwᴿ | w ∈ {a,b}*</string>
     <string name="npda_wwR_desc">Nedeterministický zásobníkový automat</string>
 
-    <!--  Grammar examples -->
+    <!-- Grammar examples -->
     <string name="grammar_example">Príklady gramatík</string>
+    <string name="reg_an_label">aⁿ</string>
+    <string name="reg_an_desc">Regulárna gramatika</string>
+    <string name="reg_3kplus1_a_label">počet a je 3k+1</string>
+    <string name="reg_3kplus1_a_desc">Regulárna gramatika</string>
+    <string name="reg_ends_01_or_10_label">Končí na 01 alebo 10</string>
+    <string name="reg_ends_01_or_10_desc">Regulárna gramatika</string>
     <string name="cf_an_bn_label">aⁿbⁿ</string>
     <string name="cf_an_bn_desc">Bezkontextová gramatika</string>
     <string name="cf_an_bn_norm_label">Normalizovaná aⁿbⁿ</string>
@@ -135,12 +146,6 @@
     <string name="cf_wwR_desc">Bezkontextová gramatika</string>
     <string name="cs_an_bn_cn_label">aⁿbⁿcⁿ</string>
     <string name="cs_an_bn_cn_desc">Kontextová gramatika</string>
-    <string name="reg_3kplus1_a_label">počet a je 3k+1</string>
-    <string name="reg_3kplus1_a_desc">Regulárna gramatika</string>
-    <string name="reg_an_label">aⁿ</string>
-    <string name="reg_an_desc">Regulárna gramatika</string>
-    <string name="reg_ends_01_or_10_label">Končí na 01 alebo 10</string>
-    <string name="reg_ends_01_or_10_desc">Regulárna gramatika</string>
 
     <!-- About Screen -->
     <string name="about_automata_features">Simulátor umožňuje pre konečné, zásobníkové automaty a Turingove stroje:</string>
